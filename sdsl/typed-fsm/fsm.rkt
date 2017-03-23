@@ -1,7 +1,6 @@
 #lang turnstile
 (extends "../../typed/rosette.rkt" #:except #%datum #%app define) ; extends typed rosette
-(require (for-syntax lens unstable/lens)
-         (prefix-in ro: rosette) ; untyped 
+(require (prefix-in ro: rosette) ; untyped 
          (prefix-in rosette: "../../typed/lib/synthax.rkt")
          (prefix-in rosette: "../../typed/query/debug.rkt")
          (prefix-in fsm: sdsl/fsm/fsm))
