@@ -11,11 +11,11 @@
  (prefix-in C
    (combine-in
     (only-in turnstile/examples/stlc+union+case
-             PosInt Zero NegInt Float True False String Unit [U U*] U*?
+             PosInt Zero NegInt Float True False String Unit Unit? [U U*] U*?
              [case-> case->*] case->? → →? String?)
     (only-in turnstile/examples/stlc+cons [List Listof])))
  (only-in turnstile/examples/stlc+union+case
-          [~U* ~CU*] [~case-> ~Ccase->] [~→ ~C→])
+          [~U* ~CU*] [~case-> ~Ccase->] [~→ ~C→] [~Unit ~CUnit])
  (only-in turnstile/examples/stlc+cons [~List ~CListof])
  ;; base lang
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
@@ -33,7 +33,7 @@
          CVectorof MVectorof IVectorof Vectorof CMVectorof CIVectorof CVector
          CParamof ; TODO: symbolic Param not supported yet
          CBoxof MBoxof IBoxof CMBoxof CIBoxof CHashTable
-         CUnit Unit
+         CUnit Unit (for-syntax ~CUnit CUnit?)
          CNegInt NegInt
          CZero Zero
          CPosInt PosInt
@@ -970,6 +970,7 @@
                     [display : (C→ Any CUnit)]
                     [displayln : (C→ Any CUnit)]
                     [with-output-to-string : (C→ (C→ Any) CString)]
+                    [string-contains? : (C→ CString CString CBool)]
                     [pretty-print : (C→ Any CUnit)]
                     [error : (Ccase-> (C→ (CU CString CSymbol) CNothing)
                                       (C→ CSymbol CString CNothing))]

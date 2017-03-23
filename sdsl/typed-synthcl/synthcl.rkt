@@ -1,7 +1,8 @@
 #lang turnstile
 (extends "../../typed/rosette.rkt" #:except ! #%app || && void = * + - / #%datum if assert verify < <= > >=) ; typed rosette
 (require (prefix-in ro: (combine-in rosette rosette/lib/synthax))
-         (prefix-in cl: "synthcl-model.rkt"))
+         (prefix-in cl: "synthcl-model.rkt")
+         (only-in "../../typed/rosette.rkt" ~CUnit))
 
 (begin-for-syntax
   (define (mk-cl id) (format-id #'here "cl:~a" id))
@@ -104,7 +105,14 @@
 
 (ro:define (to-bool v) (ro:#%app (ro:#%app cl:bool) v))
 
-(define-base-types void cl_context cl_command_queue cl_program cl_kernel cl_mem)
+(define-named-type-alias void rosette:CUnit)
+(begin-for-syntax
+  (define-syntax ~void
+    (pattern-expander
+     (syntax-parser
+       [_:id #'~CUnit][(_:id) #'(~CUnit)])))
+  (define void? rosette:CUnit?))
+(define-base-types #;void cl_context cl_command_queue cl_program cl_kernel cl_mem)
 (define-type-constructor Pointer #:arity = 1)
 (define-named-type-alias void* (Pointer void))
 (define-named-type-alias char* rosette:CString)
