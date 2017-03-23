@@ -1,5 +1,5 @@
 #lang s-exp "../sdsl/typed-fsm/fsm.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+(require typed/lib/roseunit)
 
 (define m 
   (automaton init 
@@ -42,16 +42,13 @@
 (check-type (m '(c a d a r)) : Bool -> #t)
 (check-type (m '(c a d a)) : Bool -> #f)
 (check-type (verify-automaton m #px"^c[ad]+r$") : (CListof CSymbol) -> '(c r))
-;; TODO: get this to display the debugging output
-;; it's currently #f because defing/debug in query/debug3.rkt
-;; expands e before rosette's tracking-app stx-param is declared
-;; see notes in query/debug3.rkt for more info
-(check-type (debug-automaton m #px"^c[ad]+r$" '(c r)) : CPict -> #f)
-(check-type (synthesize-automaton M #px"^c[ad]+r$") : CUnit)
-(check-type
- (with-output-to-string (λ () (synthesize-automaton M #px"^c[ad]+r$")))
- : CString
- ->
- "/home/stchang/NEU_Research/typed-rosette/test/fsm-tests.rkt:21:0\n'(define M\n   (automaton\n    init\n    (init : (c → s2))\n    (s1 : (a → s1) (d → s1) (r → end))\n    (s2 : (a → s1) (d → s1) (r → reject))\n    (end :)))\n")
 
-;(debug-automaton m #px"^c[ad]+r$" '(c r))
+;; TODO: get this to display the debugging output
+;; it's currently #f because define/debug in query/debug.rkt
+;; expands e before rosette's tracking-app stx-param is declared
+;; see notes in query/debug.rkt for more info
+(check-type (debug-automaton m #px"^c[ad]+r$" '(c r)) : CPict -> #f)
+
+(check-type+output
+ (synthesize-automaton M #px"^c[ad]+r$") ->
+ "(define M\n   (automaton\n    init\n    (init : (c → s2))\n    (s1 : (a → s1) (d → s1) (r → end))\n    (s2 : (a → s1) (d → s1) (r → reject))\n    (end :)))")

@@ -1,5 +1,5 @@
 #lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking
+(require typed/lib/roseunit
          (prefix-in cl: sdsl/synthcl/lang/main)
          (prefix-in ro: (rename-in rosette [#%app a])))
 
@@ -97,10 +97,10 @@
 (check-type (mmulVector A B n p m) : int*)
 (check-type (mmulSequential A B n p m) : int*)
 
-(check-type
- (with-output-to-string
-   (λ ()
-     (synth_vector 4))) ; 20 sec
-     : CString
-     -> "/home/stchang/NEU_Research/typed-rosette/test/matrix-synth-kernel.rkt:57:0\n'(procedure\n  int\n  (indexA (int off) (int i) (int k) (int p))\n  (: int r c w)\n  (= r (+ (choose i (/ i 4) (* i 4)) off))\n  (= c (+ (choose k (/ k 4) (* k 4)) 0))\n  (= w (+ (/ p 4) 0))\n  (+ (* r w) c))\n/home/stchang/NEU_Research/typed-rosette/test/matrix-synth-kernel.rkt:66:0\n'(procedure\n  int\n  (indexB (int off) (int k) (int j) (int m))\n  (: int r c w)\n  (= r (+ (choose k (/ k 4) (* k 4)) off))\n  (= c (+ (choose j (/ j 4) (* j 4)) 0))\n  (= w (+ (/ m 4) 0))\n  (+ (* r w) c))\n/home/stchang/NEU_Research/typed-rosette/test/matrix-synth-kernel.rkt:75:0\n'(procedure\n  int\n  (indexC (int off) (int i) (int j) (int m))\n  (: int r c w)\n  (= r (+ (choose i (/ i 4) (* i 4)) off))\n  (= c (+ (choose j (/ j 4) (* j 4)) 0))\n  (= w (+ (/ m 4) 0))\n  (+ (* r w) c))\n")
+(check-type+output
+ (synth_vector 4) ; 20 sec
+ ->
+ "(procedure\n  int\n  (indexA (int off) (int i) (int k) (int p))\n  (: int r c w)\n  (= r (+ (choose i (/ i 4) (* i 4)) off))\n  (= c (+ (choose k (/ k 4) (* k 4)) 0))\n  (= w (+ (/ p 4) 0))\n  (+ (* r w) c))"
+ "(procedure\n  int\n  (indexB (int off) (int k) (int j) (int m))\n  (: int r c w)\n  (= r (+ (choose k (/ k 4) (* k 4)) off))\n  (= c (+ (choose j (/ j 4) (* j 4)) 0))\n  (= w (+ (/ m 4) 0))\n  (+ (* r w) c))"
+ "(procedure\n  int\n  (indexC (int off) (int i) (int j) (int m))\n  (: int r c w)\n  (= r (+ (choose i (/ i 4) (* i 4)) off))\n  (= c (+ (choose j (/ j 4) (* j 4)) 0))\n  (= w (+ (/ m 4) 0))\n  (+ (* r w) c))")
 ;(synth_vector 8) ; 252 sec

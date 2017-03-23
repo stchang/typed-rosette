@@ -1,5 +1,5 @@
 #lang s-exp "../typed/rosette.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+(require typed/lib/roseunit)
 
 ;; Examples from the Rosette Guide, Section 6 Libraries
 
@@ -10,21 +10,11 @@
 (define (div2 [x : BV] -> BV)
   ([choose bvshl bvashr bvlshr bvadd bvsub bvmul] x (?? (bitvector 8))))
 (define-symbolic i (bitvector 8))
-(check-type
+(check-type+output
  (print-forms
   (synthesize #:forall (list i)
               #:guarantee (assert (equal? (div2 i) (bvudiv i (bv 2 8))))))
- : Unit)
-(check-type
- (with-output-to-string
-   (λ ()
-     (print-forms
-      (synthesize #:forall (list i)
-                  #:guarantee (assert (equal? (div2 i) (bvudiv i (bv 2 8))))))))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/rosette-guide-sec6-tests.rkt:10:0\n'(define (div2 (x : BV) -> BV) (bvlshr x (bv 1 8)))\n")
-#;(printf "expected output:\n~a\n" 
-        "'(define (div2 [x : BV] -> BV) (bvlshr x (bv 1 8)))")
+ -> "(define (div2 (x : BV) -> BV) (bvlshr x (bv 1 8)))")
 
 ;; define-synthax
 (define-synthax (nnf [x : Bool] [y : Bool] depth -> Bool)
@@ -37,17 +27,12 @@
   (nnf x y 1))
 
 (define-symbolic a b boolean?)
-(check-type
- (with-output-to-string
-   (λ ()
-     (print-forms
-      (synthesize
-       #:forall (list a b)
-       #:guarantee (assert (equal? (=> a b) (nnf=> a b)))))))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/rosette-guide-sec6-tests.rkt:36:0\n'(define (nnf=> (x : Bool) (y : Bool) -> Bool) (|| (! x) y))\n")
-;; (printf "expected output:\n~a\n"
-;;         "'(define (nnf=> [x : Bool] [y : Bool] -> Bool) (|| (! x) y))")
+(check-type+output
+ (print-forms
+  (synthesize
+   #:forall (list a b)
+   #:guarantee (assert (equal? (=> a b) (nnf=> a b)))))
+ -> "(define (nnf=> (x : Bool) (y : Bool) -> Bool) (|| (! x) y))")
 
 ;; 6.2.2 Angelic Execution Library
 (require "../typed/lib/angelic.rkt")

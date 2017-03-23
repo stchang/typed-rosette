@@ -1,5 +1,5 @@
 #lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+(require typed/lib/roseunit)
 
 ; Compute the number of steps for the algorithm, 
 ; assuming that v is a power of 2.  See the log2 
@@ -137,11 +137,9 @@
                          (fwt tArray length)
                          length)))
        
-(check-type
- (with-output-to-string (λ () (synth_scalar)))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/walsh-synth-kernel.rkt:3:0\n'(kernel\n  void\n  (fwtKernelSketch (float* tArray) (int step))\n  (: int tid group pair match)\n  (: float t1 t2)\n  (= tid (get_global_id 0))\n  (=\n   group\n   (rosette:ann\n    (locally-scoped\n     (: int left right)\n     (= left (rosette:ann tid : int))\n     (= right (rosette:ann step : int))\n     (% left right))\n    :\n    int))\n  (=\n   pair\n   (+\n    (*\n     (<< step 1)\n     (rosette:ann\n      (locally-scoped\n       (: int left right)\n       (= left (rosette:ann tid : int))\n       (= right (rosette:ann step : int))\n       (/ left right))\n      :\n      int))\n    group))\n  (= match (+ pair step))\n  (= t1 (tArray pair))\n  (= t2 (tArray match))\n  (= (tArray pair) (+ t1 t2))\n  (= (tArray match) (- t1 t2)))\n")
-(check-type
- (with-output-to-string (λ () (synth_vector)))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/walsh-synth-kernel.rkt:15:0\n'(kernel\n  void\n  (fwtKernel4Sketch (float4* tArray) (int step))\n  (: int tid group pair match)\n  (: float4 t1 t2)\n  (= tid (get_global_id 0))\n  (= step (/ step 4))\n  (= group (% tid step))\n  (= pair (+ (* (<< step 1) (/ tid step)) group))\n  (= match (+ pair step))\n  (= t1 (tArray pair))\n  (= t2 (tArray match))\n  (= (tArray pair) (+ t1 t2))\n  (= (tArray match) (- t1 t2)))\n")
+(check-type+output
+ (synth_scalar)
+ -> "(kernel\n  void\n  (fwtKernelSketch (float* tArray) (int step))\n  (: int tid group pair match)\n  (: float t1 t2)\n  (= tid (get_global_id 0))\n  (=\n   group\n   (rosette:ann\n    (locally-scoped\n     (: int left right)\n     (= left (rosette:ann tid : int))\n     (= right (rosette:ann step : int))\n     (% left right))\n    :\n    int))\n  (=\n   pair\n   (+\n    (*\n     (<< step 1)\n     (rosette:ann\n      (locally-scoped\n       (: int left right)\n       (= left (rosette:ann tid : int))\n       (= right (rosette:ann step : int))\n       (/ left right))\n      :\n      int))\n    group))\n  (= match (+ pair step))\n  (= t1 (tArray pair))\n  (= t2 (tArray match))\n  (= (tArray pair) (+ t1 t2))\n  (= (tArray match) (- t1 t2)))")
+(check-type+output
+ (synth_vector)
+ -> "(kernel\n  void\n  (fwtKernel4Sketch (float4* tArray) (int step))\n  (: int tid group pair match)\n  (: float4 t1 t2)\n  (= tid (get_global_id 0))\n  (= step (/ step 4))\n  (= group (% tid step))\n  (= pair (+ (* (<< step 1) (/ tid step)) group))\n  (= match (+ pair step))\n  (= t1 (tArray pair))\n  (= t2 (tArray match))\n  (= (tArray pair) (+ t1 t2))\n  (= (tArray match) (- t1 t2)))")

@@ -1,6 +1,5 @@
 #lang s-exp "../typed/rosette.rkt"
-(require turnstile/examples/tests/rackunit-typechecking
-         "check-type+asserts.rkt")
+(require typed/lib/roseunit)
 
 ;; all examples from the Rosette Guide, Sec 2
 
@@ -133,10 +132,9 @@
 (check-type (sat? binding) : Bool -> #t)
 (check-type (unsat? binding) : Bool -> #f)
 (check-type (print-forms binding) : Unit)
-(check-type
- (with-output-to-string (lambda () (print-forms binding)))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/rosette-guide-sec2-tests.rkt:125:0\n'(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))\n")
+(check-type+output
+ (print-forms binding) ->
+ "(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))")
 
 ;; typed/rosette should print: 
 ;;  '(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))

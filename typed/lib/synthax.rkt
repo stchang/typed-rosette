@@ -2,10 +2,10 @@
 (require
  (prefix-in 
   t/ro:
-  (only-in "../rosette.rkt" U Int C→ CSolution Unit CSyntax CListof expand/ro))
+  (only-in "../rosette.rkt" U Int C→ CSolution CUnit CSyntax CListof expand/ro))
  (prefix-in ro: rosette/lib/synthax))
 
-(provide (typed-out [print-forms : (t/ro:C→ t/ro:CSolution t/ro:Unit)])
+(provide (typed-out [print-forms : (t/ro:C→ t/ro:CSolution t/ro:CUnit)])
          ??)
 
 (provide generate-forms choose define-synthax)
@@ -27,7 +27,7 @@
    --------
    [⊢ (??/progsrc pred?-) ⇒ ty]])
   
-(define-syntax print-forms
+#;(define-syntax print-forms
   (make-variable-like-transformer
    (assign-type #'ro:print-forms
                 #'(t/ro:C→ t/ro:CSolution t/ro:Unit))))

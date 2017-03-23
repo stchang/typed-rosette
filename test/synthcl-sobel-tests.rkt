@@ -1,5 +1,5 @@
 #lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+(require typed/lib/roseunit)
 
 ; We are using the sobelFilter5 function from reference.rkt as a reference
 ; sequential implementation for the Sobel filter.  This reference implementation 
@@ -168,16 +168,11 @@
                          (sobelFilter inputImage width height pixelSize)
                          (* width height pixelSize))))
 
-(check-type
- (with-output-to-string (λ () (verify_scalar)))
- : CString -> "no counterexample found\n")
-(check-type
- (with-output-to-string (λ () (verify_vectorized)))
- : CString -> "no counterexample found\n")
-(check-type
- (with-output-to-string (λ () (synth_vectorized)))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/sobel-kernel.rkt:25:0\n'(kernel\n  void\n  (sobelFilterVectorKernelSketch\n   (int4* inputImage)\n   (int4* outputImage)\n   (int w))\n  (: int x y i offset)\n  (: int4 i00 i01 i02 i10 i11 i12 i20 i21 i22)\n  (: float4 gx gy)\n  (= x (get_global_id 0))\n  (= y (get_global_id 1))\n  (= i (+ (* y w) x))\n  (= offset 1)\n  (= i00 (inputImage (- i offset w)))\n  (= i01 (inputImage (- i w)))\n  (= i02 (inputImage (- (+ i offset) w)))\n  (= i10 (inputImage (- i offset)))\n  (= i11 (inputImage i))\n  (= i12 (inputImage (+ i offset)))\n  (= i20 (inputImage (+ (- i offset) w)))\n  (= i21 (inputImage (+ i w)))\n  (= i22 (inputImage (+ i offset w)))\n  (=\n   gx\n   (convert_float4 (+ i00 (* 2 i01) i02 (* -1 i20) (* -2 i21) (* -1 i22))))\n  (=\n   gy\n   (convert_float4 (+ i00 (* -1 i02) (* 2 i10) (* -2 i12) i20 (* -1 i22))))\n  (=\n   (outputImage i)\n   (convert_int4 (/ (sqrt (+ (* gx gx) (* gy gy))) ((float4) 2)))))\n")
+(check-type+output (verify_scalar) -> "no counterexample found")
+(check-type+output (verify_vectorized) -> "no counterexample found")
+(check-type+output
+ (synth_vectorized)
+ -> "(kernel\n  void\n  (sobelFilterVectorKernelSketch\n   (int4* inputImage)\n   (int4* outputImage)\n   (int w))\n  (: int x y i offset)\n  (: int4 i00 i01 i02 i10 i11 i12 i20 i21 i22)\n  (: float4 gx gy)\n  (= x (get_global_id 0))\n  (= y (get_global_id 1))\n  (= i (+ (* y w) x))\n  (= offset 1)\n  (= i00 (inputImage (- i offset w)))\n  (= i01 (inputImage (- i w)))\n  (= i02 (inputImage (- (+ i offset) w)))\n  (= i10 (inputImage (- i offset)))\n  (= i11 (inputImage i))\n  (= i12 (inputImage (+ i offset)))\n  (= i20 (inputImage (+ (- i offset) w)))\n  (= i21 (inputImage (+ i w)))\n  (= i22 (inputImage (+ i offset w)))\n  (=\n   gx\n   (convert_float4 (+ i00 (* 2 i01) i02 (* -1 i20) (* -2 i21) (* -1 i22))))\n  (=\n   gy\n   (convert_float4 (+ i00 (* -1 i02) (* 2 i10) (* -2 i12) i20 (* -1 i22))))\n  (=\n   (outputImage i)\n   (convert_int4 (/ (sqrt (+ (* gx gx) (* gy gy))) ((float4) 2)))))")
 
 #|
 (: int[(* 9 4)] input)

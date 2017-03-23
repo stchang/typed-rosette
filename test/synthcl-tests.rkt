@@ -1,5 +1,5 @@
 #lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking
+(require typed/lib/roseunit
          (prefix-in cl: sdsl/synthcl/lang/main)
          (prefix-in ro: (rename-in rosette [#%app a])))
 
@@ -270,12 +270,14 @@
 
 (check-type (<< 1 2) : int -> 4)
 
-(for () (print "hello\n"))
+(check-type+output (for () (print "hello\n")) -> "hello")
 
-(for [(: int x in (range 4))
-      (: int y in (range 0 6 3))
-      (: int z in (range 1))]
-  (print x " " y " " z "\n"))
+(check-type+output
+ (for [(: int x in (range 4))
+       (: int y in (range 0 6 3))
+       (: int z in (range 1))]
+   (print x " " y " " z "\n"))
+ -> "0 0 0\n0 3 0\n1 0 0\n1 3 0\n2 0 0\n2 3 0\n3 0 0\n3 3 0")
 ;; 0 0 0
 ;; 0 3 0
 ;; 1 0 0
@@ -304,33 +306,25 @@
 
 (check-type (foo 1) : int -> 0)
 
-(check-type
- (with-output-to-string
-   (λ ()
-     (synth #:forall [(: int x)]
-            #:ensure (assert (&& (== x (tiny0 x)) 
-                                 (== (- x 1) (tiny1 x)))))))
- : CString
- -> "/home/stchang/NEU_Research/typed-rosette/test/synthcl-tests.rkt:292:0\n'(procedure int (tiny0 (int x)) (- x 0))\n/home/stchang/NEU_Research/typed-rosette/test/synthcl-tests.rkt:295:0\n'(procedure int (tiny1 (int x)) (- x 1))\n")
-;; (procedure int (tiny0 (int x)) (- x 0))
-;; (procedure int (tiny1 (int x)) (- x 1))
+(check-type+output
+ (synth #:forall [(: int x)]
+        #:ensure (assert (&& (== x (tiny0 x)) 
+                             (== (- x 1) (tiny1 x)))))
+ -> "(procedure int (tiny0 (int x)) (- x 0))"
+    "(procedure int (tiny1 (int x)) (- x 1))")
 
-(check-type
- (with-output-to-string
-   (λ ()
-     (synth #:forall [(: int k)
-                      (: int t in (range 1 5))
-                      (: int p in (range t 5))]
-            #:ensure (if (&& (== t 3) (== p 4)) 
-                         {(assert (choose k 3))}))))
- : CString)
-     (synth #:forall [(: int k)
+(check-type+output
+ (synth #:forall [(: int k)
+                  (: int t in (range 1 5))
+                  (: int p in (range t 5))]
+        #:ensure (if (&& (== t 3) (== p 4)) 
+                     {(assert (choose k 3))}))
+ #;(synth #:forall [(: int k)
                       (: int t in (range 1 5))
                       (: int p in (range t 5))]
             #:ensure (if (&& (== t 3) (== p 4)) 
                          {(assert (choose k 3))}))
-#;(synth #:forall [(: int k) (: int t in (range 1 5)) (: int p in (range t 5))]
-       #:ensure (if (&& (== t 3) (== p 4)) ((assert 3))))
+ -> "(synth #:forall [(: int k) (: int t in (range 1 5)) (: int p in (range t 5))] #:ensure (if (&& (== t 3) (== p 4)) ((assert 3))))")
 
 (check-type
 (with-output-to-string
