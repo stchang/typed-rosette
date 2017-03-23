@@ -136,7 +136,7 @@
 (check-type
  (with-output-to-string (lambda () (print-forms binding)))
  : CString
- -> "/home/stchang/NEU_Research/macrotypes/turnstile/examples/tests/rosette/rosette3/rosette-guide-sec2-tests.rkt:125:0\n'(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))\n")
+ -> "/home/stchang/NEU_Research/typed-rosette/test/rosette-guide-sec2-tests.rkt:125:0\n'(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))\n")
 
 ;; typed/rosette should print: 
 ;;  '(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))

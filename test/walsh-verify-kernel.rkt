@@ -1,4 +1,4 @@
-#lang s-exp "../../../rosette/synthcl3.rkt"
+#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
 
 (kernel void (fwtKernel [float* tArray] [int step])
   (: int tid group pair match)

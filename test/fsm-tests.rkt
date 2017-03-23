@@ -52,6 +52,6 @@
  (with-output-to-string (λ () (synthesize-automaton M #px"^c[ad]+r$")))
  : CString
  ->
- "/home/stchang/NEU_Research/macrotypes/turnstile/examples/tests/rosette/rosette3/fsm3-tests.rkt:21:0\n'(define M\n   (automaton\n    init\n    (init : (c → s2))\n    (s1 : (a → s1) (d → s1) (r → end))\n    (s2 : (a → s1) (d → s1) (r → reject))\n    (end :)))\n")
+ "/home/stchang/NEU_Research/typed-rosette/test/fsm-tests.rkt:21:0\n'(define M\n   (automaton\n    init\n    (init : (c → s2))\n    (s1 : (a → s1) (d → s1) (r → end))\n    (s2 : (a → s1) (d → s1) (r → reject))\n    (end :)))\n")
 
 ;(debug-automaton m #px"^c[ad]+r$" '(c r))

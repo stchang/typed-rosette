@@ -1,5 +1,5 @@
-#lang s-exp "../../../rosette/synthcl3.rkt"
-(require "../../rackunit-typechecking.rkt"
+#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+(require turnstile/examples/tests/rackunit-typechecking
          (prefix-in cl: sdsl/synthcl/lang/main)
          (prefix-in ro: (rename-in rosette [#%app a])))
 
@@ -311,7 +311,7 @@
             #:ensure (assert (&& (== x (tiny0 x)) 
                                  (== (- x 1) (tiny1 x)))))))
  : CString
- -> "/home/stchang/NEU_Research/macrotypes/turnstile/examples/tests/rosette/rosette3/synthcl3-tests.rkt:292:0\n'(procedure int (tiny0 (int x)) (- x 0))\n/home/stchang/NEU_Research/macrotypes/turnstile/examples/tests/rosette/rosette3/synthcl3-tests.rkt:295:0\n'(procedure int (tiny1 (int x)) (- x 1))\n")
+ -> "/home/stchang/NEU_Research/typed-rosette/test/synthcl-tests.rkt:292:0\n'(procedure int (tiny0 (int x)) (- x 0))\n/home/stchang/NEU_Research/typed-rosette/test/synthcl-tests.rkt:295:0\n'(procedure int (tiny1 (int x)) (- x 1))\n")
 ;; (procedure int (tiny0 (int x)) (- x 0))
 ;; (procedure int (tiny1 (int x)) (- x 1))
 
