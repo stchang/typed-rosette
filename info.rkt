@@ -7,4 +7,8 @@
     "base"
     "rosette"
     "turnstile"
+    "rackunit-lib"
     ))
+
+(define build-deps
+  '("rackunit-lib"))
