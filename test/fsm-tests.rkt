@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-fsm/fsm.rkt"
+#lang typed/fsm
 (require typed/lib/roseunit)
 
 (define m 

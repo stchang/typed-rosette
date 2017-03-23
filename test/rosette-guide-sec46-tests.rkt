@@ -1,5 +1,5 @@
-#lang s-exp "../typed/rosette.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/rosette
+(require typed/lib/roseunit)
 
 ;; Examples from the Rosette Guide, Section 4.6-4.8
 

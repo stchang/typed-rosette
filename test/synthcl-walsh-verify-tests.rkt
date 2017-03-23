@@ -1,5 +1,5 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/synthcl
+(require turnstile/rackunit-typechecking)
 
 ; Compute the number of steps for the algorithm, 
 ; assuming that v is a power of 2.  See the log2 

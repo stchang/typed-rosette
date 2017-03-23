@@ -1,6 +1,6 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 (require typed/lib/roseunit
-         (prefix-in cl: sdsl/synthcl/lang/main)
+         (prefix-in cl: sdsl/synthcl/lang/main) ; untyped
          (prefix-in ro: (rename-in rosette [#%app a])))
 
 ; The reference implementation for square matrix multiplication.  

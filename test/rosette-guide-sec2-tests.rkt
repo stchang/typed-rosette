@@ -1,5 +1,6 @@
-#lang s-exp "../typed/rosette.rkt"
-(require typed/lib/roseunit)
+#lang typed/rosette
+(require typed/lib/roseunit
+         typed/query/debug typed/lib/render typed/lib/synthax)
 
 ;; all examples from the Rosette Guide, Sec 2
 

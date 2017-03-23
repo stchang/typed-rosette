@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 
 ; Scalar kernel for the Sobel filter.  See the loop body of the sobelFilter reference 
 ; implementation in host.rkt.

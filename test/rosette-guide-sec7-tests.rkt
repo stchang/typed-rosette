@@ -1,5 +1,7 @@
-#lang s-exp "../typed/rosette.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/rosette
+(require typed/lib/roseunit typed/lib/lift
+         (only-in typed/rosette [string-length racket/string-length]))
+
 
 ;; Examples from the Rosette Guide, Section 7 Reflecting on Symbolic Values
 
@@ -88,8 +90,6 @@
             -> (list (cons b '(1 2)) (cons (! b) 3)))
 
 ;; 7.1.3 Symbolic Lifting
-(require (only-in "../typed/rosette.rkt" [string-length racket/string-length]))
- 
 (define (string-length [value : String] -> Nat)
  (for/all ([str value])
    (racket/string-length str)))
@@ -143,7 +143,6 @@
 (printf "First printed time should be slightly slower than second time\n")
 
 ;; define-lift
-(require "../typed/lib/lift.rkt")
 (define-lift lifted-string-length [(string?) racket/string-length])
  
 (check-type (lifted-string-length "abababa") : Nat -> 7)

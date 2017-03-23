@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 
 ; Matrix multiplication C = A * B, where A is an n x p matrix and B is a p x m matrix.
 (kernel void (mmulScalarKernel [int* A] [int* B] [int* C] [int p] [int m])

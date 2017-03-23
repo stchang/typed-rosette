@@ -1,6 +1,5 @@
-#lang s-exp "../typed/rosette.rkt"
-(require turnstile/examples/tests/rackunit-typechecking
-         "check-type+asserts.rkt")
+#lang typed/rosette
+(require typed/lib/roseunit)
 
 ;; subtyping among concrete
 (check-type     ((λ ([x : CPosInt]) x) ((λ ([x : CPosInt]) x) 1)) : CPosInt -> 1)

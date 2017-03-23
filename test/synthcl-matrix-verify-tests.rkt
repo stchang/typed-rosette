@@ -1,5 +1,5 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/synthcl
+(require turnstile/rackunit-typechecking)
 
 ; The reference implementation for square matrix multiplication.  
 ; Multiplies two squre matrices A and B, where the dimension of A is 

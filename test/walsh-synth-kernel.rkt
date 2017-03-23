@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 
 (kernel void (fwtKernelSketch [float* tArray] [int step])
   (: int tid group pair match)

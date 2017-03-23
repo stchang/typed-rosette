@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 (require typed/lib/roseunit)
 
 ; Compute the number of steps for the algorithm, 

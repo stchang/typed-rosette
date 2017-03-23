@@ -1,10 +1,9 @@
-#lang s-exp "../typed/rosette.rkt"
-(require typed/lib/roseunit)
+#lang typed/rosette
+(require typed/lib/roseunit typed/lib/synthax typed/lib/angelic)
 
 ;; Examples from the Rosette Guide, Section 6 Libraries
 
 ;; 6.2.1 Synthesis library
-(require "../typed/lib/synthax.rkt")
 
 ;; choose
 (define (div2 [x : BV] -> BV)
@@ -35,7 +34,6 @@
  -> "(define (nnf=> (x : Bool) (y : Bool) -> Bool) (|| (! x) y))")
 
 ;; 6.2.2 Angelic Execution Library
-(require "../typed/lib/angelic.rkt")
 
 (define (static -> Int)  (choose 1 2 3))
 (define (dynamic -> Int) (choose* 1 2 3))

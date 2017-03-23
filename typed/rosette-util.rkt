@@ -39,7 +39,7 @@
   (and (integer? x) (not (negative? x))))
 
 (module+ test
-  (require rackunit "../test/check-asserts.rkt")
+  (require rackunit "lib/check-asserts.rkt")
   (define-symbolic b1 b2 b3 boolean?)
 
   ;; bitvector?
@@ -54,12 +54,12 @@
   (check-equal? (bitvector? (if b1 "bad" (if b2 (bitvector 4) 'also-bad))) (and (not b1) b2))
 
   (clear-asserts!)
-  
+
   ;; assert-pred with type? predicates
   (check-equal?/asserts (assert-pred (if b1 1 #f) integer?) 1 (list b1))
   (check-equal?/asserts (assert-pred (if b1 1 #f) boolean?) #f (list (not b1)))
   (check-equal?/asserts (assert-pred (if b1 (bv 3 4) "bad") (bitvector 4)) (bv 3 4) (list b1))
-
+  
   ;; assert-pred with non-type? predicates
   (check-equal?/asserts (assert-pred (if b1 1 -1) positive?) (if b1 1 -1) (list b1))
   (check-equal?/asserts (assert-pred (if b1 1 -1) negative?) (if b1 1 -1) (list (not b1)))

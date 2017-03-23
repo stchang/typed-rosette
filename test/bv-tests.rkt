@@ -1,5 +1,5 @@
-#lang s-exp "../sdsl/typed-bv/bv.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/bv
+(require typed/lib/roseunit)
 
 (check-type current-bvpred : (CParamof CBVPred))
 (check-type (current-bvpred) : BVPred -> (bitvector 4))

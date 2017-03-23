@@ -1,4 +1,4 @@
-#lang s-exp "../sdsl/typed-synthcl/synthcl.rkt"
+#lang typed/synthcl
 (require typed/lib/roseunit)
 
 ; We are using the sobelFilter5 function from reference.rkt as a reference

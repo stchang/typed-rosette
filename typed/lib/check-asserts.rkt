@@ -1,5 +1,6 @@
 #lang racket/base
 
+;; keep this file separate from roseunit.rkt to avoid circular deps
 (provide check-equal?/asserts)
 
 (require rackunit
@@ -7,9 +8,7 @@
          syntax/srcloc
          syntax/location
          (only-in rosette with-asserts)
-         (for-syntax racket/base
-                     syntax/parse
-                     ))
+         (for-syntax racket/base syntax/parse))
 
 (define-binary-check (check-set=? actual expected)
   (set=? actual expected))

@@ -1,44 +1,13 @@
 #lang racket/base
-(require turnstile/examples/tests/rackunit-typechecking)
-(provide (all-from-out turnstile/examples/tests/rackunit-typechecking))
+(require turnstile/rackunit-typechecking "check-asserts.rkt"
+         turnstile/turnstile
+         (only-in "../rosette.rkt" CListof Bool CUnit)
+         racket/string racket/port
+         syntax/srcloc syntax/location
+         (for-syntax racket/base syntax/parse))
 
+(provide (all-from-out turnstile/rackunit-typechecking "check-asserts.rkt"))
 (provide check-type+asserts check-type+output)
-(provide check-equal?/asserts)
-
-(require rackunit
-         racket/set
-         racket/string
-         syntax/srcloc
-         syntax/location
-         (only-in rosette with-asserts)
-         (for-syntax racket/base
-                     syntax/parse
-                     ))
-
-(require turnstile/turnstile
-;         (for-syntax turnstile/examples/tests/rackunit-typechecking)
-         rackunit
-         racket/port
- ;        "check-asserts.rkt"
-         (only-in "../rosette.rkt" CListof Bool CUnit))
-
-(define-binary-check (check-set=? actual expected)
-  (set=? actual expected))
-
-(define-syntax check-equal?/asserts
-  (lambda (stx)
-    (syntax-parse stx
-      [(check-equal?/asserts actual-expr expected-expr expected-asserts-expr)
-       #`(with-check-info*
-          (list (make-check-name 'check-equal?/asserts)
-                (make-check-location (build-source-location-list
-                                      (quote-srcloc #,stx)))
-                (make-check-expression '#,stx))
-          (λ ()
-            (test-begin
-             (let-values ([(actual asserts) (with-asserts actual-expr)])
-               (check-equal? actual expected-expr)
-               (check-set=? asserts expected-asserts-expr)))))])))
 
 (define-typed-syntax check-type+asserts #:datum-literals (: ->)
   [(_ e : τ-expected -> v asserts) ≫

@@ -1,5 +1,5 @@
-#lang s-exp "../sdsl/typed-ifc/ifc.rkt"
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/ifc
+(require typed/lib/roseunit)
 
 ;; tests from verify-EENI-demo.rkt (same as rosette/sdsl/ifc/test.rkt)
 

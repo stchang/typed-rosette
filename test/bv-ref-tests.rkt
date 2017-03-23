@@ -1,7 +1,5 @@
-#lang s-exp "../sdsl/typed-bv/bv.rkt"
-(require syntax/parse/define 
-         (only-in racket/base for-syntax) (for-syntax racket/base))
-(require turnstile/examples/tests/rackunit-typechecking)
+#lang typed/bv
+(require typed/lib/roseunit "bv-test-utils.rkt")
 
 ; The 25 Hacker's Delight benchmarks from the following paper:
 ; Sumit Gulwani, Susmit Jha, Ashish Tiwari, and Ramarathnam Venkatesan. 
@@ -254,11 +252,6 @@
          [o15 (bvadd o14 o12)]
          [o16 (bvadd o15 o8)])
     o16))
-
- (define-simple-macro (check-equal/rand/bv f)
-  #:with out (syntax/loc this-syntax 
-               (check-equal/rand f #:process (λ ([x : CInt]) (bv x))))
-  out)
 
 ;; Mask off the rightmost 1-bit. < 1 sec.
 (define-fragment (p1* x) 
