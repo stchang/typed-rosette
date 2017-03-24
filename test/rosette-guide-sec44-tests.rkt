@@ -13,7 +13,7 @@
 ;; (check-type res : (Constant Int))
 ;; (constant? res)
 
-(current-bitwidth #f)
+(current-bitwidth 5)
 
 ; an uninterpreted function from integers to booleans:
 (define-symbolic f (~> integer? boolean?))
@@ -21,7 +21,7 @@
 (check-type (f 1) : Bool -> (f 1))
 (check-not-type (f 1) : CBool)
 (define-symbolic x real?)
-; typed Rosette rejects tis program
+; typed Rosette rejects this program
 (typecheck-fail (f x) #:with-msg "expected.*Int.* given.*Num")
 ;; must use assert-type to cast to Int
 (check-type (f (assert-type x : Int)) 
