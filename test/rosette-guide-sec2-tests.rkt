@@ -194,14 +194,14 @@
 ;; sol2 = (model [x1 64.0])
 (check-type sol2 : CSolution)
 (check-type (sat? sol2) : Bool -> #t)
-(check-type (evaluate x1 sol2) : Num -> 64)
+(check-type (evaluate x1 sol2) : Num -> 64.0)
 
 ;; and quantifiers work
 (define sol3 (solve (assert (forall (list x1) (= x1 (+ x1 y1))))))
 ;; sol3 = (model [y1 0.0])
 (check-type sol3 : CSolution)
 (check-type (sat? sol3) : Bool -> #t)
-(check-type (evaluate y1 sol3) : Num -> 0)
+(check-type (evaluate y1 sol3) : Num -> 0.0)
 
 ;; these examples uses symbolic lists
 (check-type

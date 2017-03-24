@@ -13,7 +13,8 @@
 ;; (check-type res : (Constant Int))
 ;; (constant? res)
 
-(current-bitwidth 5)
+(current-bitwidth #f)
+(clear-terms!)
 
 ; an uninterpreted function from integers to booleans:
 (define-symbolic f (~> integer? boolean?))
@@ -33,6 +34,9 @@
 ;; typed Rosette rejects this program
 (typecheck-fail (solve (assert (not (equal? (f x) (f 1)))))
                 #:with-msg "expected.*Int.*given.*Num")
+
+(current-bitwidth 5)
+
 ;; must use assert-type to cast x toInt
 (define sol (solve (assert (not (equal? (f (assert-type x : Int)) (f 1))))))
 (check-type sol : CSolution)
