@@ -13,6 +13,8 @@
 ;; (check-type res : (Constant Int))
 ;; (constant? res)
 
+(current-bitwidth #f)
+
 ; an uninterpreted function from integers to booleans:
 (define-symbolic f (~> integer? boolean?))
 ; no built-in interpretation for 1
