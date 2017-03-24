@@ -50,7 +50,7 @@
 ;; at the time solve was called
 ;; should this be Num or Int?
 ;(check-type (evaluate x sol) : Int -> 0)
-(check-type (evaluate x sol) : Num -> 0.0)
+(check-type (inexact->exact (evaluate x sol)) : Num -> 0)
 ;; check soundness of Constant
 (check-not-type (evaluate x sol) : (Constant Num))
 ; we can apply g to concrete values
