@@ -183,6 +183,8 @@
 
 ;; infinite precision semantics
 (current-bitwidth #f)
+(clear-terms!)
+(clear-asserts!)
 
 (define sol1 (solve (assert (= x1 3.5))))
 ;; sol1 = (model [x1 7/2])
@@ -190,12 +192,16 @@
 (check-type (sat? sol1) : Bool -> #t)
 (check-type (evaluate x1 sol1) : Num -> 7/2)
 
+(clear-terms!)
+(clear-asserts!)
 (define sol2 (solve (assert (= x1 64))))
 ;; sol2 = (model [x1 64.0])
 (check-type sol2 : CSolution)
 (check-type (sat? sol2) : Bool -> #t)
 (check-type (evaluate x1 sol2) : Num -> 64.0)
 
+(clear-terms!)
+(clear-asserts!)
 ;; and quantifiers work
 (define sol3 (solve (assert (forall (list x1) (= x1 (+ x1 y1))))))
 ;; sol3 = (model [y1 0.0])

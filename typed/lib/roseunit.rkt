@@ -1,5 +1,5 @@
 #lang racket/base
-(require turnstile/rackunit-typechecking "check-asserts.rkt"
+(require rackunit turnstile/rackunit-typechecking "check-asserts.rkt"
          turnstile/turnstile
          (only-in "../rosette.rkt" CListof Bool CUnit)
          racket/string racket/port

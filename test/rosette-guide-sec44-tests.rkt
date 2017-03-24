@@ -15,6 +15,7 @@
 
 (current-bitwidth #f)
 (clear-terms!)
+(clear-asserts!)
 
 ; an uninterpreted function from integers to booleans:
 (define-symbolic f (~> integer? boolean?))
@@ -35,13 +36,11 @@
 (typecheck-fail (solve (assert (not (equal? (f x) (f 1)))))
                 #:with-msg "expected.*Int.*given.*Num")
 
-(current-bitwidth 5)
-
 ;; must use assert-type to cast x toInt
 (define sol (solve (assert (not (equal? (f (assert-type x : Int)) (f 1))))))
 (check-type sol : CSolution)
 (define g (evaluate f sol)) ; an interpretation of f
-(check-type g : (→ Int Bool)) ; -> (fv (((1) . #f) ((0) . #t)) #f integer?~>boolean?)
+(check-type g : (→ Int Bool)) ; -> (fv (((1) . #t) ((0) . #f)) #t integer?~>boolean?)
 ; f is a function value
 (check-type (fv? f) : Bool -> #t)
 ; and so is g
@@ -51,13 +50,19 @@
 ;; at the time solve was called
 ;; should this be Num or Int?
 ;(check-type (evaluate x sol) : Int -> 0)
-(check-type (evaluate x sol) : Num -> 0)
+(check-type (evaluate x sol) : Num -> 0.0)
 ;; check soundness of Constant
 (check-not-type (evaluate x sol) : (Constant Num))
 ; we can apply g to concrete values
-(check-type (g 2) : Bool -> #f)
+(check-type (g 2) : Bool -> #t)
 ; and to symbolic values
-(check-type (g (assert-type x : Int)) : Bool -> (= 0 (real->integer x)))
+(check-type
+ (g (assert-type x : Int))
+ : Bool
+; -> (if (= 1 (real->integer x)) #t (if (= 0 (real->integer x)) #f #t)))
+; -> (or (= 1 (real->integer x)) (! (= 0 (real->integer x)))))
+; -> (! (= 0 (real->integer x))))
+ -> (g (assert-type x : Int)))
 
 ;; this test does not depend on the term cache
 (check-type (equal? (g 1) (g (assert-type (evaluate x sol) : Int))) : Bool -> #f)
