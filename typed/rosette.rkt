@@ -25,14 +25,16 @@
                      [stlc+union:λ lambda])
          (for-syntax get-pred expand/ro)
          Any CNothing Nothing
-         CU U (for-syntax ~U*)
+         CU U (for-syntax ~CU* ~U*)
          Constant
          C→ → (for-syntax ~C→ C→?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
          CListof Listof CList CPair Pair
+         (for-syntax ~CListof)
          CVectorof MVectorof IVectorof Vectorof CMVectorof CIVectorof CVector
          CParamof ; TODO: symbolic Param not supported yet
          CBoxof MBoxof IBoxof CMBoxof CIBoxof CHashTable
+         (for-syntax ~CHashTable)
          CUnit Unit (for-syntax ~CUnit CUnit?)
          CNegInt NegInt
          CZero Zero
@@ -44,6 +46,7 @@
          CFalse CTrue CBool Bool
          CString String (for-syntax CString?)
          CStx ; symblic Stx not supported
+         CSymbol
          CAsserts
          ;; BV types
          CBV BV
