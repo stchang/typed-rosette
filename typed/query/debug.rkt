@@ -6,6 +6,8 @@
 
 (provide define/debug debug)
 
+;; TODO: allow type delarations before the definition using the `:` form
+
 ;; - ideally, I could separate expansion of typed rosette and rosette,
 ;; ie, expansion in ty/ro would stop at ro ids
 ;; - concretely, e cannot be fully expanded bc then it misses
@@ -32,7 +34,7 @@
         ;; and the param'ed app is already gone
         ;; - but using e wont work either due to stx taint errs
         (ro:define/debug y e-))]]
-  [(_ (f [x : ty] ... (~or → ->) ty_out) e ...+) ≫
+  [(_ (f [x : ty] ...) (~or → ->) ty_out e ...+) ≫
    #:with f- (generate-temporary #'f)
    --------
    [≻ (begin-

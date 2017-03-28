@@ -5,11 +5,11 @@
 
 ;; takes ~90min to run
 
-(define (verify/halted [p : Prog] -> (CU Witness CTrue))
+(define (verify/halted [p : Prog]) -> (CU Witness CTrue)
   (verify-EENI* init halted? mem≈ p))
-(define (verify/halted+low [p : Prog] -> (CU Witness CTrue))
+(define (verify/halted+low [p : Prog]) -> (CU Witness CTrue)
   (verify-EENI* init halted∩low? mem≈ p))
-(define (verify/halted+low/steps [p : Prog] [k : CInt] -> (CU Witness CTrue))
+(define (verify/halted+low/steps [p : Prog] [k : CInt]) -> (CU Witness CTrue)
   (verify-EENI* init halted∩low? mem≈ p k))
 
 ;; basic-bugs --------------------------------------------------

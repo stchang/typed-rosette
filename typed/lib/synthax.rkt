@@ -2,7 +2,7 @@
 (require
  (prefix-in 
   t/ro:
-  (only-in "../rosette.rkt" U Int C→ CSolution CUnit CSyntax CListof expand/ro))
+  (only-in "../rosette.rkt" U Int C→ CSolution CUnit CStx CListof expand/ro))
  (prefix-in ro: rosette/lib/synthax))
 
 (provide (typed-out [print-forms : (t/ro:C→ t/ro:CSolution t/ro:CUnit)])
@@ -35,7 +35,7 @@
 (define-syntax generate-forms
   (make-variable-like-transformer
    (assign-type #'ro:generate-forms 
-                #'(t/ro:C→ t/ro:CSolution (t/ro:CListof t/ro:CSyntax)))))
+                #'(t/ro:C→ t/ro:CSolution (t/ro:CListof t/ro:CStx)))))
 
 (define-typed-syntax choose
   [(ch e ...+) ≫
@@ -55,7 +55,7 @@
 ;; - must do some expansion to check types,
 ;;   but dont use expanded stx objs as args to ro:define-synthax
 (define-typed-syntax define-synthax
-  [(_ (f [x (~datum :) ty] ... k (~datum ->) ty-out) #:base be #:else ee) ≫
+  [(_ (f [x (~datum :) ty] ... k) (~datum ->) ty-out #:base be #:else ee) ≫
    #:with f- (generate-temporary #'f)
    #:with (a ...) (generate-temporaries #'(ty ...))
    --------

@@ -1,5 +1,5 @@
 #lang turnstile
-(extends "../../typed/rosette.rkt" #:except ! #%app || && void = * + - / #%datum if assert verify < <= > >=) ; typed rosette
+(extends "../../typed/rosette.rkt" #:except : ! #%app || && void = * + - / #%datum if assert verify < <= > >=) ; typed rosette
 (require (prefix-in ro: (combine-in rosette rosette/lib/synthax))
          (prefix-in cl: "synthcl-model.rkt")
          (only-in "../../typed/rosette.rkt" ~CUnit))
@@ -221,7 +221,7 @@
    #:fail-unless (void? #'ty-out.norm)
                  (format "expected void, given ~a" (type->str #'ty-out.norm))
    --------
-   [≻ (rosette:define (f [x : ty] ... -> void) (⊢m (ro:void) void))]]
+   [≻ (rosette:define (f [x : ty] ...) -> void (⊢m (ro:void) void))]]
   [(_ ty-out:type (f [ty:type x:id] ...) e ... e-body) ≫
    #:with (conv ...) (stx-map get-convert #'(ty.norm ...))
    #:with f- (add-orig (generate-temporary #'f) #'f)

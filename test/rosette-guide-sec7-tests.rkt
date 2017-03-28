@@ -90,7 +90,7 @@
             -> (list (cons b '(1 2)) (cons (! b) 3)))
 
 ;; 7.1.3 Symbolic Lifting
-(define (string-length [value : String] -> Nat)
+(define (string-length [value : String]) -> Nat
  (for/all ([str value])
    (racket/string-length str)))
 
@@ -119,10 +119,10 @@
  
 (define limit 1000)
  
-(define (slow [xs : (Listof CInt)] -> (U CFalse Int))
+(define (slow [xs : (Listof CInt)]) -> (U CFalse Int)
   (and (= (length xs) limit) (car (map add1 xs))))
  
-(define (fast [xs : (Listof CInt)] -> (U CFalse Int))
+(define (fast [xs : (Listof CInt)]) -> (U CFalse Int)
   (for/all ([xs xs]) (slow xs)))
 
 (define ys (build-list limit (lambda ([x : CNat]) x)))
@@ -185,7 +185,7 @@
 
 (define-symbolic a1 b1 c1 d1 integer?)
 
-(define (p? [x : Int] -> Bool)
+(define (p? [x : Int]) -> Bool
   (or (eq? x a1) (eq? x b1) (eq? x c1) (eq? x d1)))
 
 (check-type (hash-values (term-cache)) : (CListof Any)); -> (list d1 c1 b1 a1))

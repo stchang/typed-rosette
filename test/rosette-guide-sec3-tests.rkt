@@ -40,13 +40,13 @@
 
 ;; 3.2.1 Symbolic Constants
 
-(define (always-same -> Int)
+(define (always-same) -> Int
   (let-symbolic (x integer?)
     x))
 (check-type (always-same) : Int)
 (check-type (eq? (always-same) (always-same)) : Bool -> #t)
 
-(define (always-different -> Int)
+(define (always-different) -> Int
   (let-symbolic* (x integer?)
     x))
 (check-type (always-different) : Int)

@@ -1,33 +1,29 @@
 #lang turnstile
 ;; reuse unlifted forms as-is
 (reuse  
- define λ let let* letrec begin void #%datum ann #%top-interaction require prefix-in only-in rename-in define-type-alias define-named-type-alias current-join ⊔
+ let let* letrec begin #%datum ann #%top-interaction require prefix-in only-in rename-in define-type-alias define-named-type-alias current-join ⊔
  #:from turnstile/examples/stlc+union)
 (require
  ;; manual imports
  (only-in turnstile/examples/stlc+union
-          define-named-type-alias prune+sort current-sub?)
- ;; prefix existing types with C (ie, concrete)
- (prefix-in C
-   (combine-in
-    (only-in turnstile/examples/stlc+union+case
-             PosInt Zero NegInt Float True False String Unit Unit? [U U*] U*?
-             [case-> case->*] case->? → →? String?)
-    (only-in turnstile/examples/stlc+cons [List Listof])))
- (only-in turnstile/examples/stlc+union+case
-          [~U* ~CU*] [~case-> ~Ccase->] [~→ ~C→] [~Unit ~CUnit])
- (only-in turnstile/examples/stlc+cons [~List ~CListof])
+          define-named-type-alias)
+ ;; import typed rosette types
+ "rosette/types.rkt"
+ ;; import base forms
+ (rename-in "rosette/base-forms.rkt" [#%app app])
  ;; base lang
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide (rename-out [ro:#%module-begin #%module-begin] 
-                     [stlc+union:λ lambda])
+(provide : define λ apply ann begin
+         (rename-out [app #%app]
+                     [ro:#%module-begin #%module-begin] 
+                     [λ lambda])
          (for-syntax get-pred expand/ro)
          Any CNothing Nothing
          CU U (for-syntax ~CU* ~U*)
          Constant
-         C→ → (for-syntax ~C→ C→?)
+         C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
          CListof Listof CList CPair Pair
          (for-syntax ~CListof)
@@ -51,20 +47,7 @@
          ;; BV types
          CBV BV
          CBVPred BVPred
-         CSolution CSolver CPict CSyntax CRegexp CSymbol CPred CPredC)
-
-(begin-for-syntax
-  ;; TODO: fix this so it's not using hardcoded list of ids
-  (define (expand/ro e)
-    (define e+
-      (local-expand
-       e 'expression
-       (list #'ro:#%app #'ro:choose #'ro:synthesize #'ro:let #'ro:in-value
-             #'ro:assert #'ro:if #'ro:? #'ro:verify)))
-;    (displayln (stx->datum e+))
-    e+)
-  (define (mk-ro:-id id) (format-id id "ro:~a" id))
-  (current-host-lang mk-ro:-id))
+         CSolution CSolver CPict CRegexp CPred CPredC)
 
 ;; a legacy auto-providing version of define-typed-syntax
 ;; TODO: convert everything to new define-typed-syntax
@@ -78,169 +61,6 @@
      #'(define-typed-syntax name #:export-as name . rst)]
     [(_ (name:id . pat) . rst)
      #'(define-typed-syntax name #:export-as name [(_ . pat) . rst])]))
-
-;; ---------------------------------
-;; Concrete and Symbolic union types
-
-(begin-for-syntax
-  (define (concrete? t)
-    (not (or (Any? t) (U*? t) (Constant*? t)))))
-
-(define-base-types Any CBV CStx CSymbol CRegexp)
-;; CVectorof includes all vectors
-;; CIVectorof includes only immutable vectors
-;; CMVectorof includes only mutable vectors
-(define-type-constructor CIVectorof #:arity = 1)
-(define-type-constructor CMVectorof #:arity = 1)
-(define-type-constructor CMBoxof #:arity = 1)
-(define-type-constructor CIBoxof #:arity = 1)
-;; TODO: Hash subtyping?
-;; - invariant for now, like TR, though Rosette only uses immutable hashes?
-(define-type-constructor CHashTable #:arity = 2)
-(define-named-type-alias (CVectorof X) (CU (CIVectorof X) (CMVectorof X)))
-(define-named-type-alias (CBoxof X) (CU (CIBoxof X) (CMBoxof X)))
-(define-type-constructor CList #:arity >= 0)
-(define-type-constructor CVector #:arity >= 0)
-(define-type-constructor CPair #:arity = 2)
-
-;; TODO: update orig to use reduced type
-(define-syntax (CU stx)
-  (syntax-parse stx
-    [(_ . tys)
-     #:with tys+ (stx-map (current-type-eval) #'tys)
-     #:fail-unless (stx-andmap concrete? #'tys+)
-                   "CU requires concrete types"
-     #'(CU* . tys+)]))
-
-;; internal symbolic union constructor
-(define-type-constructor U* #:arity >= 0)
-
-;; user-facing symbolic U constructor: flattens and prunes
-(define-syntax (U stx)
-  (syntax-parse stx
-    [(_ . tys)
-     ;; canonicalize by expanding to U*, with only (sorted and pruned) leaf tys
-     #:with ((~or (~U* ty1- ...) (~CU* ty2- ...) ty3-) ...) (stx-map (current-type-eval) #'tys)
-     #:with tys- (prune+sort #'(ty1- ... ... ty2- ... ... ty3- ...))
-     #'(U* . tys-)]))
-
-(define-named-type-alias CNothing (CU))
-(define-named-type-alias Nothing (U))
-
-;; internal symbolic constant constructor
-(define-type-constructor Constant* #:arity = 1)
-
-(define-for-syntax (remove-Constant ty)
-  (syntax-parse ty
-    [(~Constant* t) #'t]
-    [(~U* . tys) ; redo U reductions
-     ((current-type-eval) #`(U . #,(stx-map remove-Constant #'tys)))]
-    [(tycon . tys) 
-     (transfer-stx-props #`(tycon . #,(stx-map remove-Constant #'tys)) ty)]
-    [any ty]))
-     
-;; user-facing symbolic constant constructor: enforce non-concrete type
-(define-syntax Constant
-  (syntax-parser
-    [(_ τ)
-     #:with τ+ ((current-type-eval) #'τ)
-     #:fail-when (and (concrete? #'τ+) #'τ)
-     "Constant requires a symbolic type"
-     #'(Constant* τ+)]))
-
-;; ---------------------------------
-;; case-> and Ccase->
-
-;; Ccase-> must check that its subparts are concrete → types
-(define-syntax (Ccase-> stx)
-  (syntax-parse stx
-    [(_ . tys)
-     #:with tys+ (stx-map (current-type-eval) #'tys)
-     #:fail-unless (stx-andmap C→? #'tys+)
-                   "CU require concrete arguments"
-     #'(Ccase->* . tys+)]))
-
-;; TODO: What should case-> do when given symbolic function
-;; types? Should it transform (case-> (U (C→ τ ...)) ...)
-;; into (U (Ccase-> (C→ τ ...) ...)) ? What makes sense here?
-
-;; ---------------------------------
-;; Symbolic versions of types
-
-(begin-for-syntax
-  (define (add-pred stx pred)
-    (set-stx-prop/preserved stx 'pred pred))
-  (define (get-pred stx)
-    (syntax-property stx 'pred))
-  (define (add-typefor stx t)
-    (set-stx-prop/preserved stx 'typefor t))
-  (define (get-typefor stx)
-    (syntax-property stx 'typefor))
-  (define (mark-solvable stx)
-    (set-stx-prop/preserved stx 'solvable? #t))
-  (define (set-solvable stx v)
-    (set-stx-prop/preserved stx 'solvable? v))
-  (define (solvable? stx)
-    (syntax-property stx 'solvable?))
-  (define (mark-function stx)
-    (set-stx-prop/preserved stx 'function? #t))
-  (define (set-function stx v)
-    (set-stx-prop/preserved stx 'function? v))
-  (define (function? stx)
-    (syntax-property stx 'function?)))
-
-(define-syntax-parser add-predm
-  [(_ stx pred) (add-pred #'stx #'pred)])
-(define-syntax-parser add-typeform
-  [(_ stx t) (add-typefor #'stx #'t)])
-(define-syntax-parser mark-solvablem
-  [(_ stx) (mark-solvable #'stx)])
-(define-syntax-parser mark-functionm
-  [(_ stx) (mark-function #'stx)])
-
-(define-named-type-alias NegInt (add-predm (U CNegInt) negative-integer?))
-(define-named-type-alias Zero (add-predm (U CZero) zero-integer?))
-(define-named-type-alias PosInt (add-predm (U CPosInt) positive-integer?))
-(define-named-type-alias Float (U CFloat))
-(define-named-type-alias String (U CString))
-(define-named-type-alias Unit (add-predm (U CUnit) ro:void?))
-(define-named-type-alias (CParamof X) (Ccase-> (C→ X)
-                                               (C→ X CUnit)))
-(define-named-type-alias (Listof X) (U (CListof X)))
-(define-named-type-alias (Vectorof X) (U (CVectorof X)))
-(define-named-type-alias (MVectorof X) (U (CMVectorof X)))
-(define-named-type-alias (IVectorof X) (U (CIVectorof X)))
-(define-named-type-alias (MBoxof X) (U (CMBoxof X)))
-(define-named-type-alias (IBoxof X) (U (CIBoxof X)))
-(define-named-type-alias (Pair X Y) (U (CPair X Y)))
-
-(define-syntax →
-  (syntax-parser
-    [(_ ty ...+) 
-     (add-pred
-      (add-orig 
-       #'(U (C→ ty ...)) 
-       this-syntax)
-      #'ro:fv?)]))
-
-(define-syntax define-symbolic-named-type-alias
-  (syntax-parser
-    [(_ Name:id Cτ:expr #:pred p?)
-     #:with Cτ+ ((current-type-eval) #'Cτ)
-     #:fail-when (and (not (concrete? #'Cτ+)) #'Cτ+)
-                 "should be a concrete type"
-     #:with CName (format-id #'Name "C~a" #'Name #:source #'Name)
-     #'(begin-
-         (define-named-type-alias CName Cτ)
-         (define-named-type-alias Name (add-predm (U CName) p?)))]))
-
-(define-symbolic-named-type-alias Bool (CU CFalse CTrue) #:pred ro:boolean?)
-(define-symbolic-named-type-alias Nat (CU CZero CPosInt) #:pred nonnegative-integer?)
-(define-symbolic-named-type-alias Int (CU CNegInt CNat) #:pred ro:integer?)
-(define-symbolic-named-type-alias Num (CU CFloat CInt) #:pred ro:real?)
-
-(define-named-type-alias CPred (C→ Any Bool))
-(define-named-type-alias CPredC (C→ Any CBool))
 
 ;; ---------------------------------
 ;; define-symbolic
@@ -395,110 +215,6 @@
    [⊢ [y ≫ y- ⇒ : τy]]
    --------
    [⊢ [_ ≫ (quote- (x . y)) ⇒ : (CPair τx τy)]]])
-
-;; ---------------------------------
-;; Function Application
-
-(define-typed-syntax app #:export-as #%app
-  ;; concrete functions
-  [(_ e_fn e_arg ...) ≫
-;   [⊢ e_fn ≫ e_fn- ⇒ (~C→ ~! τ_in ... τ_out)]
-   #:with e_fn- (expand/ro #'e_fn)
-   #:with (~C→ ~! τ_in ... τ_out) (typeof #'e_fn-)
-   #:with e_fn/progsrc- (replace-stx-loc #'e_fn- #'e_fn)
-   #:fail-unless (stx-length=? #'[τ_in ...] #'[e_arg ...])
-                 (num-args-fail-msg #'e_fn #'[τ_in ...] #'[e_arg ...])
-;   [⊢ e_arg ≫ e_arg- ⇐ τ_in] ...
-   #:with (e_arg- ...) (stx-map expand/ro #'(e_arg ...))
-   #:with ty_args (stx-map typeof #'(e_arg- ...))
-   #:fail-unless (typechecks? #'ty_args #'(τ_in ...))
-                 (typecheck-fail-msg/multi #'(τ_in ...) #'ty_args #'(e_arg ...))
-   --------
-   ;; TODO: use e_fn/progsrc- (currently causing "cannot use id tainted in macro trans" err)
-   [⊢ [_ ≫ (ro:#%app e_fn/progsrc- e_arg- ...) ⇒ : τ_out]]]
-  ;; concrete case->
-  [(_ e_fn e_arg ...) ≫
-   #:with e_fn- (expand/ro #'e_fn)
-   #:with (~Ccase-> ~! . (~and ty_fns ((~C→ . _) ...))) (typeof #'e_fn-)
-;   [⊢ [e_fn ≫ e_fn- ⇒ : (~Ccase-> ~! . (~and ty_fns ((~C→ . _) ...)))]]
-   #:with e_fn/progsrc- (replace-stx-loc #'e_fn- #'e_fn)
-;   [⊢ [e_arg ≫ e_arg- ⇒ : τ_arg] ...]
-   #:with (e_arg- ...) (stx-map expand/ro #'(e_arg ...))
-   #:with (τ_arg ...) (stx-map typeof #'(e_arg- ...))
-   #:with τ_out
-   (for/first ([ty_f (stx->list #'ty_fns)]
-               #:when (syntax-parse ty_f
-                        [(~C→ τ_in ... τ_out)
-                         (and (stx-length=? #'(τ_in ...) #'(e_arg ...))
-                              (typechecks? #'(τ_arg ...) #'(τ_in ...)))]))
-     (syntax-parse ty_f [(~C→ _ ... t_out) #'t_out]))
-   #:fail-unless (syntax-e #'τ_out)
-   ; use (failing) typechecks? to get err msg
-   (syntax-parse #'ty_fns
-     [((~C→ τ_in ... _) ...)
-      (let* ([τs_expecteds #'((τ_in ...) ...)]
-             [τs_given #'(τ_arg ...)]
-             [expressions #'(e_arg ...)])
-        (format (string-append "type mismatch\n"
-                               "  expected one of:\n"
-                               "    ~a\n"
-                               "  given: ~a\n"
-                               "  expressions: ~a")
-         (string-join
-          (stx-map
-           (lambda (τs_expected)
-             (string-join (stx-map type->str τs_expected) ", "))
-           τs_expecteds)
-          "\n    ")
-           (string-join (stx-map type->str τs_given) ", ")
-           (string-join (map ~s (stx-map syntax->datum expressions)) ", ")))])
-   --------
-   [⊢ [_ ≫ (ro:#%app e_fn/progsrc- e_arg- ...) ⇒ : τ_out]]]
-  ;; concrete union functions
-  [(_ e_fn e_arg ...) ≫
-   #:with e_fn- (expand/ro #'e_fn)
-   #:with (~CU* τ_f ...) (typeof #'e_fn-)
-;   [⊢ [e_fn ≫ e_fn- ⇒ : (~CU* τ_f ...)]]
-   #:with e_fn/progsrc- (replace-stx-loc #'e_fn- #'e_fn)
-;   [⊢ [e_arg ≫ e_arg- ⇒ : τ_arg] ...]
-   #:with (e_arg- ...) (stx-map expand/ro #'(e_arg ...))
-   #:with (τ_arg ...) (stx-map typeof #'(e_arg- ...))
-   #:with (f a ...) (generate-temporaries #'(e_fn e_arg ...))
-   [([f ≫ _ : τ_f] [a ≫ _ : τ_arg] ...)
-    ⊢ [(app f a ...) ≫ _ ⇒ : τ_out]]
-   ...
-   --------
-   [⊢ [_ ≫ (ro:#%app e_fn/progsrc- e_arg- ...) ⇒ : (CU τ_out ...)]]]
-  ;; symbolic functions
-  [(_ e_fn e_arg ...) ≫
-   #:with e_fn- (expand/ro #'e_fn)
-   #:with (~U* τ_f ...) (typeof #'e_fn-)
-;   [⊢ [e_fn ≫ e_fn- ⇒ : (~U* τ_f ...)]]
-   #:with e_fn/progsrc- (replace-stx-loc #'e_fn- #'e_fn)
-;   [⊢ [e_arg ≫ e_arg- ⇒ : τ_arg] ...]
-   #:with (e_arg- ...) (stx-map expand/ro #'(e_arg ...))
-   #:with (τ_arg ...) (stx-map typeof #'(e_arg- ...))
-   #:with (f a ...) (generate-temporaries #'(e_fn e_arg ...))
-   [([f ≫ _ : τ_f] [a ≫ _ : τ_arg] ...)
-    ⊢ [(app f a ...) ≫ _ ⇒ : τ_out]]
-   ...
-   --------
-   [⊢ [_ ≫ (ro:#%app e_fn/progsrc- e_arg- ...) ⇒ : (U τ_out ...)]]]
-  ;; constant symbolic fns
-  [(_ e_fn e_arg ...) ≫
-   #:with e_fn- (expand/ro #'e_fn)
-   #:with (~Constant* (~U* τ_f ...)) (typeof #'e_fn-)
-;   [⊢ [e_fn ≫ e_fn- ⇒ : (~Constant* (~U* τ_f ...))]]
-   #:with e_fn/progsrc- (replace-stx-loc #'e_fn- #'e_fn)
-;   [⊢ [e_arg ≫ e_arg- ⇒ : τ_arg] ...]
-   #:with (e_arg- ...) (stx-map expand/ro #'(e_arg ...))
-   #:with (τ_arg ...) (stx-map typeof #'(e_arg- ...))
-   #:with (f a ...) (generate-temporaries #'(e_fn e_arg ...))
-   [([f ≫ _ : τ_f] [a ≫ _ : τ_arg] ...)
-    ⊢ [(app f a ...) ≫ _ ⇒ : τ_out]]
-   ...
-   --------
-   [⊢ [_ ≫ (ro:#%app e_fn/progsrc- e_arg- ...) ⇒ : (U τ_out ...)]]])
 
 ;; ---------------------------------
 ;; if
@@ -965,9 +681,8 @@
 ;; ---------------------------------
 ;; IO and other built-in ops
 
-(define-named-type-alias CAsserts (CListof Bool))
-
-(provide (typed-out [printf : (Ccase-> (C→ CString CUnit)
+(provide (typed-out [void : (C→ CUnit)]
+                    [printf : (Ccase-> (C→ CString CUnit)
                                                (C→ CString Any CUnit)
                                                (C→ CString Any Any CUnit))]
                     [display : (C→ Any CUnit)]
@@ -1282,8 +997,6 @@
    --------
    [⊢ [_ ≫ (ro:current-bitwidth e-) ⇒ : CUnit]]])
 
-(define-named-type-alias BV (add-predm (U CBV) ro:bv?))
-(define-symbolic-named-type-alias BVPred (C→ Any Bool) #:pred lifted-bitvector?)
 (define-named-type-alias BVMultiArgOp (Ccase-> (C→ BV BV BV)
                                                (C→ BV BV BV BV)))
 
@@ -1478,8 +1191,6 @@
 
 ;; ---------------------------------
 ;; solver forms
-
-(define-base-types CSolution CSolver CPict CSyntax)
 
 (provide (typed-out [sat? : (C→ Any Bool)]
                     [unsat? : (C→ Any Bool)]
@@ -1679,73 +1390,3 @@
    [_ ≻ (for/all ([x e]) (for*/all ([x_rst e_rst] ...) e_body))]])
 
 
-;; ---------------------------------
-;; Subtyping
-
-(begin-for-syntax
-  (define (sub? t1 t2)
-    ; need this because recursive calls made with unexpanded types
-   ;; (define τ1 ((current-type-eval) t1))
-   ;; (define τ2 ((current-type-eval) t2))
-    ;; (printf "t1 = ~a\n" (syntax->datum t1))
-    ;; (printf "t2 = ~a\n" (syntax->datum t2))
-    (or 
-     (Any? t2)
-     ((current-type=?) t1 t2)
-     (syntax-parse (list t1 t2)
-       ;; Constant clause must appear before U, ow (Const Int) <: Int wont hold
-       [((~Constant* ty1) (~Constant* ty2))
-        (typecheck? #'ty1 #'ty2)]
-       [((~Constant* ty) _) 
-        (typecheck? #'ty t2)]
-       [((~CListof ty1) (~CListof ty2))
-        (typecheck? #'ty1 #'ty2)]
-       [((~CList . tys1) (~CList . tys2))
-        (and (stx-length=? #'tys1 #'tys2)
-             (typechecks? #'tys1 #'tys2))]
-       [((~CList . tys) (~CListof ty))
-        (for/and ([t (stx->list #'tys)])
-          (typecheck? t #'ty))]
-       ;; vectors, only immutable vectors are invariant
-       [((~CIVectorof ty1) (~CIVectorof ty2))
-        (typecheck? #'ty1 #'ty2)]
-       [((~CIBoxof ty1) (~CIBoxof ty2))
-        (typecheck? #'ty1 #'ty2)]
-       [((~CPair ty1a ty1b) (~CPair ty2a ty2b))
-        (and (typecheck? #'ty1a #'ty2a)
-             (typecheck? #'ty1b #'ty2b))]
-       ; 2 U types, subtype = subset
-       [((~CU* . ts1) _)
-        (for/and ([t (stx->list #'ts1)])
-          (typecheck? t t2))]
-       [((~U* . ts1) _)
-        (and
-         (not (concrete? t2))
-         (for/and ([t (stx->list #'ts1)])
-           (typecheck? t t2)))]
-       ; 1 U type, 1 non-U type. subtype = member
-       [(_ (~CU* . ts2))
-        #:when (not (or (U*? t1) (CU*? t1)))
-        (for/or ([t (stx->list #'ts2)])
-          (typecheck? t1 t))]
-       [(_ (~U* . ts2))
-        #:when (not (or (U*? t1) (CU*? t1)))
-        (for/or ([t (stx->list #'ts2)])
-          (typecheck? t1 t))]
-       ; 2 case-> types, subtype = subset
-       [(_ (~Ccase-> . ts2))
-        (for/and ([t (stx->list #'ts2)])
-          (typecheck? t1 t))]
-       ; 1 case-> , 1 non-case->
-       [((~Ccase-> . ts1) _)
-        (for/or ([t (stx->list #'ts1)])
-          (typecheck? t t2))]
-       [((~C→ s1 ... s2) (~C→ t1 ... t2))
-        (and (typechecks? #'(t1 ...) #'(s1 ...))
-             (typecheck? #'s2 #'t2))]
-       [_ #f])))
-  (current-sub? sub?)
-  (current-typecheck-relation sub?)
-  (define (subs? τs1 τs2)
-    (and (stx-length=? τs1 τs2)
-         (stx-andmap (current-sub?) τs1 τs2))))

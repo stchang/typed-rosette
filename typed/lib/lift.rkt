@@ -6,7 +6,7 @@
 
 (define-typed-syntax define-lift
   [(_ x:id [(pred? ...) racket-fn:id]) ≫
-   [⊢ [pred? ≫ pred?- ⇒ : (t/ro:~C→ _ ...)]] ...
+   [⊢ [pred? ≫ pred?- ⇒ : (t/ro:~C→ _ ... _)]] ...
    [⊢ [racket-fn ≫ racket-fn- ⇒ : (t/ro:~C→ ty1 ty2)]]
    #:with y (generate-temporary #'x)
    --------
@@ -14,7 +14,7 @@
           (define-syntax- x (make-rename-transformer (⊢ y : (t/ro:C→ (t/ro:U ty1) (t/ro:U ty2)))))
           (ro:define-lift y [(pred?- ...) racket-fn-]))]]
   [(_ x:id [pred? racket-fn:id]) ≫
-   [⊢ [pred? ≫ pred?- ⇒ : (t/ro:~C→ _ ...)]]
+   [⊢ [pred? ≫ pred?- ⇒ : (t/ro:~C→ _ ... _)]]
    [⊢ [racket-fn ≫ racket-fn- ⇒ : (t/ro:~C→ ty1 ty2)]]
    #:with y (generate-temporary #'x)
    --------

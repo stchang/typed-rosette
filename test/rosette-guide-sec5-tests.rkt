@@ -44,11 +44,11 @@
  #:with-msg "Missing type annotations for fields")
 (struct square ([side : Nat])
   #:methods gen:viewable
-  [(define (view [self : (Square Nat)] -> Nat) (square-side self))])
+  [(define (view [self : (Square Nat)]) -> Nat (square-side self))])
 (struct circle ([radius : Nat])
   #:transparent
   #:methods gen:viewable
-  [(define (view [self : (Circle Nat)] -> Nat) (circle-radius self))])
+  [(define (view [self : (Circle Nat)]) -> Nat (circle-radius self))])
 ;(define-symbolic b boolean?)
 (define p2 (if b (square 2) (circle 3))) ; p holds a symbolic structure
 (check-type p2 : (U (CSquare Nat) (CCircle Nat)))

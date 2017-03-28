@@ -32,13 +32,13 @@
 (define-symbolic* n integer?)
 
 ;; TODO: support internal definition contexts
-(define (static -> Bool)
+(define (static) -> Bool
   (let-symbolic (x boolean?) x))
 #;(define (static -> Bool)
  (define-symbolic x boolean? : Bool) ; creates the same constant when evaluated
  x)
  
-(define (dynamic -> Int)
+(define (dynamic) -> Int
   (let-symbolic* (y integer?) y))
 #;(define (dynamic -> Int)
  (define-symbolic* y integer? : Int) ; creates a different constant when evaluated
@@ -55,7 +55,7 @@
 (define sym*2 (dynamic))
 (check-type (eq? sym*1 sym*2) : Bool -> (= sym*1 sym*2))
 
-(define (yet-another-x -> Bool)
+(define (yet-another-x) -> Bool
   (let-symbolic (x boolean?) x))
 
 (check-type (eq? (static) (yet-another-x))
@@ -70,13 +70,13 @@
 (check-type (asserts) : (CListof Bool) -> (list))
 
 ;; sec 2.3
-(define (poly [x : Int] -> Int)
+(define (poly [x : Int]) -> Int
   (+ (* x x x x) (* 6 x x x) (* 11 x x) (* 6 x)))
 
-(define (factored [x : Int] -> Int)
+(define (factored [x : Int]) -> Int
   (* x (+ x 1) (+ x 2) (+ x 2)))
 
-(define (same [p : (C→ Int Int)] [f : (C→ Int Int)] [x : Int] -> Unit)
+(define (same [p : (C→ Int Int)] [f : (C→ Int Int)] [x : Int]) -> Unit
   (assert (= (p x) (f x))))
 
 ; check zeros; all seems well ...
@@ -99,7 +99,7 @@
 
 (require "../typed/query/debug.rkt"
          "../typed/lib/render.rkt")
-(define/debug (factored/d [x : Int] -> Int)
+(define/debug (factored/d [x : Int]) -> Int
   (* x (+ x 1) (+ x 2) (+ x 2)))
 
 (define ucore (debug [integer?] (same poly factored/d 12)))
@@ -122,7 +122,7 @@
  #:with-msg "Expected a non-function Rosette type, given.*integer\\? integer\\?")
 
 
-(define (factored/?? [x : Int] -> Int)
+(define (factored/?? [x : Int]) -> Int
  (* (+ x (??)) (+ x 1) (+ x (??)) (+ x (??))))
 
 
@@ -135,7 +135,7 @@
 (check-type (print-forms binding) : Unit)
 (check-type+output
  (print-forms binding) ->
- "(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))")
+ "(define (factored/?? (x : Int)) -> Int (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))")
 
 ;; typed/rosette should print: 
 ;;  '(define (factored/?? (x : Int) -> Int) (* (+ x 3) (+ x 1) (+ x 2) (+ x 0)))

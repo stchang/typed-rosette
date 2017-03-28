@@ -28,7 +28,7 @@
 (check-type ((bitvector 32) (bvsub (bv 1) (bv1))) : Bool -> #t)
 
 ; Mask off the rightmost 1-bit.
-(define (p1 [x : BV] -> BV)
+(define (p1 [x : BV]) -> BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvand x o1)])
     o2))
@@ -37,79 +37,79 @@
 (check-type ((bitvector 32) (p1 (bv 1))) : Bool -> #t)
 
 ; Test whether an unsigned integer is of the form 2^n-1.
-(define (p2 [x : BV] -> BV)
+(define (p2 [x : BV]) -> BV
   (let* ([o1 (bvadd x (bv 1))]
          [o2 (bvand x o1)])
     o2))
 
 ; Isolate the right most 1-bit.
-(define (p3 [x : BV] -> BV)
+(define (p3 [x : BV]) -> BV
   (let* ([o1 (bvneg x)]
          [o2 (bvand x o1)])
     o2))
 
 ; Form a mask that identifies the rightmost 1-bit and trailing 0s.
-(define (p4 [x : BV] -> BV)
+(define (p4 [x : BV]) -> BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvxor x o1)])
     o2))
 
 ; Right propagate rightmost 1-bit.
-(define (p5 [x : BV] -> BV)
+(define (p5 [x : BV]) -> BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvor x o1)])
     o2))
 
 ; Turn on the right-most 0-bit in a word.
-(define (p6 [x : BV] -> BV)
+(define (p6 [x : BV]) -> BV
   (let* ([o1 (bvadd x (bv 1))]
          [o2 (bvor x o1)])
     o2))
 
 ; Isolate the right most 0 bit of a given bitvector.
-(define (p7 [x : BV] -> BV)
+(define (p7 [x : BV]) -> BV
   (let* ([o1 (bvnot x)]
          [o2 (bvadd x (bv 1))]
          [o3 (bvand o1 o2)])
     o3))
 
 ; Form a mask that identifies the trailing 0s.
-(define (p8 [x : BV] -> BV)
+(define (p8 [x : BV]) -> BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvnot x)]
          [o3 (bvand o1 o2)])
     o3))
 
 ; Absolute value function.
-(define (p9 [x : BV] -> BV)
+(define (p9 [x : BV]) -> BV
   (let* ([o1 (bvashr x (bv 31))]
          [o2 (bvxor x o1)]
          [o3 (bvsub o2 o1)])
     o3))
 
 ; Test if nlz(x) == nlz(y) where nlz is number of leading zeroes.
-(define (p10 [x : BV] [y : BV] ->  BV)
+(define (p10 [x : BV] [y : BV]) ->  BV
   (let* ([o1 (bvand x y)]
          [o2 (bvxor x y)]
          [o3 (bvule o2 o1)])
     o3))
 
 ; Test if nlz(x) < nlz(y) where nlz is number of leading zeroes.
-(define (p11 [x : BV] [y : BV] ->  BV)
+(define (p11 [x : BV] [y : BV]) ->  BV
   (let* ([o1 (bvnot y)]
          [o2 (bvand x o1)]
          [o3 (bvugt o2 y)])
     o3))
 
 ; Test if nlz(x) <= nlz(y) where nlz is number of leading zeroes.
-(define (p12 [x : BV] [y : BV] ->  BV)
+(define (p12 [x : BV] [y : BV]) ->  BV
   (let* ([o1 (bvnot x)]
          [o2 (bvand y o1)]
          [o3 (bvule o2 x)])
     o3))
 
 ; Sign function.
-(define (p13 [x : BV] ->  BV)
+(define (p13 [x : BV]) ->  BV
   (let* ([o1 (bvneg x)]
          [o2 (bvlshr o1 (bv 31))]
          [o3 (bvashr x (bv 31))]
@@ -117,7 +117,7 @@
     o4))
 
 ; Floor of average of two integers without over-flowing.
-(define (p14 [x : BV] [y : BV] ->  BV)
+(define (p14 [x : BV] [y : BV]) ->  BV
   (let* ([o1 (bvand x y)]
          [o2 (bvxor x y)]
          [o3 (bvlshr o2 (bv 1))]
@@ -125,7 +125,7 @@
     o4))
 
 ; Ceil of average of two integers without over-flowing.
-(define (p15 [x : BV] [y : BV] ->  BV)
+(define (p15 [x : BV] [y : BV]) ->  BV
   (let* ([o1 (bvor x y)]
          [o2 (bvxor x y)]
          [o3 (bvlshr o2 (bv 1))]
@@ -133,11 +133,11 @@
     o4))
 
 ; The max function.
-(define (p16 [x : BV] [y : BV] ->  BV)
+(define (p16 [x : BV] [y : BV]) ->  BV
   (if (equal? (bv 1) (bvsge x y)) x y))
 
 ; Turn-off the rightmost contiguous string of 1 bits.
-(define (p17 [x : BV] ->  BV)
+(define (p17 [x : BV]) ->  BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvor x o1)]
          [o3 (bvadd o2 (bv 1))]
@@ -145,7 +145,7 @@
     o4))
 
 ; Test whether an unsigned integer is of the form 2^n.
-(define (p18 [x : BV] -> BV)
+(define (p18 [x : BV]) -> BV
   (let* ([o1 (bvsub x (bv 1))]
          [o2 (bvand o1 x)]
          [o3 (bvredor x)]
@@ -157,7 +157,7 @@
 ; Exchanging 2 fields A and B of the same register 
 ; x where m is mask which identifies field B and k 
 ; is number of bits from end of A to start of B.
-(define (p19 [x : BV] [m : BV] [k : BV] -> BV)
+(define (p19 [x : BV] [m : BV] [k : BV]) -> BV
   (let* ([o1 (bvlshr x k)]
          [o2 (bvxor x o1)]
          [o3 (bvand o2 m)]
@@ -167,7 +167,7 @@
     o6))
 
 ; Next higher unsigned number with the same number of 1 bits.
-(define (p20 [x : BV] -> BV)
+(define (p20 [x : BV]) -> BV
   (let* ([o1 (bvneg x)]
          [o2 (bvand x o1)]
          [o3 (bvadd x o2)]
@@ -178,7 +178,7 @@
     o7))
 
 ; Cycling through 3 values a, b, c.
-(define (p21 [x : BV] [a : BV] [b : BV] [c : BV] -> BV)
+(define (p21 [x : BV] [a : BV] [b : BV] [c : BV]) -> BV
   (let* ([o1 (bveq x c)]
          [o2 (bvneg o1)]
          [o3 (bvxor a c)]
@@ -192,7 +192,7 @@
     o10))
 
 ; Compute parity.
-(define (p22 [x : BV] -> BV)
+(define (p22 [x : BV]) -> BV
   (let* ([o1 (bvlshr x (bv 1))]
          [o2 (bvxor o1 x)]
          [o3 (bvlshr o2 (bv 2))]
@@ -204,7 +204,7 @@
     o8))
 
 ; Counting number of bits.
-(define (p23 [x : BV] -> BV)
+(define (p23 [x : BV]) -> BV
   (let* ([o1  (bvlshr x (bv 1))]
          [o2  (bvand o1 (bv #x55555555))]
          [o3  (bvsub x o2)]
@@ -218,7 +218,7 @@
     o10))
 
 ; Round up to the next higher power of 2.
-(define (p24 [x : BV] -> BV)
+(define (p24 [x : BV]) -> BV
   (let* ([o1  (bvsub x (bv 1))]
          [o2  (bvlshr o1 (bv 1))]
          [o3  (bvor o1 o2)]
@@ -234,7 +234,7 @@
     o12))
 
 ; Compute higher order half of product of x and y.
-(define (p25 [x : BV] [y : BV] -> BV)
+(define (p25 [x : BV] [y : BV]) -> BV
   (let* ([o1  (bvand x (bv #xffff))]
          [o2  (bvlshr x (bv 16))]
          [o3  (bvand y (bv #xffff))]

@@ -57,13 +57,14 @@
                  (format "initial state ~a is not declared state: ~a"
                          (syntax->datum #'init-state)
                          (syntax->datum #'(state ...)))
+   #:with col (datum->syntax #f ':)
    #:with arr (datum->syntax #f '→)
    [() ([state ≫ state- : CState] ...) ⊢ 
     [init-state ≫ init-state- ⇐ : CState]
     [target ≫ target- ⇐ : CState] ... ...]
    --------
    [⊢ (fsm:automaton init-state- 
-       [state- : (label arr target-) ...] ...) ⇒ CFSM]]
+       [state- col (label arr target-) ...] ...) ⇒ CFSM]]
   [(_ init-state:id
       [state:id (~datum :) (label:id (~datum →) target) ...] ...) ≫
    #:fail-unless (member (syntax->datum #'init-state)
@@ -71,13 +72,14 @@
                  (format "initial state ~a is not declared state: ~a"
                          (syntax->datum #'init-state)
                          (syntax->datum #'(state ...)))
+   #:with col (datum->syntax #f ':)
    #:with arr (datum->syntax #f '→)
    [() ([state ≫ state- : CState] ...) ⊢ 
     [init-state ≫ init-state- ⇐ : CState]
     [target ≫ target- ⇐ : State] ... ...]
    --------
    [⊢ (fsm:automaton init-state-
-       [state- : (label arr target-) ...] ...) ⇒ FSM]])
+       [state- col (label arr target-) ...] ...) ⇒ FSM]])
 
 ;; (define (apply-FSM f v) (f v))
 ;; (define-primop apply-FSM : (→ FSM (List Symbol) Bool))
