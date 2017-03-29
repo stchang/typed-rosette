@@ -297,7 +297,7 @@
                      (NoRestArg-)
                      τ_out-)
       ⇒ :: #%type]]
-  [(_ [τ_in:expr* ...] [(~seq kw:keyword τ_kw:expr*) ...] #:rest τ_rst τ_out:expr*) ≫
+  [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] #:rest τ_rst τ_out:expr*) ≫
    [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
    [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]
    [⊢ τ_rst ≫ τ_rst- ⇐ :: #%type]

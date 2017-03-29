@@ -123,9 +123,10 @@
         lam)]]
   ;; function with type declaration beforehand
   [(_ (f:id/type-decl . (~and args (:id ... (~seq :keyword [:id :expr]) ...))) body ...+) ≫
+   #:with body* (syntax/loc this-syntax (begin body ...))
+   #:with lam (syntax/loc this-syntax (λ args body*))
    --------
-   [≻ (define f
-        (λ args (begin body ...)))]])
+   [≻ (define f lam)]])
 
 ;; This new version of λ handles keyword arguments.
 
