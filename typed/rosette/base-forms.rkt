@@ -201,6 +201,11 @@
     (syntax-parse τ_f
       [(~C→* [τ_a ...] [] _) 
        (string-join (stx-map type->str #'[τ_a ...]) ", ")]
+      [(~C→* [τ_a ...] [] #:rest τ_rst _) 
+       (format
+        "~a, @ ~a"
+        (string-join (stx-map type->str #'[τ_a ...]) ", ")
+        (type->str #'τ_rst))]
       [(~C→* [τ_a ...] [[kw τ_b] ...] _)
        (format
         "~a [, ~a ]"
@@ -211,7 +216,19 @@
             (format "~s ~a" (syntax->datum kw) (type->str τ_b)))
           #'[kw ...]
           #'[τ_b ...])
-         ", "))])))
+         ", "))]
+      [(~C→* [τ_a ...] [[kw τ_b] ...] #:rest τ_rst _)
+       (format
+        "~a [, ~a ], @ ~a"
+        (string-join (stx-map type->str #'[τ_a ...]) ", ")
+        (string-join
+         (stx-map
+          (λ (kw τ_b)
+            (format "~s ~a" (syntax->datum kw) (type->str τ_b)))
+          #'[kw ...]
+          #'[τ_b ...])
+         ", ")
+        (type->str #'τ_rst))])))
 
 (define-typed-syntax app
   ;; concrete functions
@@ -302,6 +319,22 @@
                      [τ (in-list (syntax->list #'[τ_kw* ...]))])
             (list kw τ)))
         (and (typechecks? #'[τ_a ...] #'[τ_a* ...])
+             (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
+                       [b (in-list (syntax->list #'[b ...]))])
+               (define p (assoc kw kws/τs*))
+               (and p
+                    (typecheck? b (second p))))
+             #'τ_out)]
+       [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out)
+        #:when (stx-length>=? #'[τ_a ...] #'[τ_a* ...])
+        #:with [[τ_fst ...] [τ_rst ...]]
+        (split-at* (stx->list #'[τ_a ...]) (list (stx-length #'[τ_a* ...])))
+        (define kws/τs*
+          (for/list ([kw (in-list (syntax->datum #'[kw* ...]))]
+                     [τ (in-list (syntax->list #'[τ_kw* ...]))])
+            (list kw τ)))
+        (and (typechecks? #'[τ_fst ...] #'[τ_a* ...])
+             (typecheck? ((current-type-eval) #'(CList τ_rst ...)) #'τ_rst*)
              (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
                        [b (in-list (syntax->list #'[b ...]))])
                (define p (assoc kw kws/τs*))

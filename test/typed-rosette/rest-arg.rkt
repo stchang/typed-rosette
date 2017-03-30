@@ -27,3 +27,7 @@
 (check-type (f 4 5) : Int -> 45)
 (check-type (f 4 0 1) : Int -> 401)
 (check-type (f 2 4 6 2) : Int -> 2462)
+
+(check-type (+ 1 2 3 4 5 6 7 8 9 10) : CNat -> 55)
+(check-type (+ 1 -2 3 -4 5 -6 7 -8 9 -10) : CInt -> -5)
+
