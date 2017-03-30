@@ -1,5 +1,6 @@
 #lang turnstile
-(extends "../../typed/rosette.rkt" #:except : ! #%app || && void = * + - / #%datum if assert verify < <= > >=) ; typed rosette
+(extends typed/main #:prefix rosette:
+ #:except : ! #%app || && void = * + - / #%datum if assert verify < <= > >=)
 (require (prefix-in ro: (combine-in rosette rosette/lib/synthax))
          (prefix-in cl: "synthcl-model.rkt")
          (only-in "../../typed/rosette.rkt" ~CUnit))

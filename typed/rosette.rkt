@@ -1,7 +1,8 @@
 #lang turnstile
 ;; reuse unlifted forms as-is
 (reuse  
- let let* letrec begin #%datum ann #%top-interaction require prefix-in only-in rename-in define-type-alias define-named-type-alias current-join ⊔
+ let let* letrec begin #%datum ann current-join ⊔
+ define-type-alias define-named-type-alias
  #:from turnstile/examples/stlc+union)
 (require
  ;; manual imports

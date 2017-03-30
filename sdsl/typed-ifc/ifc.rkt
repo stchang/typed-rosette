@@ -1,5 +1,5 @@
 #lang turnstile
-(extends "../../typed/rosette.rkt" #:except) ; extends typed rosette
+(extends typed/main) ; extends typed rosette
 (require (prefix-in ro: (except-in rosette read write pc init)) ; untyped 
          (prefix-in ro: rosette/lib/synthax)
          (prefix-in ro: sdsl/ifc/instruction) ; program
