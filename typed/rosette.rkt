@@ -15,7 +15,7 @@
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define λ apply ann begin
+(provide : define λ apply ann begin list
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
@@ -332,12 +332,6 @@
                     [empty? : (Ccase-> (C→ (CListof Any) CBool)
                                        (C→ (Listof Any) Bool))]
                     [list? : CPred]))
-
-(define-typed-syntax list
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇒ : τ] ...]
-   --------
-   [⊢ [_ ≫ (ro:list e- ...) ⇒ : (CList τ ...)]]])
 
 (define-typed-syntax cons
   [_:id ≫ ;; TODO: use polymorphism

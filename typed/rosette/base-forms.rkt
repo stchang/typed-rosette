@@ -1,12 +1,12 @@
 #lang turnstile
 
-(provide : define λ apply ann begin
+(provide : define λ apply ann begin list
          (rename-out [app #%app])
          unsafe-assign-type unsafe-define/assign-type
          (for-syntax expand/ro))
 
 (require (only-in turnstile/examples/stlc+union ann begin)
-         (prefix-in ro: (only-in rosette/safe define λ #%app #%top))
+         (prefix-in ro: rosette/safe)
          "types.rkt")
 
 (begin-for-syntax
@@ -184,6 +184,16 @@
 
 ;; ----------------------------------------------------------------------------
 
+;; Lists
+
+(define-typed-syntax list
+  [(_ e ...) ≫
+   [⊢ [e ≫ e- ⇒ : τ] ...]
+   --------
+   [⊢ [_ ≫ (ro:#%app ro:list e- ...) ⇒ : (CList τ ...)]]])
+
+;; ----------------------------------------------------------------------------
+
 ;; Function Application
 
 (begin-for-syntax
@@ -234,6 +244,43 @@
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
    --------
    [⊢ (ro:#%app f- a- ... kw/b- ... ...) ⇒ τ_out]]
+  [(_ f:expr ab:expr ... (~seq kw:keyword c:expr) ...) ≫
+   ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)]
+   #:with f-- (expand/ro #'f)
+   #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)
+   (typeof #'f--)
+   #:with f- (replace-stx-loc #'f-- #'f)
+   #:fail-unless (stx-length>=? #'[ab ...] #'[τ_a ...])
+   (num-args-fail-msg #'f #'[τ_a ...] #'[ab ...])
+   #:with [[a ...] [b ...]]
+   (split-at* (stx->list #'[ab ...])
+              (list (stx-length #'[τ_a ...])))
+   #:do [(define kws/τs*
+           (for/list ([kw* (in-list (syntax->datum #'[kw* ...]))]
+                      [τ* (in-list (syntax->list #'[τ_kw* ...]))])
+             (list kw* τ*)))]
+   #:with [τ_c ...]
+   (for/list ([kw (in-list (syntax->list #'[kw ...]))])
+     (define p (assoc (syntax-e kw) kws/τs*))
+     (unless p (raise-syntax-error #f "keyword not in domain of function" kw))
+     (second p))
+   ;[⊢ [a ≫ a- ⇐ τ_a] ...]
+   ;[⊢ (list b ...) ≫ rst- ⇐ τ_rst]
+   ;[⊢ [c ≫ c- ⇐ τ_c] ...]
+   #:with [a- ...] (stx-map expand/ro #'[a ...])
+   #:with rst- (expand/ro #'(list b ...))
+   #:with [c- ...] (stx-map expand/ro #'[c ...])
+   #:with [τ_a* ...] (stx-map typeof #'(a- ...))
+   #:with τ_rst* (typeof #'rst-)
+   #:with [τ_c* ...] (stx-map typeof #'(c- ...))
+   #:fail-unless (typechecks? #'[τ_a* ... τ_c* ... τ_rst*]
+                              #'[τ_a ... τ_c ... τ_rst])
+   (typecheck-fail-msg/multi #'[τ_a ... τ_c ... τ_rst]
+                             #'[τ_a* ... τ_c* ... τ_rst*]
+                             #'[a ... c ... (list b ...)])
+   #:with [[kw/c- ...] ...] #'[[kw c-] ...]
+   --------
+   [⊢ (ro:#%app ro:apply f- a- ... rst- kw/c- ... ...) ⇒ τ_out]]
   ;; concrete case->
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f- ⇒ (~and (~Ccase-> ~! τ_f ...) ~!)]
@@ -358,7 +405,7 @@
    [⊢ f ≫ f- ⇒ (~C→* [] [] #:rest τ_rst τ_out)]
    [⊢ lst ≫ lst- ⇐ τ_rst]
    --------
-   [⊢ (apply- f- lst-) ⇒ τ_out]]
+   [⊢ (ro:apply f- lst-) ⇒ τ_out]]
   [(_ f:expr lst:expr) ≫
    [⊢ f ≫ f- ⇒ (~Ccase-> τ_f ...)]
    [⊢ lst ≫ lst- ⇒ τ_lst]
@@ -371,7 +418,7 @@
        [_ #false]))
    #:fail-unless (syntax-e #'τ_out) "none of the cases matched"
    --------
-   [⊢ (apply- f- lst-) ⇒ τ_out]])
+   [⊢ (ro:apply f- lst-) ⇒ τ_out]])
 
 ;; ----------------------------------------------------------------------------
 
