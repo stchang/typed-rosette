@@ -197,26 +197,27 @@
 ;; ---------------------------------
 ;; quote
 
-;; TODO: don't duplicate #%datum code here
 (define-typed-syntax quote
+  ;; base case: symbol
   [(_ x:id) ≫
    --------
-   [⊢ [_ ≫ (quote- x) ⇒ : CSymbol]]]
-  [(_ (x:integer ...)) ≫
-   #:with ty_out (let ([xs (syntax->datum #'(x ...))])
-                   (cond [(andmap zero? xs) #'CZero]
-                         [(andmap positive? xs) #'CPosInt]
-                         [else #'CNegInt]))
+   [⊢ (ro:quote x) ⇒ CSymbol]]
+  ;; recur: list (this clause should come before pair)
+  [(_ (x ...)) ≫
+   [⊢ (quote x) ≫ (_ x-) ⇒ τ] ...
    --------
-   [⊢ [_ ≫ (quote- (x ...)) ⇒ : (CListof ty_out)]]]
-  [(_ (x:id ...)) ≫
-   --------
-   [⊢ [_ ≫ (quote- (x ...)) ⇒ : (CListof CSymbol)]]]
+   [⊢ (ro:quote (x- ...)) ⇒ (CList τ ...)]]
+  ;; recur: pair
   [(_ (x . y)) ≫
-   [⊢ [x ≫ x- ⇒ : τx]]
-   [⊢ [y ≫ y- ⇒ : τy]]
+   [⊢ (quote x) ≫ (_ x-) ⇒ τx]
+   [⊢ (quote y) ≫ (_ y-) ⇒ τy]
    --------
-   [⊢ [_ ≫ (quote- (x . y)) ⇒ : (CPair τx τy)]]])
+   [⊢ (ro:quote (x- . y-)) ⇒ (CPair τx τy)]]
+  ;; base case: other datums
+  [(_ x) ≫
+   [⊢ (stlc+union:#%datum . x) ≫ (_ x-) ⇒ τ]
+   --------
+   [⊢ (ro:quote x-) ⇒ τ]])
 
 ;; ---------------------------------
 ;; if
