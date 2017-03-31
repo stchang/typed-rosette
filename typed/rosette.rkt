@@ -147,39 +147,76 @@
 ;; ---------------------------------
 ;; Racket forms
 
+;; struct enabling typed structs to cooperate with struct-info
+(begin-for-syntax
+  (require racket/struct-info)
+  (struct typed-struct (id fn)
+    #:property prop:procedure (struct-field-index fn)
+    #:property prop:struct-info
+               (λ (x)
+                 (extract-struct-info
+                  (syntax-local-value
+                   (typed-struct-id x))))))
+
 ;; TODO: get subtyping to work for struct-generated types?
-;; TODO: handle mutable structs properly
+;; TODO: allow super struct
 (define-typed-syntax struct #:datum-literals (:)
-  [(_ name:id (x:id ...) ~! . rst) ≫
+  [(_ name:id (x:id ...+) ~! . rst) ≫
    #:fail-when #t "Missing type annotations for fields"
    --------
-   [_ ≻ (ro:struct name (x ...) . rst)]]
-  [(_ name:id ([x:id : ty:type] ...) . kws) ≫
+   [≻ (ro:struct name (x ...) . rst)]]
+  [(_ name:id ([x:id : ty:type . xrst] ...) . kws) ≫
    #:fail-unless (id-lower-case? #'name)
                  (format "Expected lowercase struct name, given ~a" #'name)
    #:with name* (generate-temporary #'name)
    #:with Name (id-upcase #'name)
    #:with CName (format-id #'name "C~a" #'Name)
-   #:with TyOut #'(Name ty ...)
-   #:with CTyOut #'(CName ty ...)
-   #:with (name-x ...) (stx-map (lambda (f) (format-id #'name "~a-~a" #'name f)) #'(x ...))
-   #:with (name-x* ...) (stx-map (lambda (f) (format-id #'name* "~a-~a" #'name* f)) #'(x ...))
+   ;; find mutable fields and their types (converted to symbolic)
+   ;; produces two lists
+   ;; 1) fields+types of just mutable fields
+   ;; 2) all fields+types (with those of mutable fields converted to symbolic)
+   #:with (([x_mut ty_mut] ...) ([x/mut ty/mut] ...)) ; xs are needed to make ellipses match
+          (if (stx-datum-member '#:mutable #'kws)
+              (let ([xs+tys/mut (stx-map (λ (x t) #`[#,x (U #,t)]) #'(x ...) #'(ty ...))])
+                (list xs+tys/mut xs+tys/mut))
+              (let-values
+                ([(xs+tys_mut xs+tys/mut)
+                  (for/fold ([xs+tys_mut '()][xs+tys/mut '()])
+                            ([x (stx->list #'(x ...))]
+                             [ty (stx->list #'(ty ...))]
+                             [xrst (stx->list #'(xrst ...))])
+                    (if (stx-datum-member '#:mutable xrst)
+                        (values (cons #`[#,x (U #,ty)] xs+tys_mut)
+                                (cons #`[#,x (U #,ty)] xs+tys/mut))
+                        (values xs+tys_mut
+                                (cons #`[#,x #,ty] xs+tys/mut))))])
+                (list (reverse xs+tys_mut) (reverse xs+tys/mut))))
+   #:with TyOut #'(Name ty/mut ...)
+   #:with CTyOut #'(CName ty/mut ...)
+   #:with (name-x ...) (stx-map (λ (f) (format-id #'name "~a-~a" #'name f)) #'(x/mut ...))
+   #:with (name-x* ...) (stx-map (λ (f) (format-id #'name* "~a-~a" #'name* f)) #'(x/mut ...))
+   #:with (set-x ...) (stx-map (λ (f) (format-id #'name "set-~a-~a!" #'name f)) #'(x_mut ...))
+   #:with (set-x* ...) (stx-map (λ (f) (format-id #'name* "set-~a-~a!" #'name* f)) #'(x_mut ...))
    #:with name? (format-id #'name "~a?" #'name)
    #:with name?* (format-id #'name* "~a?" #'name*)
    --------
-   [_ ≻ (ro:begin
-          (ro:struct name* (x ...) . kws)
-          (define-type-constructor CName #:arity = #,(stx-length #'(x ...)))
-          (define-named-type-alias (Name x ...) (U (CName x ...)))
-          (define-syntax name   ; constructor
-            (make-variable-like-transformer 
-             (assign-type #'name* #'(C→ ty ... CTyOut))))
-          (define-syntax name?  ; predicate
-            (make-variable-like-transformer 
-             (assign-type #'name?* #'LiftedPred)))
-          (define-syntax name-x ; accessors
-            (make-variable-like-transformer 
-             (assign-type #'name-x* #'(C→ TyOut ty)))) ...)]])
+   [≻ (ro:begin
+       (ro:struct name* ([x . xrst] ...) . kws)
+       (define-type-constructor CName #:arity = #,(stx-length #'(x ...)))
+       (define-named-type-alias (Name x ...) (U (CName x ...)))
+       (define-syntax name   ; constructor
+         (typed-struct #'name* 
+          (make-variable-like-transformer
+           (assign-type #'name* #'(C→ ty/mut ... CTyOut)))))
+       (define-syntax name?  ; predicate
+         (make-variable-like-transformer 
+          (assign-type #'name?* #'LiftedPred)))
+       (define-syntax name-x ; accessors
+         (make-variable-like-transformer 
+          (assign-type #'name-x* #'(C→ TyOut ty/mut)))) ...
+       (define-syntax set-x ; setters (only mutable fields)
+         (make-variable-like-transformer
+          (assign-type #'set-x* #'(C→ TyOut ty_mut CUnit)))) ...)]])
 
 ;; TODO: add type rules for generics
 (define-typed-syntax define-generics #:datum-literals (: ->)
