@@ -268,7 +268,7 @@
 (typecheck-fail ((λ ([bvp : BVPred]) bvp) (λ ([bv : BV]) #t))
                 #:with-msg "expected.*BVPred.*given.*BV")
 ;; BVpred arg must have Any input type
-(check-type ((λ ([bvp : BVPred]) bvp) (λ ([bv : Any]) ((bitvector 2) bv))) : BVPred)
+(check-type ((λ ([bvp : BVPred]) bvp) (bitvector 2)) : BVPred)
 
 ;; assert-type tests
 (check-type+asserts (assert-type (sub1 10) : PosInt) : PosInt -> 9 (list))
@@ -342,3 +342,28 @@
 ;(check-type ci1 : (U (Constant Int) (Constant Bool)))
 ;(check-type (list ci1 bi1) : (CListof (U (Constant Int) (Constant Bool))))
 ;(check-type (cons ci1 (cons bi1 (list))) : (CListof (U (Constant Int) (Constant Bool))))
+
+;; CAny tests
+;; literals
+(check-type 1 : CAny)
+(check-type #f : CAny)
+(check-type "ss" : CAny)
+
+;; symbolic constants
+(check-not-type b0 : CAny)
+(check-not-type (not b0) : CAny)
+(check-not-type (equal? i0 i0) : CAny)
+
+;; check concreteness preserved
+(check-type (not #f) : CAny)
+(check-type (equal? 1 2) : CAny)
+
+;; data structures have type CAny only if elements are concrete
+;; (even if outer structure is concrete)
+(check-type (box 1) : CAny)
+(check-not-type (box i0) : CAny)
+(check-type (list 1 2 3) : CAny)
+(check-not-type (list i0 b0) : CAny)
+(check-type (list (list 1 2) (list 3 4)) : CAny)
+(check-type (list (list (list 1 2) 3) 4) : CAny)
+(check-not-type (list (list (list i0 2) 3) 4) : CAny)

@@ -1,6 +1,6 @@
 #lang turnstile
 
-(provide Any
+(provide CAny Any
          CNothing Nothing
          CU U
          Constant
@@ -48,7 +48,8 @@
          CSymbol
          CAsserts
          COutputPort
-         CSolution CSolver CPict CRegexp CSymbol CPred CPredC
+         CSolution CSolver CPict CRegexp CSymbol
+         LiftedPred LiftedPred2 LiftedNumPred LiftedIntPred UnliftedPred
          (for-syntax ~CUnit CUnit?
                      ~CString CString?)
          ;; The relationship between types and
@@ -83,10 +84,16 @@
 
 (begin-for-syntax
   (define (concrete? t)
-    (not (or (Any? t) (U*? t) (Constant*? t)))))
+    (not (or (Any? t) (U*? t) (Constant*? t))))
+  (define (concrete/recur? t)
+    (and (concrete? t)
+         (syntax-parse t
+           [(~Any _ . tys)
+            (stx-andmap concrete/recur? #'tys)]
+           [_ #t]))))
 
 (define-base-types
-  Any CBV CStx CSymbol CRegexp
+  CAny Any CBV CStx CSymbol CRegexp
   CSolution CSolver CPict
   COutputPort)
 
@@ -351,10 +358,17 @@
 
 ;; Extra convenience types for predicates
 
-(define-named-type-alias CPred (C→ Any Bool))
-(define-named-type-alias CPredC (C→ Any CBool))
+(define-named-type-alias LiftedPred (Ccase-> (C→ CAny CBool)
+                                             (C→ Any Bool)))
+(define-named-type-alias LiftedPred2 (Ccase-> (C→ CAny CAny CBool)
+                                              (C→ Any Any Bool)))
+(define-named-type-alias LiftedNumPred (Ccase-> (C→ CNum CBool)
+                                                (C→ Num Bool)))
+(define-named-type-alias LiftedIntPred (Ccase-> (C→ CInt CBool)
+                                                (C→ Int Bool)))
+(define-named-type-alias UnliftedPred (C→ Any CBool))
 
-(define-symbolic-named-type-alias BVPred (C→ Any Bool)
+(define-symbolic-named-type-alias BVPred LiftedPred
   #:pred lifted-bitvector?)
 
 ;; ---------------------------------------------------------
@@ -370,6 +384,7 @@
     ;; (printf "t2 = ~a\n" (syntax->datum t2))
     (or 
      (Any? t2)
+     (and (concrete/recur? t1) (CAny? t2))
      ((current-type=?) t1 t2)
      (syntax-parse (list t1 t2)
        ;; Constant clause must appear before U, ow (Const Int) <: Int wont hold

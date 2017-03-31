@@ -126,7 +126,7 @@
                                (CU Witness CTrue)))]
           [EENI-witness : (C→ Machine Machine Int (C→ Machine Machine Bool) Witness)]
           [EENI-witness-k : (C→ Any CInt)]
-          [EENI-witness? : CPred]))
+          [EENI-witness? : LiftedPred]))
 
 #;(define-typed-syntax program
   [(_ n procs) ≫

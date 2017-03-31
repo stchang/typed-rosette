@@ -21,7 +21,7 @@
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
          (for-syntax get-pred expand/ro)
-         Any CNothing Nothing
+         CAny Any CNothing Nothing
          CU U (for-syntax ~CU* ~U*)
          Constant
          C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
@@ -48,7 +48,8 @@
          ;; BV types
          CBV BV
          CBVPred BVPred
-         CSolution CSolver CPict CRegexp CPred CPredC)
+         CSolution CSolver CPict CRegexp
+         LiftedPred LiftedPred2 LiftedNumPred LiftedIntPred UnliftedPred)
 
 ;; a legacy auto-providing version of define-typed-syntax
 ;; TODO: convert everything to new define-typed-syntax
@@ -175,7 +176,7 @@
              (assign-type #'name* #'(C→ ty ... CTyOut))))
           (define-syntax name?  ; predicate
             (make-variable-like-transformer 
-             (assign-type #'name?* #'(C→ Any Bool))))
+             (assign-type #'name?* #'LiftedPred)))
           (define-syntax name-x ; accessors
             (make-variable-like-transformer 
              (assign-type #'name-x* #'(C→ TyOut ty)))) ...)]])
@@ -263,7 +264,7 @@
                                         #'(CMVectorof (CU τ ...))
                                         #'(CMVectorof (U τ ...)))]]])
 
-(provide (typed-out [vector? : CPred]))
+(provide (typed-out [vector? : LiftedPred]))
 
 ;; immutable constructor
 (define-typed-syntax vector-immutable
@@ -332,7 +333,7 @@
                                       (C→ (Listof Any) Bool))]
                     [empty? : (Ccase-> (C→ (CListof Any) CBool)
                                        (C→ (Listof Any) Bool))]
-                    [list? : CPred]))
+                    [list? : LiftedPred]))
 
 (define-typed-syntax cons
   [_:id ≫ ;; TODO: use polymorphism
@@ -650,8 +651,8 @@
 (define-typed-syntax sort
   [_:id ≫ ;; TODO: use polymorphism
    --------
-   [⊢ [_ ≫ ro:sort ⇒ : (Ccase-> (C→ (CListof Any) (C→ Any Any Bool) (CListof Any))
-                                (C→ (Listof Any) (C→ Any Any Bool) (Listof Any)))]]]
+   [⊢ [_ ≫ ro:sort ⇒ : (Ccase-> (C→ (CListof Any) LiftedPred2 (CListof Any))
+                                (C→ (Listof Any) LiftedPred2 (Listof Any)))]]]
   [(_ e cmp) ≫
    [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
    [⊢ [cmp ≫ cmp- ⇐ : (C→ τ τ Bool)]]
@@ -678,8 +679,8 @@
 
 (provide (typed-out [void : (C→ CUnit)]
                     [printf : (Ccase-> (C→ CString CUnit)
-                                               (C→ CString Any CUnit)
-                                               (C→ CString Any Any CUnit))]
+                                       (C→ CString Any CUnit)
+                                       (C→ CString Any Any CUnit))]
                     [display : (C→ Any CUnit)]
                     [displayln : (C→ Any CUnit)]
                     [with-output-to-string : (C→ (C→ Any) CString)]
@@ -691,15 +692,11 @@
                     [string-length : (C→ CString CNat)]
                     [string-append : (C→ CString CString CString)]
 
-                    [equal? : (C→ Any Any Bool)]
-                    [eq? : (C→ Any Any Bool)]
-                    [distinct? : (Ccase-> (C→ Bool)
-                                          (C→ Any Bool)
-                                          (C→ Any Any Bool)
-                                          (C→ Any Any Any Bool)
-                                          (C→ Any Any Any Any Bool)
-                                          (C→ Any Any Any Any Any Bool)
-                                          (C→ Any Any Any Any Any Any Bool))]
+                    [equal? : LiftedPred2]
+                    [eq? : LiftedPred2]
+                    [distinct? : (Ccase-> (C→* [] [] #:rest (CListof CAny) CBool)
+                                          (C→* [] [] #:rest (CListof Any) Bool)
+                                          (C→* [] [] #:rest (Listof Any) Bool))]
                     
                     [pi : CNum]
                     
@@ -725,10 +722,13 @@
                                      (C→ Int Int))]
                     [+ : (Ccase-> (C→ CZero)
                                   (C→* [] [] #:rest (CListof CNat) CNat)
+                                  (C→* [] [] #:rest (CListof Nat) Nat)
                                   (C→* [] [] #:rest (Listof Nat) Nat)
                                   (C→* [] [] #:rest (CListof CInt) CInt)
+                                  (C→* [] [] #:rest (CListof Int) Int)
                                   (C→* [] [] #:rest (Listof Int) Int)
                                   (C→* [] [] #:rest (CListof CNum) CNum)
+                                  (C→* [] [] #:rest (CListof Num) Num)
                                   (C→* [] [] #:rest (Listof Num) Num))]
                     [- : (Ccase-> (C→ CInt CInt)
                                   (C→ CInt CInt CInt)
@@ -817,7 +817,7 @@
                                     (C→ Num Num Num Num))] 
                     ;; out type for these fns must be CNum, because of +inf.0 and +nan.0
                     [floor : (Ccase-> (C→ CNum CNum)
-                                              (C→ Num Num))]
+                                      (C→ Num Num))]
                     [ceiling : (Ccase-> (C→ CNum CNum)
                                         (C→ Num Num))]
                     [truncate : (Ccase-> (C→ CNum CNum)
@@ -836,27 +836,23 @@
                                      (C→ CNum CNum CNum)
                                      (C→ Num Num Num))]
                     
-                    [not : (C→ Any Bool)]
-                    [xor : (C→ Any Any Any)]
-                    [false? : (C→ Any Bool)]
+                    [not : LiftedPred]
+                    [xor : (Ccase-> (C→ CAny CAny CAny)
+                                    (C→ Any Any Any))]
+                    [false? : LiftedPred]
                     
                     [true : CTrue]
                     [false : CFalse]
                     [real->integer : (C→ Num Int)]
-                    [string? : (C→ Any Bool)]
-                    [number? : (C→ Any Bool)]
-                    [positive? : (Ccase-> (C→ CNum CBool)
-                                          (C→ Num Bool))]
-                    [negative? : (Ccase-> (C→ CNum CBool)
-                                          (C→ Num Bool))]
-                    [zero? : (Ccase-> (C→ CNum CBool)
-                                      (C→ Num Bool))]
-                    [even? : (Ccase-> (C→ CInt CBool)
-                                      (C→ Int Bool))]
-                    [odd? : (Ccase-> (C→ CInt CBool)
-                                     (C→ Int Bool))]
+                    [string? : UnliftedPred]
+                    [number? : LiftedPred]
+                    [positive? : LiftedNumPred]
+                    [negative? : LiftedNumPred]
+                    [zero? : LiftedNumPred]
+                    [even? : LiftedIntPred]
+                    [odd? : LiftedIntPred]
                     [inexact->exact : (Ccase-> (C→ CNum CNum)
-                                                       (C→ Num Num))]
+                                               (C→ Num Num))]
                     [exact->inexact : (Ccase-> (C→ CNum CNum)
                                                (C→ Num Num))]
                     [quotient : (Ccase-> (C→ CInt CInt CInt)
@@ -878,42 +874,40 @@
 (define-typed-syntax boolean?
   [_:id ≫
    --------
-   [⊢ [_ ≫ (mark-solvablem
-            (add-typeform
-             ro:boolean?
-             Bool))
-           ⇒ : (C→ Any Bool)]]]
+   [⊢ (mark-solvablem
+       (add-typeform
+        ro:boolean?
+        Bool)) ⇒ LiftedPred]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : ty]]
+   [⊢ e ≫ e- ⇒ ty]
    --------
-   [⊢ [_ ≫ (ro:boolean? e-) ⇒ : #,(if (concrete? #'ty) #'CBool #'Bool)]]])
+   [⊢ (ro:boolean? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
 
 ;(define-rosette-primop integer? : (C→ Any Bool))
 (define-typed-syntax integer?
   [_:id ≫
    --------
-   [⊢ [_ ≫ (mark-solvablem
-            (add-typeform
-             ro:integer?
-             Int))
-           ⇒ : (C→ Any Bool)]]]
+   [⊢ (mark-solvablem
+       (add-typeform
+        ro:integer?
+        Int)) ⇒ LiftedPred]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : ty]]
+   [⊢ e ≫ e- ⇒ ty]
    --------
-   [⊢ [_ ≫ (ro:integer? e-) ⇒ : #,(if (concrete? #'ty) #'CBool #'Bool)]]])
+   [⊢ (ro:integer? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
 
 ;(define-rosette-primop real? : (C→ Any Bool))
 (define-typed-syntax real?
   [_:id ≫
    --------
-   [⊢ [_ ≫ (mark-solvablem
-            (add-typeform
-             ro:real?
-             Num)) ⇒ : (C→ Any Bool)]]]
+   [⊢ (mark-solvablem
+       (add-typeform
+        ro:real?
+        Num)) ⇒ LiftedPred]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : ty]]
+   [⊢ e ≫ e- ⇒ ty]
    --------
-   [⊢ [_ ≫ (ro:real? e-) ⇒ : #,(if (concrete? #'ty) #'CBool #'Bool)]]])
+   [⊢ (ro:real? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
 
 (define-typed-syntax time
   [(_ e) ≫
@@ -985,7 +979,7 @@
 
 (provide (typed-out [bv : (Ccase-> (C→ CInt CBVPred CBV)
                                    (C→ CInt CPosInt CBV))]
-                    [bv? : (C→ Any Bool)]
+                    [bv? : LiftedPred]
                     
                     [bveq : (C→ BV BV Bool)]
                     [bvslt : (C→ BV BV Bool)]
@@ -1020,7 +1014,7 @@
                     
                     [concat : BVMultiArgOp]
                     [extract : (C→ Int Int BV BV)]
-                    [sign-extend : (C→ BV CBVPred BV)]
+                    [sign-extend : (C→ BV BVPred BV)]
                     [zero-extend : (C→ BV BVPred BV)]
                     
                     [bitvector->integer : (C→ BV Int)]
@@ -1033,14 +1027,14 @@
 (define-typed-syntax bitvector
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:bitvector ⇒ : (C→ CPosInt CBVPred)]]]
+   [⊢ ro:bitvector ⇒ (C→ CPosInt CBVPred)]]
   [(_ n) ≫
-   [⊢ [n ≫ n- ⇐ : CPosInt]]
+   [⊢ n ≫ n- ⇐ CPosInt]
    --------
-   [⊢ [_ ≫ (mark-solvablem
-            (add-typeform
-             (ro:bitvector n-)
-             BV)) ⇒ : CBVPred]]])
+   [⊢ (mark-solvablem
+       (add-typeform
+        (ro:bitvector n-)
+        BV)) ⇒ CBVPred]])
 
 ;; bitvector? can produce type CFalse if input does not have type (C→ Any Bool)
 ;; result is always CBool, since anything symbolic returns false
@@ -1048,23 +1042,23 @@
 (define-typed-syntax bitvector?
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:bitvector? ⇒ : (C→ Any CBool)]]]
+   [⊢ ro:bitvector? ⇒ UnliftedPred]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇐ : (C→ Any Bool)]]
+   [⊢ e ≫ e- ⇐ LiftedPred]
    --------
-   [⊢ [_ ≫ (ro:bitvector? e-) ⇒ : CBool]]]
+   [⊢ (ro:bitvector? e-) ⇒ CBool]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : _]]
+   [⊢ e ≫ e- ⇒ _]
    --------
-   [⊢ [_ ≫ (ro:bitvector? e-) ⇒ : CFalse]]])
+   [⊢ (ro:bitvector? e-) ⇒ CFalse]])
 
 ;; ---------------------------------
 ;; Uninterpreted functions
 
 (define-typed-syntax ~>
   [(_ pred? ...+ out) ≫
-   [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?) (⇒ function? f?)]] ...
-   [⊢ [out ≫ out- (⇒ : _) (⇒ typefor ty-out) (⇒ solvable? out-s?) (⇒ function? out-f?)]]
+   [⊢ pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?) (⇒ function? f?)] ...
+   [⊢ out ≫ out- (⇒ : _) (⇒ typefor ty-out) (⇒ solvable? out-s?) (⇒ function? out-f?)]
    #:fail-unless (stx-andmap syntax-e #'(s? ... out-s?))
                  (format "Expected a Rosette-solvable type, given ~a." 
                          (syntax->datum #'(pred? ... out)))
@@ -1072,14 +1066,13 @@
                (format "Expected a non-function Rosette type, given ~a." 
                        (syntax->datum #'(pred? ... out)))
    --------
-   [⊢ [_ ≫ (mark-solvablem
-            (mark-functionm
-             (add-typeform
-              (ro:~> pred?- ... out-)
-              (→ ty ... ty-out))))
-              ⇒ : (C→ Any Bool)]]])
+   [⊢ (mark-solvablem
+       (mark-functionm
+        (add-typeform
+         (ro:~> pred?- ... out-)
+         (→ ty ... ty-out)))) ⇒ LiftedPred]])
 
-(provide (typed-out [fv? : (C→ Any Bool)]))
+(provide (typed-out [fv? : LiftedPred]))
 
 ;; function? can produce type CFalse if input does not have type (C→ Any Bool)
 ;; result is always CBool, since anything symbolic returns false
@@ -1087,15 +1080,15 @@
 (define-typed-syntax function?
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:function? ⇒ : (C→ Any CBool)]]]
+   [⊢ ro:function? ⇒ UnliftedPred]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇐ : (C→ Any Bool)]]
+   [⊢ e ≫ e- ⇐ LiftedPred]
    --------
-   [⊢ [_ ≫ (ro:function? e-) ⇒ : CBool]]]
+   [⊢ (ro:function? e-) ⇒ CBool]]
   [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : _]]
+   [⊢ e ≫ e- ⇒ _]
    --------
-   [⊢ [_ ≫ (ro:function? e-) ⇒ : CFalse]]])
+   [⊢ (ro:function? e-) ⇒ CFalse]])
 
 ;; ---------------------------------
 ;; Logic operators
@@ -1175,10 +1168,10 @@
 ;; ---------------------------------
 ;; solver forms
 
-(provide (typed-out [sat? : (C→ Any Bool)]
-                    [unsat? : (C→ Any Bool)]
-                    [solution? : CPred]
-                    [unknown? : CPred]
+(provide (typed-out [sat? : UnliftedPred]
+                    [unsat? : UnliftedPred]
+                    [solution? : UnliftedPred]
+                    [unknown? : UnliftedPred]
                     [sat : (Ccase-> (C→ CSolution)
                                     (C→ (CHashTable Any Any) CSolution))]
                     [unsat : (Ccase-> (C→ CSolution)
@@ -1313,7 +1306,7 @@
 
 ;(define-rosette-primop gen:solver : CSolver)
 (provide (typed-out
-          [solver? : CPred]
+          [solver? : UnliftedPred]
           [solver-assert : (C→ CSolver (CListof Bool) CUnit)]
           [solver-clear : (C→ CSolver CUnit)]
           [solver-minimize : (C→ CSolver (CListof (U Int Num BV)) CUnit)]
@@ -1328,14 +1321,13 @@
 ;; ---------------------------------
 ;; Reflecting on symbolic values
 
-;; TODO: CPredC correct here?
 (provide (typed-out
-          [term? : CPredC]
-          [expression? : CPredC]
-          [constant? : CPredC]
-          [type? : CPredC]
-          [solvable? : CPredC]
-          [union? : CPredC]))
+          [term? : UnliftedPred]
+          [expression? : UnliftedPred]
+          [constant? : UnliftedPred]
+          [type? : UnliftedPred]
+          [solvable? : UnliftedPred]
+          [union? : UnliftedPred]))
 
 (define-typed-syntax union-contents
   [(_ u) ≫
@@ -1347,8 +1339,8 @@
 ;; TODO: add match and match expanders
 
 ;; TODO: should a type-of expression have a solvable stx prop?
-(provide (typed-out [type-of : (Ccase-> (C→ Any CPred)
-                                        (C→ Any Any CPred))]
+(provide (typed-out [type-of : (Ccase-> (C→ Any LiftedPred)
+                                        (C→ Any Any LiftedPred))]
                     [any/c : (C→ Any CTrue)]))
 
 (define-typed-syntax for/all
