@@ -360,10 +360,12 @@
 
 ;; data structures have type CAny only if elements are concrete
 ;; (even if outer structure is concrete)
-(check-type (box 1) : CAny)
-(check-not-type (box i0) : CAny)
 (check-type (list 1 2 3) : CAny)
 (check-not-type (list i0 b0) : CAny)
 (check-type (list (list 1 2) (list 3 4)) : CAny)
 (check-type (list (list (list 1 2) 3) 4) : CAny)
 (check-not-type (list (list (list i0 2) 3) 4) : CAny)
+
+;; Boxes are mutable, so they contain possibly-symbolic types
+(check-not-type (box 1) : CAny)
+(check-not-type (box i0) : CAny)

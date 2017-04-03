@@ -14,7 +14,7 @@
 ;; mut vectors are invariant
 (check-not-type (vector b 1) : (CMVectorof (U Bool CPosInt)))
 (check-not-type (vector b 1) : (CIVectorof (U Bool CPosInt)))
-(check-not-type (vector b 1) : (CMVectorof (CU CBool CPosInt)))
+(check-not-type (vector b 1) : (CMVectorof Bool))
 (check-type (vector b 1) : (CMVectorof (U (Constant Bool) CPosInt)))
 ;; mutable vectors are invariant
 (check-not-type (vector b 1) : (CMVectorof (U CBool CPosInt)))

@@ -4,7 +4,8 @@
 ;; Examples from the Rosette Guide, Section 3
 
 ;; Symbolic effects
-(define y1 (ann 0 : Nat))
+(: y1 #:mutable : Nat)
+(define y1 0)
 (check-type (if #t (void) (set! y1 3)) : CUnit -> (void))
 ;; y1 unchanged: 0
 (check-type y1 : Nat -> 0)
@@ -20,7 +21,7 @@
 
 
 (define res
- (let ([y (ann 0 : Nat)])
+ (let ([y #:mutable (ann 0 : Nat)])
    (if #t (void) (set! y 3))
    (printf "y unchanged: ~a\n" y)
    (if #f (set! y 3) (void))

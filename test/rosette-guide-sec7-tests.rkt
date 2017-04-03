@@ -56,12 +56,12 @@
 ;; 7.1.2 Symbolic Unions
 (define-symbolic b boolean?)
 (define v (vector 1))
-(check-type v : (CVectorof CPosInt))
+(check-type v : (CVectorof PosInt))
 (define w (vector 2 3))
-(check-type v : (CVectorof CPosInt))
+(check-type v : (CVectorof PosInt))
 (define s (if b v w))
-(check-type s : (Vectorof CPosInt)) ;{[b #(1)] [(! b) #(2 3)]}
-(check-not-type s : (CVectorof CPosInt)) ; check union doesnt have concrete type
+(check-type s : (Vectorof PosInt)) ;{[b #(1)] [(! b) #(2 3)]}
+(check-not-type s : (CVectorof PosInt)) ; check union doesnt have concrete type
 (check-type (type-of s) : (C→ Any Bool) -> vector?)
 (check-type (eq? s v) : Bool -> b)
 (check-type (eq? s w) : Bool -> (! b))

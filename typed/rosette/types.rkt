@@ -51,7 +51,8 @@
          CSolution CSolver CPict CRegexp CSymbol
          LiftedPred LiftedPred2 LiftedNumPred LiftedIntPred UnliftedPred
          (for-syntax ~CUnit CUnit?
-                     ~CString CString?)
+                     ~CString CString?
+                     ~CTrue ~CFalse)
          ;; The relationship between types and
          ;; rosette's run-time type predicates
          add-predm
@@ -71,6 +72,7 @@
            [U CU*] [~U* ~CU*] [U*? CU*?]
            [case-> Ccase->*] [~case-> ~Ccase->] [case->? Ccase->?]
            [→ C→/normal] [~→ ~C→/normal] [→? C→/normal?]
+           [~True ~CTrue] [~False ~CFalse]
            [~String ~CString]
            [~Unit ~CUnit])
          (only-in turnstile/examples/stlc+cons
@@ -101,17 +103,37 @@
 ;; CIVectorof includes only immutable vectors
 ;; CMVectorof includes only mutable vectors
 (define-type-constructor CIVectorof #:arity = 1)
-(define-type-constructor CMVectorof #:arity = 1)
-(define-type-constructor CMBoxof #:arity = 1)
 (define-type-constructor CIBoxof #:arity = 1)
+(define-internal-type-constructor CMVectorof) ; #:arity = 1
+(define-internal-type-constructor CMBoxof) ; #:arity = 1
+
+(define-typed-syntax (CMVectorof τ:type) ≫
+  #:fail-when (and (concrete? #'τ.norm) #'τ)
+  "Mutable locations must have types that allow for symbolic values"
+  --------
+  [⊢ (CMVectorof- τ.norm) ⇒ :: #%type])
+(define-typed-syntax (CMBoxof τ:type) ≫
+  #:fail-when (and (concrete? #'τ.norm) #'τ)
+  "Mutable locations must have types that allow for symbolic values"
+  --------
+  [⊢ (CMBoxof- τ.norm) ⇒ :: #%type])
+
 ;; TODO: Hash subtyping?
 ;; - invariant for now, like TR, though Rosette only uses immutable hashes?
 (define-type-constructor CHashTable #:arity = 2)
 (define-named-type-alias (CVectorof X) (CU (CIVectorof X) (CMVectorof X)))
 (define-named-type-alias (CBoxof X) (CU (CIBoxof X) (CMBoxof X)))
 (define-type-constructor CList #:arity >= 0)
-(define-type-constructor CVector #:arity >= 0)
 (define-type-constructor CPair #:arity = 2)
+
+(define-internal-type-constructor CVector) ; #:arity >= 0
+(define-typed-syntax (CVector τ:type ...) ≫
+  #:fail-when (stx-ormap (λ (τn τ) (and (concrete? τn) τ))
+                         #'[τ.norm ...]
+                         #'[τ ...])
+  "Mutable locations must have types that allow for symbolic values"
+  --------
+  [⊢ (CVector- τ.norm ...) ⇒ :: #%type])
 
 ;; TODO: update orig to use reduced type
 (define-syntax (CU stx)

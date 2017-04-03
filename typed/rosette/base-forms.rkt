@@ -1,6 +1,7 @@
 #lang turnstile
 
-(provide : define λ apply ann begin list
+(provide : define set! λ apply ann begin list
+         let
          (rename-out [app #%app])
          unsafe-assign-type unsafe-define/assign-type
          (for-syntax expand/ro))
@@ -43,6 +44,11 @@
 (begin-for-syntax
   (define type-decl-internal-id 'type-decl-internal-id)
   (define type-decl-internal-id-for 'type-decl-internal-id-for)
+  (define type-decl-mutable 'type-decl-mutable)
+  (define typeCTrue ((current-type-eval) #'CTrue))
+  (define typeCFalse ((current-type-eval) #'CFalse))
+  (define (typebool->bool b)
+    (syntax-parse b [~CTrue #true] [~CFalse #false]))
   (define-syntax-class id/type-decl
     #:attributes [internal-id type]
     [pattern x:id
@@ -51,22 +57,31 @@
       #:with x* (local-expand #'x 'expression #false)
       #:attr internal-id (syntax-property #'x* type-decl-internal-id)
       #:when (attribute internal-id)
-      #:with type (typeof #'x*)]))
+      #:with type (typeof #'x*)])
+  (define-splicing-syntax-class mut-kw
+    #:attributes [mutable? mutable?/tb]
+    [pattern (~seq)           #:attr mutable? #f #:attr mutable?/tb typeCFalse]
+    [pattern (~seq #:mutable) #:attr mutable? #t #:attr mutable?/tb typeCTrue]))
 
 (define-typed-syntax :
   #:datum-literals [:]
-  [(_ x:id : τ) ≫
+  [(_ x:id mut:mut-kw : τ:type) ≫
    #:with x- (generate-temporary #'x)
+   #:fail-when (and (attribute mut.mutable?) (concrete? #'τ.norm) #'τ)
+   "Mutable variables must have types that allow for symbolic values"
    --------
    [≻ (define-syntax- x
         (make-variable-like-transformer
          (set-stx-prop/preserved
           (set-stx-prop/preserved
-           (⊢ x- : τ)
-           type-decl-internal-id
-           (syntax-local-introduce #'x-))
-          type-decl-internal-id-for
-          (syntax-local-introduce #'x))))]])
+           (set-stx-prop/preserved
+            (⊢ x- : τ.norm)
+            type-decl-internal-id
+            (syntax-local-introduce #'x-))
+           type-decl-internal-id-for
+           (syntax-local-introduce #'x))
+          type-decl-mutable
+          #'mut.mutable?/tb)))]])
 
 ;; ----------------------------------------------------------------------------
 
@@ -452,6 +467,48 @@
    #:fail-unless (syntax-e #'τ_out) "none of the cases matched"
    --------
    [⊢ (ro:apply f- lst-) ⇒ τ_out]])
+
+;; ----------------------------------------------------------------------------
+
+;; Variable Assignment
+
+;; This version of set! checks that it has the `type-decl-mutable` property.
+
+(define-typed-syntax set!
+  [(set! x:id e) ≫
+   [⊢ [x ≫ x- ⇒ : τ_x]]
+   #:fail-unless (typebool->bool (or (detach #'x- type-decl-mutable) typeCFalse))
+   (format "Cannot set! an immutable variable, `~a` must be declared mutable"
+           (syntax-e #'x))
+   [⊢ [e ≫ e- ⇐ : τ_x]]
+   --------
+   [⊢ [_ ≫ (ro:set! x- e-) ⇒ : CUnit]]])
+
+;; ----------------------------------------------------------------------------
+
+;; This version of let allows declaring variables as mutable
+
+(define-typed-syntax let
+  [(_ ([x m:mut-kw e] ...) e_body ...) ⇐ τ_expected ≫
+   [⊢ [e ≫ e- ⇒ : τ_x] ...]
+   #:with [τ_x* ...]
+   (stx-map (λ (τ mut?) (if mut? #`(U #,τ) τ))
+            #'[τ_x ...]
+            (attribute m.mutable?))
+   [[x ≫ x- : τ_x* type-decl-mutable m.mutable?/tb] ...
+    ⊢ (begin e_body ...) ≫ e_body- ⇐ τ_expected]
+   --------
+   [⊢ (ro:let ([x- e-] ...) e_body-)]]
+  [(_ ([x m:mut-kw e] ...) e_body ...) ≫
+   [⊢ [e ≫ e- ⇒ : τ_x] ...]
+   #:with [τ_x* ...]
+   (stx-map (λ (τ mut?) (if mut? #`(U #,τ) τ))
+            #'[τ_x ...]
+            (attribute m.mutable?))
+   [[x ≫ x- : τ_x* type-decl-mutable m.mutable?/tb] ...
+    ⊢ (begin e_body ...) ≫ e_body- ⇒ τ_body]
+   --------
+   [⊢ (ro:let ([x- e-] ...) e_body-) ⇒ τ_body]])
 
 ;; ----------------------------------------------------------------------------
 

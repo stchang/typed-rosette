@@ -29,17 +29,19 @@
 (check-type (evaluate p sol4) : (Pair Nat (U Nat Bool)) -> '(1 . 2))
 
 ;; 4.7 Vectors
+;; Mutable locations have symbolic types
 (define v1 (vector 1 2 #f))
 (define v2 (vector 1 2 #f))
 ;; mutable vectors are invariant
-(check-type v1 : (CMVectorof (CU CPosInt CFalse)))
-(check-type v1 : (CVectorof (CU CPosInt CFalse)))
+(check-type v1 : (CMVectorof (U CPosInt CFalse)))
+(check-type v1 : (CVectorof (U CPosInt CFalse)))
 (check-not-type v1 : (CMVectorof (U Nat Bool)))
 (check-not-type v1 : (CVectorof (U Nat Bool)))
-(check-type v2 : (CMVectorof (CU CPosInt CFalse)))
+(check-type v2 : (CMVectorof (U CPosInt CFalse)))
 (check-type (eq? v1 v2) : Bool -> #f)
 (check-type (equal? v1 v2) : Bool -> #t)
 
+;; These are immutable, so they can have have concrete types
 (define v3 (vector-immutable 1 2 #f))
 (define v4 (vector-immutable 1 2 #f))
 ;; immutable vectors have supertypes
@@ -63,10 +65,10 @@
 ;; 4.8 Boxes
 (define b1 (box 1))
 (define b2 (box 1))
-(check-type b1 : (CMBoxof CPosInt))
-(check-type b1 : (CBoxof CPosInt))
+(check-type b1 : (CMBoxof PosInt))
+(check-type b1 : (CBoxof PosInt))
 (check-not-type b1 : (CMBoxof Nat)) ; invariant
-(check-type b2 : (CMBoxof CPosInt))
+(check-type b2 : (CMBoxof PosInt))
 
 (check-type (eq? b1 b2) : Bool -> #f)
 (check-type (equal? b1 b2) : Bool -> #t)
@@ -74,7 +76,7 @@
 (define b3 (box-immutable 1))
 (define b4 (box-immutable 1))
 (check-type b3 : (CIBoxof CPosInt))
-(check-type b3 : (CBoxof CPosInt))
+(check-type b3 : (CBoxof PosInt))
 (check-type b3 : (CBoxof Nat)) ; subtype ok
 (check-type b4 : (CBoxof Nat))
 
@@ -86,10 +88,10 @@
 (define sb1 (box x))           ; sb1 is a box with symbolic contents
 (check-type sb1 : (CMBoxof (Constant Int)))
 (define sb2 (if b sb1 (box 3))) ; sb2 is a symbolic box
-(check-type sb2 : (U (CMBoxof (Constant Int)) (CMBoxof CPosInt)))
+(check-type sb2 : (U (CMBoxof (Constant Int)) (CMBoxof PosInt)))
 (define sol6 (solve (assert (= 4 (unbox sb2)))))
 (check-type (evaluate sb1 sol6) : (CMBoxof Int) -> (box 4))
-(check-type (evaluate sb2 sol6) : (U (CMBoxof Int) (CMBoxof CPosInt)) -> (box 4))
+(check-type (evaluate sb2 sol6) : (U (CMBoxof Int) (CMBoxof PosInt)) -> (box 4))
 (check-not-type (evaluate sb2 sol6) : (MBoxof Int))
 (check-type (= 4 (unbox (evaluate sb2 sol6))) : Bool -> #t)
 (check-type (evaluate (eq? sb1 sb2) sol6) : Bool -> #t)

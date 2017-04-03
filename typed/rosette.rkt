@@ -1,7 +1,7 @@
 #lang turnstile
 ;; reuse unlifted forms as-is
 (reuse  
- let let* letrec begin #%datum ann current-join ⊔
+ let* letrec begin #%datum ann current-join ⊔
  define-type-alias define-named-type-alias
  #:from turnstile/examples/stlc+union)
 (require
@@ -16,7 +16,8 @@
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define λ apply ann begin list
+(provide : define set! λ apply ann begin list
+         let
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
@@ -243,17 +244,6 @@
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : (U ty1 ty2)]]])
    
 ;; ---------------------------------
-;; set!
-
-;; TODO: use x instead of x-?
-(define-typed-syntax set!
-  [(set! x:id e) ≫
-   [⊢ [x ≫ x- ⇒ : ty_x]]
-   [⊢ [e ≫ e- ⇐ : ty_x]]
-   --------
-   [⊢ [_ ≫ (ro:set! x- e-) ⇒ : CUnit]]])
-
-;; ---------------------------------
 ;; vector
 
 ;; mutable constructor
@@ -261,9 +251,7 @@
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : τ] ...]
    --------
-   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : #,(if (stx-andmap concrete? #'(τ ...))
-                                        #'(CMVectorof (CU τ ...))
-                                        #'(CMVectorof (U τ ...)))]]])
+   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : (CMVectorof (U τ ...))]]])
 
 (provide (typed-out [vector? : LiftedPred]))
 
@@ -286,11 +274,12 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof τ)]]]
+   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof #,(if (concrete? #'τ) #'(U τ) #'τ))]]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
+   #:with [τ* ...] (stx-map (λ (τ) (if (concrete? τ) #`(U #,τ) τ)) #'[τ ...])
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVectorof τ) ...)]]]
+   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVectorof τ*) ...)]]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CList τ ...)]]
    --------
@@ -923,7 +912,7 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : τ]]
    --------
-   [⊢ [_ ≫ (ro:box e-) ⇒ : (CMBoxof τ)]]])
+   [⊢ [_ ≫ (ro:box e-) ⇒ : (CMBoxof #,(if (concrete? #'τ) #'(U τ) #'τ))]]])
 
 (define-typed-syntax box-immutable
   [(_ e) ≫
