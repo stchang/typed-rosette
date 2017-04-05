@@ -137,7 +137,10 @@
    [≻ (define f : (C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
         lam)]]
   ;; function with type declaration beforehand
-  [(_ (f:id/type-decl . (~and args (:id ... (~seq :keyword [:id :expr]) ...))) body ...+) ≫
+  [(_ (f:id/type-decl
+       . (~and args (~or (:id ... (~seq :keyword [:id :expr]) ...)
+                         (:id ... (~seq :keyword [:id :expr]) ... . :id))))
+      body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
    #:with lam (syntax/loc this-syntax (λ args body*))
    --------
