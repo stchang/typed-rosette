@@ -12,6 +12,7 @@
  "rosette/types.rkt"
  ;; import base forms
  (rename-in "rosette/base-forms.rkt" [#%app app])
+ "rosette/struct-type-properties.rkt"
  ;; base lang
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
@@ -21,6 +22,7 @@
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
+         prop:procedure struct-field-index
          (for-syntax get-pred expand/ro)
          CAny Any CNothing Nothing
          CU U (for-syntax ~CU* ~U*)

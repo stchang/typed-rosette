@@ -33,6 +33,9 @@
          ;; BV types
          CBV BV
          CBVPred BVPred
+         ;; Structure Type Properties
+         CStructTypeProp
+         (for-syntax ~CStructTypeProp)
          ;; Other base types
          CUnit Unit
          CZero Zero
@@ -282,6 +285,7 @@
 ;; ---------------------------------------------------------
 
 (define-type-constructor CSequenceof #:arity = 1)
+(define-type-constructor CStructTypeProp #:arity = 1)
 
 (begin-for-syntax
   (begin-for-syntax
