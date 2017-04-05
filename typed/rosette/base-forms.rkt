@@ -492,6 +492,15 @@
 ;; This version of let allows declaring variables as mutable
 
 (define-typed-syntax let
+  #:datum-literals [:]
+  [(_ name:id ~! ([x:id : τ_x:type e:expr] ...) :-> τ_out:type b ...+) ≫
+   [⊢ [e ≫ e- ⇐ τ_x] ...]
+   #:with body (syntax/loc this-syntax (begin b ...))
+   [[name ≫ name- : (C→ τ_x ... τ_out)]
+    [x ≫ x- : τ_x] ...
+    ⊢ body ≫ body- ⇐ τ_out]
+   --------
+   [⊢ (let- name- ([x- e-] ...) body-) ⇒ τ_out]]
   [(_ ([x m:mut-kw e] ...) e_body ...) ⇐ τ_expected ≫
    [⊢ [e ≫ e- ⇒ : τ_x] ...]
    #:with [τ_x* ...]
