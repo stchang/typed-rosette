@@ -847,11 +847,14 @@
                                                (C→ Num Num))]
                     [exact->inexact : (Ccase-> (C→ CNum CNum)
                                                (C→ Num Num))]
-                    [quotient : (Ccase-> (C→ CInt CInt CInt)
+                    [quotient : (Ccase-> (C→ CNat CNat CNat)
+                                         (C→ CInt CInt CInt)
                                          (C→ Int Int Int))]
-                    [remainder : (Ccase-> (C→ CInt CInt CInt)
+                    [remainder : (Ccase-> (C→ CNat CNat CNat)
+                                          (C→ CInt CInt CInt)
                                           (C→ Int Int Int))]
-                    [modulo : (Ccase-> (C→ CInt CInt CInt)
+                    [modulo : (Ccase-> (C→ CNat CNat CNat)
+                                       (C→ CInt CInt CInt)
                                        (C→ Int Int Int))]
                     
                     ;; rosette-specific
