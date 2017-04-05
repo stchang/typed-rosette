@@ -823,6 +823,8 @@
                     
                     [expt : (Ccase-> (C→ CNum CZero CPosInt)
                                      (C→ Num Zero PosInt)
+                                     (C→ CNat CNat CNat)
+                                     (C→ Nat Nat Nat)
                                      (C→ CInt CInt CInt)
                                      (C→ Int Int Int)
                                      (C→ CNum CNum CNum)
