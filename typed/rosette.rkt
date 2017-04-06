@@ -143,6 +143,8 @@
   [(_ e : ty:type) ≫
    [⊢ [e ≫ e- ⇒ : _]]
    #:with pred (get-pred #'ty.norm)
+   #:fail-when (and (not (syntax-e #'pred)) #'ty)
+   "type does not (or cannot) have an associated predicate"
    --------
    [⊢ [_ ≫ (ro:#%app assert-pred e- pred) ⇒ : ty.norm]]])  
 
