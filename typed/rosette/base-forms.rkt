@@ -39,6 +39,11 @@
             (= num-args (stx-length #'[τ_in ...]))
             (equal? kws (syntax->datum #'[kw ...])))]))
 
+  ;; U/preserve-concreteness : [StxListof Type] -> Type
+  (define (U/preserve-concreteness τs)
+    (cond [(stx-andmap concrete? τs) #`(CU #,@τs)]
+          [else #`(U #,@τs)]))
+
   ;; C→-map-union : [StxListof Type] -> Type
   ;; DO NOT USE for soundness. Only use after you have already checked
   ;; all the cases.
@@ -49,24 +54,26 @@
        "function types must have the same arity"
        #:fail-unless (all-equal? (stx-map syntax->datum #'[[kw ...] ...]))
        "function types must have the same keywords"
-       #:with [[τ_in* ...] ...] (transpose #'[[τ_in ...] ...])
+       #:with [τ_in* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_in ...] ...]))
        #:with [kw* ...] (stx-car #'[[kw ...] ...])
-       #:with [[τ_kw* ...] ...] (transpose #'[[τ_kw ...] ...])
-       #'(C→* [(U τ_in* ...) ...]
-              [[kw* (U τ_kw* ...)] ...]
-              (U τ_out ...))]
+       #:with [τ_kw* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_kw ...] ...]))
+       #:with τ_out* (U/preserve-concreteness #'[τ_out ...])
+       #'(C→* [τ_in* ...] [[kw* τ_kw*] ...] τ_out*)]
       [[(~C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out) ...]
        #:fail-unless (all-equal? (stx-map stx-length #'[[τ_in ...] ...]))
        "function types must have the same arity"
        #:fail-unless (all-equal? (stx-map syntax->datum #'[[kw ...] ...]))
        "function types must have the same keywords"
-       #:with [[τ_in* ...] ...] (transpose #'[[τ_in ...] ...])
+       #:with [τ_in* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_in ...] ...]))
        #:with [kw* ...] (stx-car #'[[kw ...] ...])
-       #:with [[τ_kw* ...] ...] (transpose #'[[τ_kw ...] ...])
-       #'(C→* [(U τ_in* ...) ...]
-              [[kw* (U τ_kw* ...)] ...]
-              #:rest (U τ_rst ...)
-              (U τ_out ...))]))
+       #:with [τ_kw* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_kw ...] ...]))
+       #:with τ_rst* (U/preserve-concreteness #'[τ_rst ...])
+       #:with τ_out* (U/preserve-concreteness #'[τ_out ...])
+       #'(C→* [τ_in* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out*)]))
   )
 
 ;; ----------------------------------------------------------------------------
