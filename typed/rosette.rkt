@@ -1345,10 +1345,21 @@
 (define-typed-syntax for/all
   ;; symbolic e
   [(_ ([x:id e]) e_body) ≫
+   ;; TODO: this is unsound!
+   ;; See issue #12
    [⊢ [e ≫ e- ⇒ : (~U* τ_x)]]
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
    --------
    [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : (U τ_body)]]]
+  ;; known concrete e
+  [(_ ([x:id e]) e_body) ≫
+   [⊢ [e ≫ e- ⇒ : τ_x]]
+   #:when (concrete? #'τ_x)
+   [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
+   --------
+   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_body]]]
+  ;; other, for example a symbolic constant, an Any type, or a symbolic union
+  ;; type that didn't pass the first case
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
