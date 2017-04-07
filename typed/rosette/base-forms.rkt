@@ -18,6 +18,55 @@
            (define-values [fst rst]
              (split-at lst (first lengths)))
            (cons fst (split-at* rst (rest lengths)))]))
+
+  ;; transpose : [StxListof [StxListof A]] -> [StxListof [StxListof A]]
+  (define (transpose lol)
+    (apply stx-map list (stx->list lol)))
+
+  (define ((equal?? a) b) (equal? a b))
+  (define (all-equal? lst)
+    (or (empty? lst) (andmap (equal?? (first lst)) (rest lst))))
+
+  ;; C→-arity-is? : Nat [Listof Kw] Bool -> [Type -> Bool]
+  (define ((C→-arity-is? num-args kws rest?) τ)
+    (syntax-parse τ
+      [(~C→* [τ_in ...] [[kw τ_kw] ...] τ_out)
+       (and (not rest?)
+            (= num-args (stx-length #'[τ_in ...]))
+            (equal? kws (syntax->datum #'[kw ...])))]
+      [(~C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
+       (and rest?
+            (= num-args (stx-length #'[τ_in ...]))
+            (equal? kws (syntax->datum #'[kw ...])))]))
+
+  ;; C→-map-union : [StxListof Type] -> Type
+  ;; DO NOT USE for soundness. Only use after you have already checked
+  ;; all the cases.
+  (define (C→-map-union τs)
+    (syntax-parse τs
+      [[(~C→* [τ_in ...] [[kw τ_kw] ...] τ_out) ...]
+       #:fail-unless (all-equal? (stx-map stx-length #'[[τ_in ...] ...]))
+       "function types must have the same arity"
+       #:fail-unless (all-equal? (stx-map syntax->datum #'[[kw ...] ...]))
+       "function types must have the same keywords"
+       #:with [[τ_in* ...] ...] (transpose #'[[τ_in ...] ...])
+       #:with [kw* ...] (stx-car #'[[kw ...] ...])
+       #:with [[τ_kw* ...] ...] (transpose #'[[τ_kw ...] ...])
+       #'(C→* [(U τ_in* ...) ...]
+              [[kw* (U τ_kw* ...)] ...]
+              (U τ_out ...))]
+      [[(~C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out) ...]
+       #:fail-unless (all-equal? (stx-map stx-length #'[[τ_in ...] ...]))
+       "function types must have the same arity"
+       #:fail-unless (all-equal? (stx-map syntax->datum #'[[kw ...] ...]))
+       "function types must have the same keywords"
+       #:with [[τ_in* ...] ...] (transpose #'[[τ_in ...] ...])
+       #:with [kw* ...] (stx-car #'[[kw ...] ...])
+       #:with [[τ_kw* ...] ...] (transpose #'[[τ_kw ...] ...])
+       #'(C→* [(U τ_in* ...) ...]
+              [[kw* (U τ_kw* ...)] ...]
+              #:rest (U τ_rst ...)
+              (U τ_out ...))]))
   )
 
 ;; ----------------------------------------------------------------------------
@@ -174,6 +223,22 @@
                                        (list (length (stx->list #'[x ...]))))
    ---------
    [⊢ (ro:λ (x- ... . rst-) e-)]]
+  ;; use case-> expected type, no rest argument
+  [(_ (~and args (~or (x:id ... (~seq kw:keyword [y:id e_def:expr]) ...)
+                      (x:id ... (~seq kw:keyword [y:id e_def:expr]) ... . rst:id)))
+     body)
+   ⇐ (~Ccase-> τ_expected ...) ≫
+   #:fail-unless (stx-andmap (C→-arity-is? (stx-length #'[x ...])
+                                           (syntax->datum #'[kw ...])
+                                           (not (false? (attribute rst))))
+                             #'[τ_expected ...])
+   "wrong number of arguments"
+   [⊢ (λ args body) ≫ _ ⇐ τ_expected]
+   ...
+   #:with τ_unionized (C→-map-union #'[τ_expected ...])
+   [⊢ (λ args body) ≫ f- ⇐ τ_unionized]
+   ---------
+   [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
@@ -338,10 +403,10 @@
             (list kw τ)))
         (and (typechecks? #'[τ_a ...] #'[τ_a* ...])
              (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
-                       [b (in-list (syntax->list #'[b ...]))])
+                       [τ_b (in-list (syntax->list #'[τ_b ...]))])
                (define p (assoc kw kws/τs*))
                (and p
-                    (typecheck? b (second p))))
+                    (typecheck? τ_b (second p))))
              #'τ_out)]
        [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out)
         #:when (stx-length>=? #'[τ_a ...] #'[τ_a* ...])
@@ -354,10 +419,10 @@
         (and (typechecks? #'[τ_fst ...] #'[τ_a* ...])
              (typecheck? ((current-type-eval) #'(CList τ_rst ...)) #'τ_rst*)
              (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
-                       [b (in-list (syntax->list #'[b ...]))])
+                       [τ_b (in-list (syntax->list #'[τ_b ...]))])
                (define p (assoc kw kws/τs*))
                (and p
-                    (typecheck? b (second p))))
+                    (typecheck? τ_b (second p))))
              #'τ_out)]
        [_ #false]))
    #:fail-unless (syntax-e #'τ_out)
