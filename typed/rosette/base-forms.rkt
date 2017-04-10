@@ -1,6 +1,6 @@
 #lang turnstile
 
-(provide : define set! λ apply ann begin list
+(provide : define set! λ apply curry compose ann begin list
          let
          (rename-out [app #%app])
          unsafe-assign-type unsafe-define/assign-type
@@ -174,10 +174,10 @@
   [(_ (f:id [x:id : τ_in] ... [kw:keyword y:id : τ_kw e_def:expr] ...)
       :-> τ_out
       body ...+) ≫
-   #:with body* (syntax/loc this-syntax (begin body ...))
+   #:with body* (syntax/loc this-syntax (ann (begin body ...) : τ_out))
    #:with lam (syntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ...)
-                  (ann body* : τ_out)))
+                  body*))
    --------
    [≻ (define f : (C→ τ_in ... [kw τ_kw] ... τ_out)
         lam)]]
@@ -185,10 +185,10 @@
   [(_ (f:id [x:id : τ_in] ... [kw:keyword y:id : τ_kw e_def:expr] ... . [rst:id : τ_rst])
       :-> τ_out
       body ...+) ≫
-   #:with body* (syntax/loc this-syntax (begin body ...))
+   #:with body* (syntax/loc this-syntax (ann (begin body ...) : τ_out))
    #:with lam (syntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ... . [rst : τ_rst])
-                  (ann body* : τ_out)))
+                  body*))
    --------
    [≻ (define f : (C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
         lam)]]
@@ -322,9 +322,12 @@
 
 (define-typed-syntax app
   ;; concrete functions
+  ;; no rest arg
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
+;   #:do[(printf "applying: ~a\n" #'f)]
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
    #:with f-- (expand/ro #'f)
+;   #:do[(displayln    (typeof #'f--))]
    #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)
    (typeof #'f--)
    #:with f- (replace-stx-loc #'f-- #'f)
@@ -345,6 +348,9 @@
    #:with [b- ...] (stx-map expand/ro #'[b ...])
    #:with [τ_a* ...] (stx-map typeof #'(a- ...))
    #:with [τ_b* ...] (stx-map typeof #'(b- ...))
+   ;; #:do[(stx-map
+   ;;       (λ (a b) (printf "1) ~a\n2) ~a\n" (stx->datum a) (stx->datum b)))
+   ;;       #'[τ_a* ... τ_b* ...] #'[τ_a ... τ_b ...])]
    #:fail-unless (typechecks? #'[τ_a* ... τ_b* ...] #'[τ_a ... τ_b ...])
    (typecheck-fail-msg/multi #'[τ_a ... τ_b ...] #'[τ_a* ... τ_b* ...]
                              #'[a ... b ...])
@@ -542,6 +548,25 @@
    #:fail-unless (syntax-e #'τ_out) "none of the cases matched"
    --------
    [⊢ (ro:apply f- lst-) ⇒ τ_out]])
+
+(define-typed-syntax curry
+  [(_ f x) ≫
+   [⊢ f ≫ f- ⇒ (~C→ ty0 ty ... ty-out)]
+   [⊢ x ≫ x- ⇐ ty0]
+   -------
+   [⊢ (ro:curry f- x-) ⇒ (C→ ty ... ty-out)]])
+
+;; TODO: support case->
+(define-typed-syntax compose
+  [(_ f0 f ... fn) ≫
+   [⊢ f0 ≫ f0- ⇒ (~C→ ty-in0 ty-out0)]
+   [⊢ f ≫ f- ⇒ (~C→ ty-in ty-out)] ...
+   [⊢ fn ≫ fn- ⇒ (~C→ ty-inn ty-outn)]
+   #:with (ty ...) (stx-flatten #'((ty-in ty-out) ...))
+   #:when (typechecks? #'(ty-outn ty ...)
+                       #'(ty ... ty-in0))
+   -------
+   [⊢ (ro:compose f0- f- ... fn-) ⇒ (C→ ty-inn ty-out0)]])
 
 ;; ----------------------------------------------------------------------------
 

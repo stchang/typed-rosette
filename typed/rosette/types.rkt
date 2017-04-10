@@ -23,13 +23,15 @@
          ;; Other container types
          CHashTable
          CSequenceof
-         CBoxof CMBoxof CIBoxof MBoxof  IBoxof
+         CISetof CMSetof
+         CBoxof CMBoxof CIBoxof MBoxof IBoxof
          CVectorof CMVectorof CIVectorof CVector
          Vectorof MVectorof IVectorof
          (for-syntax ~CHashTable
                      ~CSequenceof
                      ~CMBoxof ~CIBoxof
-                     ~CMVectorof ~CIVectorof)
+                     ~CMVectorof ~CIVectorof
+                     ~CMSetof ~CISetof)
          ;; BV types
          CBV BV
          CBVPred BVPred
@@ -77,7 +79,7 @@
            [→ C→/normal] [~→ ~C→/normal] [→? C→/normal?]
            [~True ~CTrue] [~False ~CFalse]
            [~String ~CString]
-           [~Unit ~CUnit])
+           [~Unit ~CUnit] [~False ~CFalse])
          (only-in turnstile/examples/stlc+cons
            [List CListof] [~List ~CListof])
          (prefix-in ro: rosette)
@@ -107,8 +109,10 @@
 ;; CMVectorof includes only mutable vectors
 (define-type-constructor CIVectorof #:arity = 1)
 (define-type-constructor CIBoxof #:arity = 1)
+(define-type-constructor CISetof #:arity = 1)
 (define-internal-type-constructor CMVectorof) ; #:arity = 1
 (define-internal-type-constructor CMBoxof) ; #:arity = 1
+(define-internal-type-constructor CMSetof) ; #:arity = 1
 
 (define-typed-syntax (CMVectorof τ:type) ≫
   #:fail-when (and (concrete? #'τ.norm) #'τ)
@@ -120,6 +124,11 @@
   "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMBoxof- τ.norm) ⇒ :: #%type])
+(define-typed-syntax (CMSetof τ:type) ≫
+  #:fail-when (and (concrete? #'τ.norm) #'τ)
+  "Mutable locations must have types that allow for symbolic values"
+  --------
+  [⊢ (CMSetof- τ.norm) ⇒ :: #%type])
 
 ;; TODO: Hash subtyping?
 ;; - invariant for now, like TR, though Rosette only uses immutable hashes?
@@ -330,6 +339,9 @@
                      (NoRestArg-)
                      τ_out-)
       ⇒ :: #%type]]
+  [(_ #:rest τ_rst τ_out:expr*) ≫
+   --------
+   [≻ (C→* [] [] #:rest τ_rst τ_out)]]
   [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] #:rest τ_rst τ_out:expr*) ≫
    [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
    [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]

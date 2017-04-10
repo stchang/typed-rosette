@@ -1,6 +1,6 @@
 #lang turnstile
 (extends typed/main #:prefix rosette:
- #:except : ! #%app || && void = * + - / #%datum if assert verify < <= > >=)
+ #:except : ! #%app || && void = * + - / #%datum if assert verify < <= > >= for range)
 (require (prefix-in ro: (combine-in rosette rosette/lib/synthax))
          (prefix-in cl: "synthcl-model.rkt")
          (only-in "../../typed/rosette.rkt" ~CUnit))
@@ -199,7 +199,7 @@
          (define len-str (caddr split-ty))]
    #:do [(define sels (length (stx->list #'selector)))]
    #:with e-out (if (= sels 1) #'(ro:vector-ref vec- (ro:car 'selector))
-                               #'(for/list ([idx 'selector])
+                               #'(ro:for/list ([idx 'selector])
                                    (ro:vector-ref vec- idx)))
    #:with ty-out ((current-type-eval)
                   (if (= sels 1) (format-id #'here "~a" base-str)
