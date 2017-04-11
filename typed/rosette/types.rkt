@@ -79,7 +79,7 @@
            [→ C→/normal] [~→ ~C→/normal] [→? C→/normal?]
            [~True ~CTrue] [~False ~CFalse]
            [~String ~CString]
-           [~Unit ~CUnit] [~False ~CFalse])
+           [~Unit ~CUnit])
          (only-in turnstile/examples/stlc+cons
            [List CListof] [~List ~CListof])
          (prefix-in ro: rosette)

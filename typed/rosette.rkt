@@ -188,7 +188,16 @@
     #:property prop:procedure (struct-field-index fn)
     #:property prop:struct-info (λ (x) (extract-struct-info
                                         (syntax-local-value
-                                         (typed-struct-id x))))))
+                                         (typed-struct-id x)))))
+  (define (id-UPCASE stx)
+    (unless (identifier? stx)
+      (error 'stx-upcase "Expected identifier, given ~a" stx))
+    (define chars (string->list (symbol->string (syntax->datum stx))))
+    (define CHARS (map char-upcase chars))
+    (datum->syntax 
+     stx 
+     (string->symbol (apply string CHARS)))))
+
 ;; ---------------------------------
 ;; Racket forms
 
