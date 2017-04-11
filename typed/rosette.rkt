@@ -43,6 +43,7 @@
          CListof Listof CList CPair Pair
          (for-syntax ~CListof)
          CVectorof MVectorof IVectorof Vectorof CMVectorof CIVectorof CVector
+         (for-syntax ~CMVectorof)
          CISetof CMSetof
          CParamof ; TODO: symbolic Param not supported yet
          CBoxof MBoxof IBoxof CMBoxof CIBoxof CHashTable
@@ -198,11 +199,12 @@
    #:fail-when #t "Missing type annotations for fields"
    --------
    [_ ≻ (ro:struct name (x ...) . rst)]]
-  [(_ name:id ([x:id : ty:type . xrst] ...) . kws) ≫
-   #:fail-unless (id-lower-case? #'name)
-                 (format "Expected lowercase struct name, given ~a" #'name)
+  [(_ name:id (~optional maybe-super:id)
+      ([x:id : ty:type . xrst] ...) . kws) ≫
    #:with name* (generate-temporary #'name)
-   #:with Name (id-upcase #'name)
+   #:with Name (if (id-lower-case? #'name)
+                   (id-upcase #'name)
+                   (id-UPCASE #'name))
    #:with CName (format-id #'name "C~a" #'Name)
    #:with TyOut #'(Name ty ...)
    #:with CTyOut #'(CName ty ...)
@@ -212,25 +214,26 @@
    #:with (set-x* ...) (stx-map (λ (f) (format-id #'name* "set-~a-~a!" #'name* f)) #'(x ...))
    #:with name? (format-id #'name "~a?" #'name)
    #:with name?* (format-id #'name* "~a?" #'name*)
+   #:with sups (if (attribute maybe-super) #'(maybe-super) #'())
    --------
-   [_ ≻ (ro:begin
-          (ro:struct name* ([x . xrst] ...) . kws)
-          (define-type-constructor CName #:arity = #,(stx-length #'(x ...)))
-          (define-named-type-alias (Name x ...) (U (CName x ...)))
-          (define-syntax name   ; constructor
-            (typed-struct
-             #'name* 
-             (make-variable-like-transformer
-              (assign-type #'name* #'(C→ ty ... CTyOut)))))
-          (define-syntax name?  ; predicate
-            (make-variable-like-transformer 
-             (assign-type #'name?* #'LiftedPred)))
-          (define-syntax name-x ; accessors
-            (make-variable-like-transformer 
-             (assign-type #'name-x* #'(C→ TyOut ty)))) ...
-          (define-syntax set-x ; setters
-            (make-variable-like-transformer
-             (assign-type #'set-x* #'(C→ TyOut ty CUnit)))) ...)]])
+   [≻ (ro:begin
+       (ro:struct name* #,@#'sups ([x . xrst] ...) . kws)
+       (define-type-constructor CName #:arity = #,(stx-length #'(x ...)))
+       (define-named-type-alias (Name x ...) (U (CName x ...)))
+       (define-syntax name   ; constructor
+         (typed-struct
+          #'name* 
+          (make-variable-like-transformer
+           (assign-type #'name* #'(C→ ty ... CTyOut)))))
+       (define-syntax name?  ; predicate
+         (make-variable-like-transformer 
+          (assign-type #'name?* #'LiftedPred)))
+       (define-syntax name-x ; accessors
+         (make-variable-like-transformer 
+          (assign-type #'name-x* #'(C→ TyOut ty)))) ...
+       (define-syntax set-x ; setters
+         (make-variable-like-transformer
+          (assign-type #'set-x* #'(C→ TyOut ty CUnit)))) ...)]])
 
 ;; TODO: add type rules for generics
 (define-typed-syntax define-generics #:datum-literals (: ->)
@@ -430,21 +433,21 @@
 ;; ---------------------------------
 ;; for loops (not rosette/safe)
 (define-typed-syntax for/and
-  [(_ ([x:id seq]) e) ≫ ; TODO: define pat expander for "sequence"
+  [(_ ([x:id seq]) e ...) ≫ ; TODO: define pat expander for "sequence"
    [⊢ seq ≫ seq- ⇒ (~CMVectorof τ)]
-   [[x ≫ x- : τ] ⊢ e ≫ e- ⇐ CBool]
+   [[x ≫ x- : τ] ⊢ (begin e ...) ≫ e- ⇐ CBool]
    --------------
    [⊢ (for/and- ([x- seq-]) e-) ⇒ CBool]])
 
 (define-typed-syntax for/or
-  [(_ ([x:id seq]) e) ≫ ; TODO: define pat expander for "sequence"
+  [(_ ([x:id seq]) e ...) ≫ ; TODO: define pat expander for "sequence"
    [⊢ seq ≫ seq- ⇒ (~CMVectorof τ)]
-   [[x ≫ x- : τ] ⊢ e ≫ e- ⇒ ty]
+   [[x ≫ x- : τ] ⊢ (begin e ...) ≫ e- ⇒ ty]
    --------------
    [⊢ (for/or- ([x- seq-]) e-) ⇒ (CU CFalse ty)]]
-  [(_ ([x:id seq] ...) e) ≫ ; TODO: define pat expander for "sequence"
+  [(_ ([x:id seq] ...) e ...) ≫ ; TODO: define pat expander for "sequence"
    [⊢ seq ≫ seq- ⇐ CNat] ...
-   [[x ≫ x- : CNat] ... ⊢ e ≫ e- ⇒ ty]
+   [[x ≫ x- : CNat] ... ⊢ (begin e ...) ≫ e- ⇒ ty]
    --------------
    [⊢ (for/or- ([x- seq-] ...) e-) ⇒ (CU CFalse ty)]])
 
@@ -1557,6 +1560,10 @@
   [(_) ≫
    --------
    [⊢ (ro:or) ⇒ CFalse]]
+  [(_ e ...) ≫
+   [⊢ e ≫ e- ⇐ CBool] ...
+   --------
+   [⊢ (ro:or e- ...) ⇒ CBool]]
   [(_ e ...) ≫
    [⊢ e ≫ e- ⇐ Bool] ...
    --------
