@@ -25,6 +25,7 @@
          prop:procedure struct-field-index
          (for-syntax get-pred expand/ro)
          CAny Any CNothing Nothing
+         Term
          CU U (for-syntax ~CU* ~U*)
          Constant
          C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
@@ -43,7 +44,7 @@
          CInt Int
          CFloat Float
          CNum Num
-         CFalse CTrue CBool Bool
+         CFalse CTrue CBool False True Bool
          CString String (for-syntax CString?)
          CStx ; symblic Stx not supported
          CSymbol
@@ -234,7 +235,9 @@
    [⊢ [e_tst ≫ e_tst- ⇒ : ty_tst]]
    #:when (or (concrete? #'ty_tst) ; either concrete
               ; or non-bool symbolic
-              (not (typecheck? #'ty_tst ((current-type-eval) #'Bool))))
+              ; (not a super-type of CFalse)
+              (and (not (typecheck? ((current-type-eval) #'CFalse) #'ty_tst))
+                   (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) #'ty_tst))))
    [⊢ [e1 ≫ e1- ⇒ : ty1]]
    [⊢ [e2 ≫ e2- ⇒ : ty2]]
    #:when (and (concrete? #'ty1) (concrete? #'ty2))
@@ -244,8 +247,9 @@
    [⊢ [e_tst ≫ e_tst- ⇒ : _]]
    [⊢ [e1 ≫ e1- ⇒ : ty1]]
    [⊢ [e2 ≫ e2- ⇒ : ty2]]
+   #:with τ_out (type-merge #'ty1 #'ty2)
    --------
-   [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : (U ty1 ty2)]]])
+   [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
    
 ;; ---------------------------------
 ;; vector
@@ -254,8 +258,10 @@
 (define-typed-syntax vector
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : τ] ...]
+   #:with τ* (type-merge*
+              (stx-map type-merge #'[τ ...] #'[τ ...]))
    --------
-   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : (CMVectorof (U τ ...))]]])
+   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : (CMVectorof (U τ*))]]])
 
 (provide (typed-out [vector? : LiftedPred]))
 
@@ -304,6 +310,14 @@
    [⊢ [n ≫ n- ⇐ : Int]]
    --------
    [⊢ [_ ≫ (ro:vector-ref e- n-) ⇒ : (U τ ...)]]])
+
+(define-typed-syntax vector-set!
+  [(_ v:expr i:expr x:expr) ≫
+   [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
+   [⊢ i ≫ i- ⇐ Nat]
+   [⊢ x ≫ x- ⇐ τ]
+   --------
+   [⊢ (ro:vector-set! v- i- x-) ⇒ CUnit]])
 
 ;; ---------------------------------
 ;; hash tables
@@ -874,9 +888,9 @@
   [_:id ≫
    --------
    [⊢ (mark-solvablem
-       (add-typeform
-        ro:boolean?
-        Bool)) ⇒ LiftedPred]]
+       ro:boolean?)
+      (⇒ : LiftedPred)
+      (⇒ typefor (Term CBool))]]
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ ty]
    --------
@@ -887,9 +901,9 @@
   [_:id ≫
    --------
    [⊢ (mark-solvablem
-       (add-typeform
-        ro:integer?
-        Int)) ⇒ LiftedPred]]
+       ro:integer?)
+      (⇒ : LiftedPred)
+      (⇒ typefor (Term CInt))]]
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ ty]
    --------
@@ -900,9 +914,9 @@
   [_:id ≫
    --------
    [⊢ (mark-solvablem
-       (add-typeform
-        ro:real?
-        Num)) ⇒ LiftedPred]]
+       ro:real?)
+      (⇒ : LiftedPred)
+      (⇒ typefor (Term CNum))]]
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ ty]
    --------
@@ -921,7 +935,7 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : τ]]
    --------
-   [⊢ [_ ≫ (ro:box e-) ⇒ : (CMBoxof #,(if (concrete? #'τ) #'(U τ) #'τ))]]])
+   [⊢ [_ ≫ (ro:box e-) ⇒ : (CMBoxof #,(type-merge #'τ #'τ))]]])
 
 (define-typed-syntax box-immutable
   [(_ e) ≫
@@ -936,8 +950,9 @@
    [⊢ [_ ≫ (ro:unbox e-) ⇒ : τ]]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~and (~or (~CMBoxof τ) (~CIBoxof τ))) ...)]]
+   #:with τ_out (type-merge* #'[τ ...])
    --------
-   [⊢ [_ ≫ (ro:unbox e-) ⇒ : (U τ ...)]]])
+   [⊢ [_ ≫ (ro:unbox e-) ⇒ : τ_out]]])
 
 ;; TODO: implement multiple values
 ;; result type should be (Valuesof ty CAsserts)
@@ -1031,9 +1046,9 @@
    [⊢ n ≫ n- ⇐ CPosInt]
    --------
    [⊢ (mark-solvablem
-       (add-typeform
-        (ro:bitvector n-)
-        BV)) ⇒ CBVPred]])
+       (ro:bitvector n-))
+      (⇒ : CBVPred)
+      (⇒ typefor (Term CBV))]])
 
 ;; bitvector? can produce type CFalse if input does not have type (C→ Any Bool)
 ;; result is always CBool, since anything symbolic returns false
@@ -1067,9 +1082,9 @@
    --------
    [⊢ (mark-solvablem
        (mark-functionm
-        (add-typeform
-         (ro:~> pred?- ... out-)
-         (→ ty ... ty-out)))) ⇒ LiftedPred]])
+        (ro:~> pred?- ... out-)))
+      (⇒ : LiftedPred)
+      (⇒ typefor (Term (C→ (U ty) ... ty-out)))]])
 
 (provide (typed-out [fv? : LiftedPred]))
 
@@ -1130,7 +1145,7 @@
    [⊢ [e ≫ e- ⇒ : ty] ...]
    [⊢ [elast ≫ elast- ⇒ : ty-last]]
    --------
-   [⊢ [_ ≫ (ro:and e- ... elast-) ⇒ : (U CFalse ty-last)]]])
+   [⊢ [_ ≫ (ro:and e- ... elast-) ⇒ : #,(type-merge typeCFalse #'ty-last)]]])
 (define-typed-syntax or
   [(_) ≫
    --------
@@ -1142,7 +1157,7 @@
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : ty] ...]
    --------
-   [⊢ [_ ≫ (ro:or efirst- e- ...) ⇒ : (U ty ...)]]])
+   [⊢ [_ ≫ (ro:or e- ...) ⇒ : #,(type-merge* (cons typeCFalse #'[ty ...]))]]])
 (define-typed-syntax nand
   [(_) ≫
    --------
@@ -1345,12 +1360,18 @@
 (define-typed-syntax for/all
   ;; symbolic e
   [(_ ([x:id e]) e_body) ≫
-   ;; TODO: this is unsound!
-   ;; See issue #12
-   [⊢ [e ≫ e- ⇒ : (~U* τ_x)]]
+   [⊢ [e ≫ e- ⇒ : (~U* τ_case ...)]]
+   #:with τ_x (cond [(= 1 (stx-length #'[τ_case ...]))
+                     (stx-car #'[τ_case ...])]
+                    [(stx-andmap concrete? #'[τ_case ...])
+                     #'(CU τ_case ...)]
+                    [else
+                     #'(U τ_case ...)])
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
+   ;; Merge the τ_body with itself
+   #:with τ_out (type-merge #'τ_body #'τ_body)
    --------
-   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : (U τ_body)]]]
+   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]]
   ;; known concrete e
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
@@ -1363,8 +1384,10 @@
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
+   ;; Merge the τ_body with itself
+   #:with τ_out (type-merge #'τ_body #'τ_body)
    --------
-   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : (U τ_body)]]])
+   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]])
 
 (define-typed-syntax for*/all
   [(_ () e_body) ≫

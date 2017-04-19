@@ -52,7 +52,7 @@
 ;(check-type (evaluate x sol) : Int -> 0)
 (check-type (inexact->exact (evaluate x sol)) : Num -> 0)
 ;; check soundness of Constant
-(check-not-type (evaluate x sol) : (Constant Num))
+(check-not-type (evaluate x sol) : (Constant (Term CNum)))
 ; we can apply g to concrete values
 (check-type (g 2) : Bool -> #t)
 ; and to symbolic values

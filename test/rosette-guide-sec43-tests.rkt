@@ -20,12 +20,20 @@
 (check-type (asserts) : (CListof Bool) -> (list b)) ; Rosette emits an appropriate assertion
 (clear-asserts!)
 
+(check-type b : Bool -> b)
+(check-type b : (Term CBool) -> b)
+(check-not-type b : CBool)
+
 ;; bitvector
 (define bv6? (bitvector 6))
 (check-type (bv6? 1) : Bool -> #f)
 (check-type (bv6? (bv 3 6)) : Bool -> #t)
 (check-type (bv6? (bv 3 5)) : Bool -> #f)
+
 ;(define-symbolic b boolean?)
+(check-type (if b (bv 3 6) #t) : (U CBV CBool))
+(check-not-type (if b (bv 3 6) #t) : (CU CBV CBool))
+
 (check-type (bv6? (if b (bv 3 6) #t)) : Bool -> b)
 (check-not-type (bv6? (if b (bv 3 6) #t)) : CBool)
 

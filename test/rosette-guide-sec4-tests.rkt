@@ -242,7 +242,7 @@
                 #:with-msg "Expected list of symbolic constants, given list containing: PosInt")
 (typecheck-fail (exists (list (+ a1 b1)) (= a1 b1)) 
                 #:with-msg "Expected list of symbolic constants, given list containing: Int")
-(check-type (cons a1 (cons b (list))) : (CList (Constant Int) (Constant Bool)))
+(check-type (cons a1 (cons b (list))) : (CList (Constant (Term CInt)) (Constant (Term CBool))))
 (typecheck-fail (forall (list 1) (= a1 b1)) 
                 #:with-msg "Expected list of symbolic constants, given list containing: PosInt")
 (typecheck-fail (forall (list (+ a1 b1)) (= a1 b1)) 

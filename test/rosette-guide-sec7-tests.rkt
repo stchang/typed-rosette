@@ -75,7 +75,7 @@
 (check-type v2 : (U CString CInt))
 (check-type v2 : (U CString CZero))
 (define u (if b (vector v2) 4))
-(check-type u : (U (CVectorof (U CString CZero)) Int)) ;{[b #({[c "c"] [(! c) 0]})] [(! b) 4]}
+(check-type u : (U (CVectorof (U String Zero)) Int)) ;{[b #({[c "c"] [(! c) 0]})] [(! b) 4]}
 (check-type (type-of u) : (C→ Any Bool) -> any/c)
 
 (check-type '(1 2) : (CListof CPosInt))
@@ -122,7 +122,7 @@
 (define (slow [xs : (Listof CInt)]) -> (U CFalse Int)
   (and (= (length xs) limit) (car (map add1 xs))))
  
-(define (fast [xs : (Listof CInt)]) -> (U CFalse Int)
+(define (fast [xs : (Listof CInt)]) -> (U False Int)
   (for/all ([xs xs]) (slow xs)))
 
 (define ys (build-list limit (lambda ([x : CNat]) x)))
@@ -137,7 +137,7 @@
 (check-type (time (slow xs)) : (U CFalse Int) -> (if a 1 #f))
 ;; cpu time: 1 real time: 2 gc time: 0
 ;; {[a 1] [(! a) #f]}
-(check-type (time (fast xs)) : (U CFalse Int) -> (if a 1 #f))
+(check-type (time (fast xs)) : (U False Int) -> (if a 1 #f))
 ;; cpu time: 0 real time: 0 gc time: 0
 ;; {[a 1] [(! a) #f]}
 (printf "First printed time should be slightly slower than second time\n")

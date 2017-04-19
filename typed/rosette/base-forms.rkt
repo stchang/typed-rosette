@@ -101,8 +101,6 @@
   (define type-decl-internal-id 'type-decl-internal-id)
   (define type-decl-internal-id-for 'type-decl-internal-id-for)
   (define type-decl-mutable 'type-decl-mutable)
-  (define typeCTrue ((current-type-eval) #'CTrue))
-  (define typeCFalse ((current-type-eval) #'CFalse))
   (define (typebool->bool b)
     (syntax-parse b [~CTrue #true] [~CFalse #false]))
   (define-syntax-class id/type-decl
@@ -125,6 +123,14 @@
    #:with x- (generate-temporary #'x)
    #:fail-when (and (attribute mut.mutable?) (concrete? #'τ.norm) #'τ)
    "Mutable variables must have types that allow for symbolic values"
+   #:with τ_merged (type-merge #'τ.norm #'τ.norm)
+   #:fail-when (and (attribute mut.mutable?)
+                    (not (typecheck? #'τ_merged #'τ.norm))
+                    #'τ)
+   (format (string-append
+            "Mutable variable type must allow for Rosette's symbolic merging\n"
+            "  merged type: ~a")
+           (type->str #'τ_merged))
    --------
    [≻ (define-syntax- x
         (make-variable-like-transformer
@@ -493,11 +499,13 @@
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
    --------
    [⊢ (ro:#%app f- a- ... kw/b- ... ...) ⇒ (U τ_out ...)]]
-  ;; symbolic constant functions
+  ;; symbolic constant and functions
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ [f ≫ f-- ⇒ : (~and (~Constant* (~U* τ_f ...)) ~!)]]
    #:with f-- (expand/ro #'f)
-   #:with (~Constant* (~U* τ_f ...)) (typeof #'f--)
+   #:with (~or (~Term* τ_f)
+               (~Constant* (~Term* τ_f)))
+   (typeof #'f--)
    #:with f- (replace-stx-loc #'f-- #'f)
    ;[⊢ [a ≫ a- ⇒ : τ_a] ...]
    ;[⊢ [b ≫ b- ⇒ : τ_b] ...]
@@ -511,10 +519,9 @@
    #:with [[kw/b* ...] ...] #'[[kw b*] ...]
    [([f* ≫ _ : τ_f] [a* ≫ _ : τ_a] ... [b* ≫ _ : τ_b] ...)
     ⊢ [(app f* a* ... kw/b* ... ...) ≫ _ ⇒ : τ_out]]
-   ...
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
    --------
-   [⊢ [_ ≫ (ro:#%app f- a- ... kw/b- ... ...) ⇒ : (U τ_out ...)]]])
+   [⊢ [_ ≫ (ro:#%app f- a- ... kw/b- ... ...) ⇒ : τ_out]]])
 
 ;; ----------------------------------------------------------------------------
 
@@ -576,7 +583,7 @@
   [(_ ([x m:mut-kw e] ...) e_body ...) ⇐ τ_expected ≫
    [⊢ [e ≫ e- ⇒ : τ_x] ...]
    #:with [τ_x* ...]
-   (stx-map (λ (τ mut?) (if mut? #`(U #,τ) τ))
+   (stx-map (λ (τ mut?) (if mut? (type-merge τ τ) τ))
             #'[τ_x ...]
             (attribute m.mutable?))
    [[x ≫ x- : τ_x* type-decl-mutable m.mutable?/tb] ...
@@ -586,7 +593,7 @@
   [(_ ([x m:mut-kw e] ...) e_body ...) ≫
    [⊢ [e ≫ e- ⇒ : τ_x] ...]
    #:with [τ_x* ...]
-   (stx-map (λ (τ mut?) (if mut? #`(U #,τ) τ))
+   (stx-map (λ (τ mut?) (if mut? (type-merge τ τ) τ))
             #'[τ_x ...]
             (attribute m.mutable?))
    [[x ≫ x- : τ_x* type-decl-mutable m.mutable?/tb] ...

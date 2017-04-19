@@ -118,3 +118,57 @@
 
 ;; 3.2.8 Reasoning Precision
 ;; see rosette-guide-sec2-tests.rkt, Sec 2.4 Symbolic Reasoning
+
+;; ------------------------------------------------------------------------
+
+;; Safe vector mutation
+
+(define y2 (vector 0 1 2))
+
+(define-symbolic b1 b2 boolean?)
+
+;; If b1 is true, then y2[1] should be 3, otherwise y2[2] should be 4:
+(check-type (if b1
+                (vector-set! y2 1 3)
+                (vector-set! y2 2 4))
+            : Unit
+            -> (void))
+
+;; These are safe `vector-set!`s, so the state of y correctly
+;; accounts for both possibilities:
+;;  * If the solver finds that b1 must be #t, then the contents
+;;    of y2 will be (vector 0 3 2)
+;;  * Otherwise, the contents of y2 wil be (vector 0 1 4)
+(check-type y2 : (MVectorof Nat)
+            -> (vector 0 (if b1 3 1) (if b1 2 4)))
+
+(define env1 (solve (assert b1)))
+(check-type (evaluate y2 env1)
+            : (MVectorof Nat)
+            -> (vector 0 3 2))
+
+(define env2 (solve (assert (not b1))))
+(check-type (evaluate y2 env2)
+            : (MVectorof Nat)
+            -> (vector 0 1 4))
+
+(define y3 (vector 0 1 2))
+
+;; If b2 is true, then y3[1] should be 5, otherwise y3[2] should be 5:
+(check-type (vector-set! y3 (if b2 1 2) 5)
+            : Unit
+            -> (void))
+
+(check-type y3 : (MVectorof Nat)
+            -> (vector 0 (if b2 5 1) (if b2 2 5)))
+
+(define env3 (solve (assert b2)))
+(check-type (evaluate y3 env3)
+            : (MVectorof Nat)
+            -> (vector 0 5 2))
+
+(define env4 (solve (assert (not b2))))
+(check-type (evaluate y3 env4)
+            : (MVectorof Nat)
+            -> (vector 0 1 5))
+

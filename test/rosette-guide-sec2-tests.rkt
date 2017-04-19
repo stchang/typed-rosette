@@ -6,23 +6,24 @@
 
 (define-symbolic b boolean?)
 (check-type b : Bool)
+(check-type b : (Term CBool))
+(check-type b : (Constant (Term CBool)))
 (check-type (boolean? b) : Bool -> #t)
 (check-type (integer? b) : Bool -> #f)
 
 ;; TODO: fix these tests?
-(check-type (vector b 1) : (CMVectorof (U (Constant Bool) CPosInt)) -> (vector b 1))
+(check-type (vector b 1) : (CMVectorof (U Bool PosInt)) -> (vector b 1))
 ;; mut vectors are invariant
 (check-not-type (vector b 1) : (CMVectorof (U Bool CPosInt)))
 (check-not-type (vector b 1) : (CIVectorof (U Bool CPosInt)))
 (check-not-type (vector b 1) : (CMVectorof Bool))
-(check-type (vector b 1) : (CMVectorof (U (Constant Bool) CPosInt)))
 ;; mutable vectors are invariant
 (check-not-type (vector b 1) : (CMVectorof (U CBool CPosInt)))
 (check-not-type (vector b 1) : (CMVectorof (U Bool CInt)))
 
-(check-type (vector b 1) : (CVectorof (U (Constant Bool) PosInt)))
+(check-type (vector b 1) : (CVectorof (U Bool PosInt)))
 ;; vectors are also invariant, because it includes mvectors
-(check-not-type (vector b 1) : (CVectorof (U Bool PosInt)))
+(check-not-type (vector b 1) : (CVectorof (U Bool Nat)))
 (check-not-type (vector b 1) : (CVectorof (U Bool CInt)))
 (check-not-type (vector b 1) : (CVectorof (U Bool Int)))
 

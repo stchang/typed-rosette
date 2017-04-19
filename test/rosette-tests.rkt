@@ -55,8 +55,8 @@
 (typecheck-fail ((λ ([x : CBool]) x) ((λ ([x : Bool]) x) #t)))
 (check-type     ((λ ([x : (U CInt CBool)]) x) ((λ ([x : (CU CInt CBool)]) x) 1)) : (U CInt CBool))
 (typecheck-fail ((λ ([x : (CU CInt CBool)]) x) ((λ ([x : (U CInt CBool)]) x) 1)))
-(check-type     ((λ ([x : (U Int Bool)]) x) ((λ ([x : (U CInt CBool)]) x) 1)) : (U CInt CBool))
-(check-type     ((λ ([x : (U CInt CBool)]) x) ((λ ([x : (U Int Bool)]) x) 1)) : (U CInt CBool))
+(check-type     ((λ ([x : (U Int Bool)]) x) ((λ ([x : (U CInt CBool)]) x) 1)) : (U (Term CInt) (Term CBool)))
+(check-type     ((λ ([x : (U (Term CInt) (Term CBool))]) x) ((λ ([x : (U Int Bool)]) x) 1)) : (U (Term CInt) (Term CBool)))
 
 ;; add1 has a case-> type with cases for different subtypes of Int
 ;; to preserve some of the type information through the operation
@@ -103,12 +103,12 @@
 (typecheck-fail (define-symbolic posint1 positive?) 
  #:with-msg "Expected a Rosette-solvable type, given positive?")
 (typecheck-fail (lambda ([x : (Constant CInt)]) x)
- #:with-msg "Constant requires a symbolic type")
+ #:with-msg "Constant requires a symbolic term type")
 (check-type b0 : Bool -> b0)
-(check-type b0 : (Constant Bool) -> b0)
+(check-type b0 : (Constant (Term CBool)) -> b0)
 (check-not-type b0 : CBool)
 (check-type i0 : Int -> i0)
-(check-type i0 : (Constant Int) -> i0)
+(check-type i0 : (Constant (Term CInt)) -> i0)
 (check-type (if b0 1 2) : Int)
 (check-not-type (if b0 1 2) : CInt)
 (check-type (if #t i0 2) : Int)
@@ -118,9 +118,9 @@
 (check-type (if b0 i0 2) : Int)
 (check-type (if b0 1 #f) : (U CInt CBool))
 (check-type (if b0 1 #f) : (U Int Bool))
-;; slightly unintuitive case: (U Int Bool) <: (U CInt Bool), ok for now (see notes)
-(check-type (if #f i0 #f) : (U CInt CBool))
-(check-type (if #f i0 #f) : (U CInt Bool))
+
+(check-type (if #f i0 #f) : (U (Term CInt) CBool))
+(check-type (if #f i0 #f) : (U (Term CInt) Bool))
 (check-type (if #f i0 #f) : (U Int Bool))
 (check-type (if #f (+ i0 1) #f) : (U Int Bool))
 
@@ -315,18 +315,21 @@
 (define-symbolic ci1 integer?)
 (define-symbolic bi1 bi2 boolean?)
 
-(check-type ci1 : (Constant Int))
+(check-type ci1 : (Constant (Term CInt)))
 (check-type ci1 : Int)
-(check-type ci1 : (Constant Num))
+(check-type ci1 : (Constant (Term CNum)))
 (check-type ci1 : Num)
 
 ;; homogeneous list of constants
-(check-type (list bi1 bi2) : (CList (Constant Bool) (Constant Bool)))
-(check-type (list bi1 bi2) : (CListof (Constant Bool)))
+(check-type (list bi1 bi2) : (CList (Constant (Term CBool))
+                                    (Constant (Term CBool))))
+(check-type (list bi1 bi2) : (CListof (Constant (Term CBool))))
 
 ;; heterogeneous list of constants
-(check-type (list ci1 bi1) : (CList (Constant Int) (Constant Bool)))
-(check-type (cons ci1 (cons bi1 (list))) : (CList (Constant Int) (Constant Bool)))
+(check-type (list ci1 bi1) : (CList (Constant (Term CInt))
+                                    (Constant (Term CBool))))
+(check-type (cons ci1 (cons bi1 (list))) : (CList (Constant (Term CInt))
+                                                  (Constant (Term CBool))))
 
 (check-type
  (lambda ([x : CInt] [lst : (CListof CBool)]) (cons x lst))
@@ -369,3 +372,19 @@
 ;; Boxes are mutable, so they contain possibly-symbolic types
 (check-not-type (box 1) : CAny)
 (check-not-type (box i0) : CAny)
+
+;; Subtyping between Terms and Unions
+(check-type (ann (ann 1 : CNum) : (Term CNum)) : Num)
+(check-type (ann (ann 1 : CNum) : (U (Term CNum))) : Num)
+(check-type (ann (ann 1 : (Term CNat)) : (Term CInt)) : Int)
+(check-type (ann (ann 1 : (Term CNum)) : (U (Term CNum))) : Num)
+(check-type (ann (ann 1 : (U CNum)) : (U (Term CNum))) : Num)
+
+(typecheck-fail (ann (ann 1 : (U CNum)) : (Term CNum)))
+(typecheck-fail (ann (ann 1 : (Term CNum)) : (U CNum)))
+
+;; Merging within unions
+(check-type (ann (ann 1 : Int) : (U CInt Int)) : Int)
+(check-type (ann (ann 1 : Int) : (U Nat Int)) : Int)
+(check-type (ann (ann 1 : Int) : (U CNat Nat CInt Int)) : Int)
+
