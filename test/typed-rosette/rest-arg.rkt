@@ -2,13 +2,13 @@
 
 (require turnstile/rackunit-typechecking)
 
-(: foldl/int : (C→ (→ Int Int Int) Int (Listof Int) Int))
+(: foldl/int : (C→ (→ Int Int Int) Int (CListof Int) Int))
 (define (foldl/int f b xs)
   (if (empty? xs)
       b
       (foldl/int f (f (first xs) b) (rest xs))))
 
-(: f : (C→* [] [] #:rest (Listof Int) Int))
+(: f : (C→* [] [] #:rest (CListof Int) Int))
 (define f
   (λ xs
     (foldl/int (λ ([x : Int] [acc : Int])

@@ -11,7 +11,7 @@
          ;; Function types
          C→ C→* Ccase->
          →
-         (for-syntax concrete-function-type?
+         (for-syntax concrete-function-type? concrete?
                      ~C→ ~C→* ~Ccase->
                      C→? Ccase->?)
          ;; Parameters

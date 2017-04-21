@@ -25,13 +25,13 @@
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define set! λ apply ann begin list
+(provide : define set! unsafe-set! λ curry apply ann begin list
          let
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
          prop:procedure struct-field-index
-         (for-syntax get-pred expand/ro
+         (for-syntax get-pred expand/ro concrete?
                      syntax-case syntax/loc)
          CAny Any CNothing Nothing
          CU U (for-syntax ~CU* ~U*)
@@ -294,7 +294,7 @@
    --------
    [⊢ (ro:if (ro:term? x)
              (ro:let ([x- x]) e1-) 
-             (ro:let ([y- x]) e2-)) ⇒ (CU ty1 ty2)]] ; should be U?
+             (ro:let ([y- x]) e2-)) ⇒ (U ty1 ty2)]] ; should be U?
   [(_ x:id e1 e2) ≫ ; x concrete
 ;   [⊢ x ≫ _ ⇒ (~and ty_x (~CU* _ ...))]
    [⊢ e2 ≫ _ ⇒ _] ; check e2 well-typed
@@ -309,7 +309,11 @@
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ (~CU* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
    --------
-   [⊢ e- ⇒ (CU ty ...)]])
+   [⊢ e- ⇒ (CU ty ...)]]
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ (~U* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   --------
+   [⊢ e- ⇒ (U ty ...)]])
 
 (define-typed-syntax if
   [(_ e_tst e1 e2) ≫
@@ -330,9 +334,14 @@
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : (U ty1 ty2)]]])
    
 (define-typed-syntax when
-  [(_ e_tst e) ≫
+  [(_ x:id e ...) ≫
+   [⊢ x ≫ _ ⇒ (~CU* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   [[x ≫ x- : (CU ty ...)] ⊢ (begin e ...) ≫ e- ⇒ ty-e]
+   ------
+   [⊢ (ro:when x (let ([x- x]) e-)) ⇒ (CU CUnit ty-e)]]
+  [(_ e_tst e ...) ≫
    [⊢ e_tst ≫ e_tst- ⇒ ty_tst]
-   [⊢ e ≫ e- ⇒ ty]
+   [⊢ (begin e ...) ≫ e- ⇒ ty]
    ------
    [⊢ (ro:when e_tst- e-) ⇒ ty]])
 
@@ -390,7 +399,7 @@
    [⊢ (ro:list->vector e-) ⇒ (U (CMVector (U τ ...)) ...)]])
 (define-typed-syntax vector->list
   [(_ e) ≫
-   [⊢ e ≫ e- ⇒ (~CMVectorof τ)]
+   [⊢ e ≫ e- ⇒ (~or (~CMVectorof τ) (~CIVectorof τ))]
    --------
    [⊢ (ro:vector->list e-) ⇒ (CListof τ)]])
 
@@ -430,14 +439,29 @@
    [⊢ n ≫ n- ⇐ CNat]
    [⊢ v ≫ v- ⇒ τ]
    --------
-   [⊢ (make-vector- n- v-) ⇒ (CMVectorof τ)]])
+   [⊢ (make-vector- n- v-) ⇒ #,(syntax/loc this-syntax (CMVectorof τ))]])
+;; programmer cannot manually do (vector->immutable-vector (make-vector ...))
+;; bc there might be an intermediate mutable vector with non-symbolic elements
+(define-typed-syntax make-immutable-vector
+  [(_ n v) ≫
+   [⊢ n ≫ n- ⇐ CNat]
+   [⊢ v ≫ v- ⇒ τ]
+   --------
+   [⊢ (vector->immutable-vector- (make-vector- n- v-)) ⇒ (CIVectorof τ)]])
 
 (define-typed-syntax build-vector
   [(_ n f) ≫
    [⊢ n ≫ n- ⇐ CNat]
    [⊢ f ≫ f- ⇒ (~C→ CNat τ_out)]
    --------
-   [⊢ (build-vector- n- f-) ⇒ (CMVectorof τ_out)]])
+   [⊢ (build-vector- n- f-) ⇒ #,(syntax/loc this-syntax (CMVectorof τ_out))]])
+
+(define-typed-syntax build-immutable-vector
+  [(_ n f) ≫
+   [⊢ n ≫ n- ⇐ CNat]
+   [⊢ f ≫ f- ⇒ (~C→ CNat τ_out)]
+   --------
+   [⊢ (vector->immutable-vector- (build-vector- n- f-)) ⇒ (CIVectorof τ_out)]])
 
 ;; ---------------------------------
 ;; for loops (not rosette/safe)
@@ -446,19 +470,28 @@
    [⊢ seq ≫ seq- ⇒ (~CMVectorof τ)]
    [[x ≫ x- : τ] ⊢ (begin e ...) ≫ e- ⇐ CBool]
    --------------
-   [⊢ (for/and- ([x- seq-]) e-) ⇒ CBool]])
+   [⊢ (for/and- ([x- seq-]) e-) ⇒ CBool]]
+  [(_ ([x:id seq]) e ...) ≫ ; TODO: define pat expander for "sequence"
+   [⊢ seq ≫ seq- ⇒ (~CMVectorof τ)]
+   [[x ≫ x- : τ] ⊢ (begin e ...) ≫ e- ⇒ ty]
+   --------------
+   [⊢ (for/and- ([x- seq-]) e-) ⇒ (U CFalse ty)]])
 
 (define-typed-syntax for/or
   [(_ ([x:id seq]) e ...) ≫ ; TODO: define pat expander for "sequence"
    [⊢ seq ≫ seq- ⇒ (~CMVectorof τ)]
    [[x ≫ x- : τ] ⊢ (begin e ...) ≫ e- ⇒ ty]
    --------------
-   [⊢ (for/or- ([x- seq-]) e-) ⇒ (CU CFalse ty)]]
+   [⊢ (for/or- ([x- seq-]) e-) ⇒ #,(if (concrete? #'ty)
+                                       #'(CU CFalse ty)
+                                       #'(U CFalse ty))]]
   [(_ ([x:id seq] ...) e ...) ≫ ; TODO: define pat expander for "sequence"
    [⊢ seq ≫ seq- ⇐ CNat] ...
    [[x ≫ x- : CNat] ... ⊢ (begin e ...) ≫ e- ⇒ ty]
    --------------
-   [⊢ (for/or- ([x- seq-] ...) e-) ⇒ (CU CFalse ty)]])
+   [⊢ (for/or- ([x- seq-] ...) e-) ⇒ #,(if (concrete? #'ty)
+                                       #'(CU CFalse ty)
+                                       #'(U CFalse ty))]])
 
 (define-typed-syntax for/sum
   [(_ ([x:id seq]) e) ≫ ; TODO: define pat expander for "sequence"
@@ -511,7 +544,7 @@
    [⊢ set- ⇒ (C→* [] [] #:rest (CListof Any) (CMSetof Any))]]
   [(_ {ty}) ≫
    --------
-   [⊢ (mutable-set-) ⇒ (CMSetof ty)]]
+   [⊢ (mutable-set-) ⇒ #,(syntax/loc this-syntax (CMSetof ty))]]
   [(_ e ...) ≫
    [⊢ e ≫ e- ⇒ τ] ...
    --------
@@ -1279,6 +1312,9 @@
                     [modulo : (Ccase-> (C→ CNat CNat CNat)
                                        (C→ CInt CInt CInt)
                                        (C→ Int Int Int))]
+                    ;; unlifted, not in rosette/safe
+                    [random : (Ccase-> (C→ CPosInt CNat)
+                                       (C→ CNat CNat))]
                     
                     ;; rosette-specific
                     [pc : (C→ Bool)]
@@ -1830,6 +1866,8 @@
 
 ;; undocumented ----------------------------------------
 
+;; TODO: add union
+
 ;; returns all symbolic constants from e?
 (define-typed-syntax symbolics
   [(_ e) ≫
@@ -1905,4 +1943,4 @@
 (define-typed-syntax (untyped-begin . args) ≫
   ---------
   [⊢ (begin- . args) ⇒ Any])
-  
+

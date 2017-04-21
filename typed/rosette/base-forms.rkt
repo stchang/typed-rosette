@@ -1,6 +1,6 @@
 #lang turnstile
 
-(provide : define set! λ apply curry compose ann begin list
+(provide : define set! unsafe-set! λ apply curry compose ann begin list
          let
          (rename-out [app #%app])
          unsafe-assign-type unsafe-define/assign-type
@@ -530,9 +530,17 @@
 ;; functions that declare a rest argument.
 
 (define-typed-syntax apply
+  ;; → type with CListof rst arg
   [(_ f:expr lst:expr) ≫
-   [⊢ f ≫ f- ⇒ (~C→* [] [] #:rest τ_rst τ_out)]
-   [⊢ lst ≫ lst- ⇐ τ_rst]
+   [⊢ f ≫ f- ⇒ (~and (~C→* [τ ...] [] #:rest (~and τ-lst (~CListof τ-rst)) τ_out) ~!)]
+   [⊢ lst ≫ lst- ⇐ τ-lst]
+   #:when (stx-andmap (λ (t) (typecheck? t #'τ-rst)) #'(τ ...))
+   --------
+   [⊢ (ro:apply f- lst-) ⇒ τ_out]]
+  ;; → type with CList rst arg
+  [(_ f:expr lst:expr) ≫
+   [⊢ f ≫ f- ⇒ (~and (~C→* [τ ...] [] #:rest (~and τ-lst (~CList τ-rst ...)) τ_out) ~!)]
+   [⊢ lst ≫ lst- ⇐ (CList τ ... τ-rst ...)]
    --------
    [⊢ (ro:apply f- lst-) ⇒ τ_out]]
   [(_ f:expr lst:expr) ≫
@@ -580,6 +588,17 @@
    #:fail-unless (typebool->bool (or (detach #'x- type-decl-mutable) typeCFalse))
    (format "Cannot set! an immutable variable, `~a` must be declared mutable"
            (syntax-e #'x))
+   [⊢ [e ≫ e- ⇐ : τ_x]]
+   --------
+   [⊢ [_ ≫ (ro:set! x- e-) ⇒ : CUnit]]])
+
+;; does not check for type-decl-mutable
+(define-typed-syntax unsafe-set!
+  [(_ x:id e) ≫
+   [⊢ [x ≫ x- ⇒ : τ_x]]
+   ;; #:fail-unless (typebool->bool (or (detach #'x- type-decl-mutable) typeCFalse))
+   ;; (format "Cannot set! an immutable variable, `~a` must be declared mutable"
+   ;;         (syntax-e #'x))
    [⊢ [e ≫ e- ⇐ : τ_x]]
    --------
    [⊢ [_ ≫ (ro:set! x- e-) ⇒ : CUnit]]])
