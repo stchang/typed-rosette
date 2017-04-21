@@ -25,8 +25,9 @@
  (prefix-in ro: (combine-in rosette rosette/lib/synthax))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define set! unsafe-set! λ curry apply ann begin list
+(provide : define set! unsafe-set! λ apply ann begin list
          let
+         curry identity
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda])
@@ -37,7 +38,7 @@
          CU U (for-syntax ~CU* ~U*)
          define-syntax-rule define-syntax
          define-typed-param provide all-from-out except-in rename-out
-         Constant
+         Constant SolvableVal ConstantSolvableVal
          C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
          CListof Listof CList CPair Pair
@@ -1873,7 +1874,7 @@
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ _]
    ---------
-   [⊢ (ro:symbolics e-) ⇒ (CListof Any)]])
+   [⊢ (ro:symbolics e-) ⇒ (CListof SolvableVal)]])
 
 ;; completes given model with given constants?
 (define-typed-syntax complete

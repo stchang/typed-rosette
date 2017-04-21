@@ -327,7 +327,7 @@
 ;   #:do[(printf "applying: ~a\n" #'f)]
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
    #:with f-- (expand/ro #'f)
- ;  #:do[(pretty-print (stx->datum (typeof #'f--)))]
+;   #:do[(pretty-print (stx->datum (typeof #'f--)))]
    #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)
    (typeof #'f--)
    #:with f- (replace-stx-loc #'f-- #'f)
@@ -563,6 +563,8 @@
    [⊢ x ≫ x- ⇐ ty0]
    -------
    [⊢ (ro:curry f- x-) ⇒ (C→ ty ... ty-out)]])
+
+(provide (typed-out [identity : (C→ CInt CInt)]))
 
 ;; TODO: support case->
 (define-typed-syntax compose

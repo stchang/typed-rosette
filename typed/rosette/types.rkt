@@ -3,7 +3,7 @@
 (provide CAny Any
          CNothing Nothing
          CU U
-         Constant
+         Constant SolvableVal ConstantSolvableVal
          (for-syntax Any?
                      ~CU* ~U* CU*? U*?
                      ~Constant* Constant*? remove-Constant
@@ -289,6 +289,14 @@
 
 (define-named-type-alias BV (add-predm (U CBV) ro:bv?))
 
+;; TODO: missing solvable fns
+(define-named-type-alias SolvableVal (U Bool Int Num BV))
+;; ie, output of make-symbolic
+(define-named-type-alias ConstantSolvableVal (U (Constant Bool)
+                                                (Constant Int)
+                                                (Constant Num)
+                                                (Constant BV)))
+
 (define-named-type-alias CAsserts (CListof Bool))
 
 ;; ---------------------------------------------------------
@@ -428,7 +436,7 @@
        ;; Constant clause must appear before U, ow (Const Int) <: Int wont hold
        [((~Constant* ty1) (~Constant* ty2))
         (typecheck? #'ty1 #'ty2)]
-       [((~Constant* ty) _) 
+       [((~Constant* ty) _)
         (typecheck? #'ty t2)]
        [((~CListof ty1) (~CListof ty2))
         (typecheck? #'ty1 #'ty2)]
