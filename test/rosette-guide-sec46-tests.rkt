@@ -33,11 +33,11 @@
 (define v1 (vector 1 2 #f))
 (define v2 (vector 1 2 #f))
 ;; mutable vectors are invariant
-(check-type v1 : (CMVectorof (U PosInt (Term CFalse))))
-(check-type v1 : (CVectorof (U PosInt (Term CFalse))))
+(check-type v1 : (CMVectorof (U PosInt CFalse)))
+(check-type v1 : (CVectorof (U PosInt CFalse)))
 (check-not-type v1 : (CMVectorof (U Nat Bool)))
 (check-not-type v1 : (CVectorof (U Nat Bool)))
-(check-type v2 : (CMVectorof (U PosInt (Term CFalse))))
+(check-type v2 : (CMVectorof (U PosInt CFalse)))
 (check-type (eq? v1 v2) : Bool -> #f)
 (check-type (equal? v1 v2) : Bool -> #t)
 
