@@ -345,6 +345,7 @@
   (define typeCNum ((current-type-eval) #'CNum))
   (define typeCBV ((current-type-eval) #'CBV))
 
+  ;; concrete-type-solvable-base? : Type -> Bool
   (define (concrete-type-solvable-base? τ)
     (or (typecheck? τ typeCBool)
         (typecheck? τ typeCInt)
@@ -362,6 +363,15 @@
               #:with [[_ Any*] ...] #'[[x Any] ...]
               ((current-type-eval) #'(CList Any* ...))]
              [_ #false])]))
+
+  ;; types-same-singleton? : Type Type -> Bool
+  (define (types-same-singleton? a b)
+    (cond [(typecheck? a typeCFalse)
+           (typecheck? b typeCFalse)]
+          [(typecheck? a typeCTrue)
+           (typecheck? b typeCTrue)]
+          [else
+           #false]))
   )
 
 ;; ---------------------------------
@@ -504,9 +514,11 @@
 ;;     \ (union u v)         otherwise
 
 ;; Merging for types:
-;; All *base* single-shape types must be solvable
+;; All *base* single-shape types must be solvable.
+;; All singleton types must have the property that ∀a:τ.∀b:τ.(rkt:eq? a b)
 ;;   μ(u, v) :=
-;;     / (Term (CU u v))     if sameBaseSingleShape(u, v)
+;;     / u                   if sameSingletonType(u, v)
+;;     | (Term (CU u v))     if sameBaseSingleShape(u, v)
 ;;     | (List w_0 ... w_n)  if sameListSingleShape(u, v) and
 ;;     |                        w_i = μ(u[i], v[i]) for 0 <= i < len
 ;;     | μ(v, u)            if not isUnion(u) and isUnion(v)
@@ -549,9 +561,17 @@
                   a-shape)))))
 
   ;; type-merge : Type Type -> Type
-  (define (type-merge a* b*)
-    (define a (syntax-parse a* [(~Constant* a) #'a] [_ a*]))
-    (define b (syntax-parse b* [(~Constant* b) #'b] [_ b*]))
+  (define (type-merge a b)
+    (cond [(types-same-singleton? a b) a]
+          [else
+           ;; Here it will result in some kind of term or union,
+           ;; so remove immediate Constant wrappers
+           (define a* (syntax-parse a [(~Constant* a*) #'a*] [_ a]))
+           (define b* (syntax-parse b [(~Constant* b*) #'b*] [_ b]))
+           (type-merge/non-singleton a* b*)]))
+
+  ;; type-merge/non-singleton : Type Type -> Type
+  (define (type-merge/non-singleton a b)
     ;; if they are both single-shape and their shapes are
     ;; the same,
     (define single-shape (types-same-single-shape a b))

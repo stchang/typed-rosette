@@ -36,6 +36,8 @@
 
 ;; ------------------------------------------------------------------------
 
+(define (c-true) -> CTrue #true)
+(define (c-false) -> CFalse #false)
 (define (c-bool) -> CBool #false)
 
 (define (c-nat) -> CNat 0)
@@ -47,9 +49,24 @@
 
 (define (u-c-bool-c-nat) -> (U CBool CNat) 0)
 (define (u-c-bool-c-str) -> (U CBool CString) "")
+(define (u-c-false-c-nat) -> (U CFalse CNat) 0)
+(define (u-c-false-c-str) -> (U CFalse CString) "")
 
 (define (cu-c-bool-c-nat) -> (CU CBool CNat) 0)
 (define (cu-c-bool-c-str) -> (CU CBool CString) "")
+(define (cu-c-false-c-nat) -> (CU CFalse CNat) 0)
+(define (cu-c-false-c-str) -> (CU CFalse CString) "")
+
+;; Tests for merging singletons, the only cases where it
+;; doesn't produce a U or Term type, because
+;; ∀a:τ.∀b:τ.(rkt:eq? a b)
+
+(check-type (if b #true #true) : CTrue)
+(check-type (if b #false #false) : CFalse)
+(check-type (if b (c-true) #true) : CTrue)
+(check-type (if b #false (c-false)) : CFalse)
+(check-type (if b (c-true) (c-true)) : CTrue)
+(check-type (if b (c-false) (c-false)) : CFalse)
 
 ;; Tests for when merging is known to produce a Term
 
@@ -127,4 +144,10 @@
             : (U (Term CBool) CNat CString))
 (check-not-type (if b (cu-c-bool-c-nat) (cu-c-bool-c-str))
                 : (U CBool CNat CString))
+
+;; Merging unions with singletons inside them
+(check-type (if b (u-c-false-c-nat) (u-c-false-c-str))
+            : (U CFalse CNat CString))
+(check-type (if b (cu-c-false-c-nat) (cu-c-false-c-str))
+            : (U CFalse CNat CString))
 
