@@ -95,6 +95,21 @@
 
 ;; ----------------------------------------------------------------------------
 
+;; Environments and Variables
+
+(begin-for-syntax
+  ;; var-assign/orig-binding :
+  ;; Id (Listof Sym) (StxListof TypeStx) -> Stx
+  (define (var-assign/orig-binding x seps τs)
+    (attachs (attach x 'orig-binding x)
+             seps
+             τs
+             #:ev (current-type-eval)))
+
+  (current-var-assign var-assign/orig-binding))
+
+;; ----------------------------------------------------------------------------
+
 ;; Declaring Types before Definitions
 
 (begin-for-syntax
@@ -331,7 +346,10 @@
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
    #:with f-- (expand/ro #'f)
-   #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)
+   #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...]
+                      τ_out
+                      : #:+ posprop #:- negprop)
+                ~!)
    (typeof #'f--)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length=? #'[a ...] #'[τ_a ...])
@@ -355,12 +373,17 @@
    (typecheck-fail-msg/multi #'[τ_a ... τ_b ...] #'[τ_a* ... τ_b* ...]
                              #'[a ... b ...])
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
+   #:do [(define prop-inst (prop-instantiate (stx-map get-arg-obj #'[a- ...])))]
    --------
-   [⊢ (ro:#%app f- a- ... kw/b- ... ...) ⇒ τ_out]]
+   [⊢ (ro:#%app f- a- ... kw/b- ... ...)
+      (⇒ : τ_out)
+      (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
+      (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
   [(_ f:expr ab:expr ... (~seq kw:keyword c:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)]
    #:with f-- (expand/ro #'f)
-   #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)
+   #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out
+                      : #:+ posprop #:- negprop) ~!)
    (typeof #'f--)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length>=? #'[ab ...] #'[τ_a ...])
@@ -392,8 +415,12 @@
                              #'[τ_a* ... τ_c* ... τ_rst*]
                              #'[a ... c ... (list b ...)])
    #:with [[kw/c- ...] ...] #'[[kw c-] ...]
+   #:do [(define prop-inst (prop-instantiate (stx-map get-arg-obj #'[a- ...])))]
    --------
-   [⊢ (ro:#%app ro:apply f- a- ... rst- kw/c- ... ...) ⇒ τ_out]]
+   [⊢ (ro:#%app ro:apply f- a- ... rst- kw/c- ... ...)
+      (⇒ : τ_out)
+      (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
+      (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
   ;; concrete case->
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f- ⇒ (~and (~Ccase-> ~! τ_f ...) ~!)]
@@ -406,10 +433,11 @@
    #:with [b- ...] (stx-map expand/ro #'[b ...])
    #:with [τ_a ...] (stx-map typeof #'(a- ...))
    #:with [τ_b ...] (stx-map typeof #'(b- ...))
-   #:with τ_out
+   #:with result-info
    (for/or ([τ_f (in-list (stx->list #'[τ_f ...]))])
      (syntax-parse τ_f
-       [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] τ_out)
+       [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] τ_out
+              : #:+ posprop #:- negprop)
         (define kws/τs*
           (for/list ([kw (in-list (syntax->datum #'[kw* ...]))]
                      [τ (in-list (syntax->list #'[τ_kw* ...]))])
@@ -420,8 +448,9 @@
                (define p (assoc kw kws/τs*))
                (and p
                     (typecheck? τ_b (second p))))
-             #'τ_out)]
-       [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out)
+             (list #'τ_out #'posprop #'negprop))]
+       [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out
+              : #:+ posprop #:- negprop)
         #:when (stx-length>=? #'[τ_a ...] #'[τ_a* ...])
         #:with [[τ_fst ...] [τ_rst ...]]
         (split-at* (stx->list #'[τ_a ...]) (list (stx-length #'[τ_a* ...])))
@@ -436,9 +465,9 @@
                (define p (assoc kw kws/τs*))
                (and p
                     (typecheck? τ_b (second p))))
-             #'τ_out)]
+             (list #'τ_out #'posprop #'negprop))]
        [_ #false]))
-   #:fail-unless (syntax-e #'τ_out)
+   #:fail-unless (syntax-e #'result-info)
    ; use (failing) typechecks? to get err msg
    (let* ([τs_given #'(τ_a ...)]
           [expressions #'(a ...)])
@@ -452,9 +481,14 @@
         "\n    ")
        (string-join (stx-map type->str τs_given) ", ")
        (string-join (map ~s (stx-map syntax->datum expressions)) ", ")))
+   #:with [τ_out posprop negprop] #'result-info
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
+   #:do [(define prop-inst (prop-instantiate (stx-map get-arg-obj #'[a- ...])))]
    --------
-   [⊢ (ro:#%app f- a- ... kw/b- ... ...) ⇒ τ_out]]
+   [⊢ (ro:#%app f- a- ... kw/b- ... ...)
+      (⇒ : τ_out)
+      (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
+      (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
   ;; concrete union functions
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ [f ≫ f-- ⇒ : (~and (~CU* τ_f ...) ~!)]]
@@ -494,7 +528,7 @@
    #:with (b* ...) (generate-temporaries #'(b ...))
    #:with [[kw/b* ...] ...] #'[[kw b*] ...]
    [([f* ≫ _ : τ_f] [a* ≫ _ : τ_a] ... [b* ≫ _ : τ_b] ...)
-    ⊢ [(app f* a* ... kw/b* ... ...) ≫ _ ⇒ : τ_out]]
+    ⊢ [#,(syntax/loc this-syntax (app f* a* ... kw/b* ... ...)) ≫ _ ⇒ : τ_out]]
    ...
    #:with [[kw/b- ...] ...] #'[[kw b-] ...]
    --------
@@ -537,7 +571,7 @@
    --------
    [⊢ (ro:apply f- lst-) ⇒ τ_out]]
   [(_ f:expr lst:expr) ≫
-   [⊢ f ≫ f- ⇒ (~Ccase-> τ_f ...)]
+   [⊢ f ≫ f- ⇒ (~Ccase-> ~! τ_f ...)]
    [⊢ lst ≫ lst- ⇒ τ_lst]
    #:with τ_out
    (for/or ([τ_f (in-list (stx->list #'[τ_f ...]))])
@@ -572,7 +606,7 @@
 
 (define-typed-syntax let
   #:datum-literals [:]
-  [(_ name:id ~! ([x:id : τ_x:type e:expr] ...) :-> τ_out:type b ...+) ≫
+  [(_ name:id ([x:id : τ_x:type e:expr] ...) :-> ~! τ_out:type b ...+) ≫
    [⊢ [e ≫ e- ⇐ τ_x] ...]
    #:with body (syntax/loc this-syntax (begin b ...))
    [[name ≫ name- : (C→ τ_x ... τ_out)]
@@ -580,6 +614,14 @@
     ⊢ body ≫ body- ⇐ τ_out]
    --------
    [⊢ (let- name- ([x- e-] ...) body-) ⇒ τ_out]]
+  [(_ name:id ([x:id : τ_x:type e:expr] ...) b ...+) ⇐ τ_out ≫
+   [⊢ [e ≫ e- ⇐ τ_x] ...]
+   #:with body (syntax/loc this-syntax (begin b ...))
+   [[name ≫ name- : (C→ τ_x ... τ_out)]
+    [x ≫ x- : τ_x] ...
+    ⊢ body ≫ body- ⇐ τ_out]
+   --------
+   [⊢ (let- name- ([x- e-] ...) body-)]]
   [(_ ([x m:mut-kw e] ...) e_body ...) ⇐ τ_expected ≫
    [⊢ [e ≫ e- ⇒ : τ_x] ...]
    #:with [τ_x* ...]
@@ -610,7 +652,7 @@
   #:datum-literals [:]
   [(_ e:expr : τ:expr) ≫
    --------
-   [⊢ e ⇒ : τ]])
+   [⊢ (ro:#%expression e) ⇒ : τ]])
 
 (define-syntax-parser unsafe-define/assign-type
   #:datum-literals [:]

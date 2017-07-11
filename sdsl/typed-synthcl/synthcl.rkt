@@ -199,7 +199,7 @@
          (define len-str (caddr split-ty))]
    #:do [(define sels (length (stx->list #'selector)))]
    #:with e-out (if (= sels 1) #'(ro:vector-ref vec- (ro:car 'selector))
-                               #'(for/list ([idx 'selector])
+                               #'(ro:for/list ([idx 'selector])
                                    (ro:vector-ref vec- idx)))
    #:with ty-out ((current-type-eval)
                   (if (= sels 1) (format-id #'here "~a" base-str)
@@ -580,6 +580,6 @@
                (ro:and (ro:sat? cex)
                        (displayln "counterexample found:")
                        (ro:for ([i '(id ...)] [i- (ro:list id- ...)])
-                               (printf "~a = ~a\n" i (ro:evaluate i- cex)))
+                               (ro:printf "~a = ~a\n" i (ro:evaluate i- cex)))
                        cex))
               (begin (displayln "no counterexample found") (ro:unsat))))) ⇒ void]])

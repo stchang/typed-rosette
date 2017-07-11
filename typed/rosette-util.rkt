@@ -18,8 +18,11 @@
 (define (assert-pred a pred)
   (if (type? pred)
       (type-cast pred a)
-      (begin
-        (assert (pred a))
+      (let ([pass? (pred a)])
+        (when (and (not (union? pass?)) (not (term? pass?)) (false? pass?))
+          (printf "assert-pred failed outright\n  a: ~v\n  pred: ~v\n"
+                  a pred))
+        (assert pass?)
         a)))
 
 ;; zero-integer? : Any -> Bool

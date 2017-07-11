@@ -361,17 +361,17 @@
 (check-type (not #f) : CAny)
 (check-type (equal? 1 2) : CAny)
 
-;; data structures have type CAny only if elements are concrete
+;; data structures have type CAnyDeep only if elements are concrete
 ;; (even if outer structure is concrete)
-(check-type (list 1 2 3) : CAny)
-(check-not-type (list i0 b0) : CAny)
-(check-type (list (list 1 2) (list 3 4)) : CAny)
-(check-type (list (list (list 1 2) 3) 4) : CAny)
-(check-not-type (list (list (list i0 2) 3) 4) : CAny)
+(check-type (list 1 2 3) : CAnyDeep)
+(check-not-type (list i0 b0) : CAnyDeep)
+(check-type (list (list 1 2) (list 3 4)) : CAnyDeep)
+(check-type (list (list (list 1 2) 3) 4) : CAnyDeep)
+(check-not-type (list (list (list i0 2) 3) 4) : CAnyDeep)
 
 ;; Boxes are mutable, so they contain possibly-symbolic types
-(check-not-type (box 1) : CAny)
-(check-not-type (box i0) : CAny)
+(check-not-type (box 1) : CAnyDeep)
+(check-not-type (box i0) : CAnyDeep)
 
 ;; Subtyping between Terms and Unions
 (check-type (ann (ann 1 : CNum) : (Term CNum)) : Num)

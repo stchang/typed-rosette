@@ -4,9 +4,7 @@ env:
   global:
     - RACKET_DIR=~/racket
   matrix:
-    - RACKET_VERSION="6.6"
-    - RACKET_VERSION="6.7"
-    - RACKET_VERSION="6.8"
+    - RACKET_VERSION="6.9"
     - RACKET_VERSION="HEAD"
 matrix:
   allow_failures:
@@ -30,4 +28,10 @@ install:
 
 script:
  - raco test --package typed-rosette
+ # Install the Typed Rosette version of Ocelot
+ - raco pkg install -j 1 --auto git://github.com/AlexKnauth/ocelot#typed-rosette
  - raco setup
+
+after_success:
+ # this currently fails 1 out of 728 tests
+ - raco test --package ocelot

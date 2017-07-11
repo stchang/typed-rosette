@@ -11,23 +11,48 @@
  ;; import typed rosette types
  "rosette/types.rkt"
  ;; import base forms
- (rename-in "rosette/base-forms.rkt" [#%app app])
+ (rename-in (except-in "rosette/base-forms.rkt" list) [#%app app])
+ (except-in "rosette/bool.rkt" and or not)
+ (except-in "rosette/list.rkt" pair)
+ "rosette/match-core.rkt"
+ "rosette/match-pat-forms.rkt"
+ "rosette/struct.rkt"
  "rosette/struct-type-properties.rkt"
+ "rosette/generic-interfaces.rkt"
+ "rosette/for-forms.rkt"
+ "rosette/format.rkt"
+ "rosette/vector.rkt"
+ "rosette/hash.rkt"
+ "rosette/function.rkt"
  ;; base lang
- (prefix-in ro: (combine-in rosette rosette/lib/synthax))
+ (prefix-in ro: (combine-in rosette rosette/lib/synthax
+                            "rosette/concrete-predicate.rkt"))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define set! λ apply ann begin list
+(provide : define set! λ apply ann begin
          let
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
-                     [λ lambda])
-         prop:procedure struct-field-index
+                     [λ lambda]
+                     [ro:begin splicing-begin])
+         match match-let _ var ?
+         (all-from-out "rosette/bool.rkt"
+                       "rosette/match-pat-forms.rkt"
+                       "rosette/struct.rkt"
+                       "rosette/struct-type-properties.rkt"
+                       "rosette/generic-interfaces.rkt"
+                       "rosette/for-forms.rkt"
+                       "rosette/format.rkt"
+                       "rosette/list.rkt"
+                       "rosette/vector.rkt"
+                       "rosette/hash.rkt"
+                       "rosette/function.rkt")
          (for-syntax get-pred expand/ro)
-         CAny Any CNothing Nothing
+         CAnyDeep CAny Any CNothing Nothing
          Term
          CU U (for-syntax ~CU* ~U*)
          Constant
+         Struct
          C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
          CListof Listof CList CPair Pair
@@ -54,6 +79,7 @@
          CBVPred BVPred
          CSolution CSolver CPict CRegexp
          LiftedPred LiftedPred2 LiftedNumPred LiftedIntPred UnliftedPred)
+
 
 ;; a legacy auto-providing version of define-typed-syntax
 ;; TODO: convert everything to new define-typed-syntax
@@ -155,7 +181,7 @@
 
 ;; TODO: get subtyping to work for struct-generated types?
 ;; TODO: handle mutable structs properly
-(define-typed-syntax struct #:datum-literals (:)
+#;(define-typed-syntax struct #:datum-literals (:)
   [(_ name:id (x:id ...) ~! . rst) ≫
    #:fail-when #t "Missing type annotations for fields"
    --------
@@ -188,7 +214,7 @@
              (assign-type #'name-x* #'(C→ TyOut ty)))) ...)]])
 
 ;; TODO: add type rules for generics
-(define-typed-syntax define-generics #:datum-literals (: ->)
+#;(define-typed-syntax define-generics #:datum-literals (: ->)
   [(_ name:id (f:id x:id ... -> ty-out)) ≫
    #:with app-f (format-id #'f "apply-~a" #'f)
    --------
@@ -199,125 +225,6 @@
              [(_ . es)
               #:with es+ (stx-map expand/df #'es)
               (assign-type #'(ro:#%app f . es+) #'ty-out)])))]])
-
-;; ---------------------------------
-;; quote
-
-(define-typed-syntax quote
-  ;; base case: symbol
-  [(_ x:id) ≫
-   --------
-   [⊢ (ro:quote x) ⇒ CSymbol]]
-  ;; recur: list (this clause should come before pair)
-  [(_ (x ...)) ≫
-   [⊢ (quote x) ≫ (_ x-) ⇒ τ] ...
-   --------
-   [⊢ (ro:quote (x- ...)) ⇒ (CList τ ...)]]
-  ;; recur: pair
-  [(_ (x . y)) ≫
-   [⊢ (quote x) ≫ (_ x-) ⇒ τx]
-   [⊢ (quote y) ≫ (_ y-) ⇒ τy]
-   --------
-   [⊢ (ro:quote (x- . y-)) ⇒ (CPair τx τy)]]
-  ;; base case: other datums
-  [(_ x) ≫
-   [⊢ (stlc+union:#%datum . x) ≫ (_ x-) ⇒ τ]
-   --------
-   [⊢ (ro:quote x-) ⇒ τ]])
-
-;; ---------------------------------
-;; if
-
-;; TODO: this is not precise enough
-;; specifically, a symbolic non-bool should produce a concrete val
-(define-typed-syntax if
-  [(_ e_tst e1 e2) ≫
-   [⊢ [e_tst ≫ e_tst- ⇒ : ty_tst]]
-   #:when (or (concrete? #'ty_tst) ; either concrete
-              ; or non-bool symbolic
-              ; (not a super-type of CFalse)
-              (and (not (typecheck? ((current-type-eval) #'CFalse) #'ty_tst))
-                   (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) #'ty_tst))))
-   [⊢ [e1 ≫ e1- ⇒ : ty1]]
-   [⊢ [e2 ≫ e2- ⇒ : ty2]]
-   #:when (and (concrete? #'ty1) (concrete? #'ty2))
-   --------
-   [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : (CU ty1 ty2)]]]
-  [(_ e_tst e1 e2) ≫
-   [⊢ [e_tst ≫ e_tst- ⇒ : _]]
-   [⊢ [e1 ≫ e1- ⇒ : ty1]]
-   [⊢ [e2 ≫ e2- ⇒ : ty2]]
-   #:with τ_out (type-merge #'ty1 #'ty2)
-   --------
-   [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
-   
-;; ---------------------------------
-;; vector
-
-;; mutable constructor
-(define-typed-syntax vector
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇒ : τ] ...]
-   #:with τ* (type-merge*
-              (stx-map type-merge #'[τ ...] #'[τ ...]))
-   --------
-   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : (CMVectorof (U τ*))]]])
-
-(provide (typed-out [vector? : LiftedPred]))
-
-;; immutable constructor
-(define-typed-syntax vector-immutable
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇒ : τ] ...]
-   --------
-   [⊢ [_ ≫ (ro:vector-immutable e- ...) ⇒ : #,(if (stx-andmap concrete? #'(τ ...))
-                                                  #'(CIVectorof (CU τ ...))
-                                                  #'(CIVectorof (U τ ...)))]]])
-
-;; TODO: add CList case?
-;; returne mutable vector
-(define-typed-syntax list->vector
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:list->vector ⇒ : (Ccase-> (C→ (CListof Any) (CMVectorof Any))
-                                        (C→ (Listof Any) (MVectorof Any)))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof #,(if (concrete? #'τ) #'(U τ) #'τ))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   #:with [τ* ...] (stx-map (λ (τ) (if (concrete? τ) #`(U #,τ) τ)) #'[τ ...])
-   --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVectorof τ*) ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof (U τ ...))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVector (U τ ...)) ...)]]])
-
-(define-typed-syntax vector-ref
-  [(_ e n) ≫
-   [⊢ [e ≫ e- ⇒ : (~or (~CMVectorof τ) (~CIVectorof τ))]]
-   [⊢ [n ≫ n- ⇐ : Int]]
-   --------
-   [⊢ [_ ≫ (ro:vector-ref e- n-) ⇒ : τ]]]
-  [(_ e n) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]]
-   [⊢ [n ≫ n- ⇐ : Int]]
-   --------
-   [⊢ [_ ≫ (ro:vector-ref e- n-) ⇒ : (U τ ...)]]])
-
-(define-typed-syntax vector-set!
-  [(_ v:expr i:expr x:expr) ≫
-   [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
-   [⊢ i ≫ i- ⇐ Nat]
-   [⊢ x ≫ x- ⇐ τ]
-   --------
-   [⊢ (ro:vector-set! v- i- x-) ⇒ CUnit]])
 
 ;; ---------------------------------
 ;; hash tables
@@ -337,173 +244,7 @@
 ;; ---------------------------------
 ;; lists
 
-(provide (typed-out [null? : (Ccase-> (C→ (CListof Any) CBool)
-                                      (C→ (Listof Any) Bool))]
-                    [empty? : (Ccase-> (C→ (CListof Any) CBool)
-                                       (C→ (Listof Any) Bool))]
-                    [list? : LiftedPred]))
 
-(define-typed-syntax cons
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:cons ⇒ : (Ccase-> 
-                        (C→ Any Any (CPair Any Any))
-                        (C→ Any (CListof Any) (CListof Any))
-                        (C→ Any (Listof Any) (Listof Any)))]]]
-  [(_ e1 e2) ≫
-   [⊢ [e2 ≫ e2- ⇒ : (~CListof τ1)]]
-   [⊢ [e1 ≫ e1- ⇒ : τ2]]
-   --------
-   [⊢ [_ ≫ (ro:cons e1- e2-) 
-           ⇒ : #,(if (and (concrete? #'τ1) (concrete? #'τ2))
-                     #'(CListof (CU τ1 τ2))
-                     #'(CListof (U τ1 τ2)))]]]
-  [(_ e1 e2) ≫
-   [⊢ [e2 ≫ e2- ⇒ : (~U* (~CListof τ) ...)]]
-   [⊢ [e1 ≫ e1- ⇒ : τ1]]
-   --------
-   [⊢ [_ ≫ (ro:cons e1- e2-) ⇒ : (U (CListof (U τ1 τ)) ...)]]]
-  [(_ e1 e2) ≫
-   [⊢ [e1 ≫ e1- ⇒ : τ1]]
-   [⊢ [e2 ≫ e2- ⇒ : (~CList τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cons e1- e2-) ⇒ : (CList τ1 τ ...)]]]
-  [(_ e1 e2) ≫
-   [⊢ [e1 ≫ e1- ⇒ : τ1]]
-   [⊢ [e2 ≫ e2- ⇒ : (~U* (~CList τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cons e1- e2-) ⇒ : (U (CList τ1 τ ...) ...)]]]
-  [(_ e1 e2) ≫
-   [⊢ [e1 ≫ e1- ⇒ : τ1]]
-   [⊢ [e2 ≫ e2- ⇒ : τ2]]
-   --------
-   [⊢ [_ ≫ (ro:cons e1- e2-) ⇒ : (CPair τ1 τ2)]]])
-
-;; car and cdr additionally support pairs
-(define-typed-syntax car
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:car ⇒ : (Ccase-> (C→ (Pair Any Any) Any)
-                               (C→ (Listof Any) Any))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : τ]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : (U τ ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ1 τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : τ1]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ1 τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : (U τ1 ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CPair τ _)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : τ]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CPair τ _) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:car e-) ⇒ : (U τ ...)]]])
-
-(define-typed-syntax cdr
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:cdr ⇒ : (Ccase-> (C→ (CListof Any) (CListof Any))
-                                (C→ (Listof Any) (Listof Any)))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : (CListof τ)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : (U (CListof τ) ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ1 τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : (CList τ ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ1 τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : (U (CList τ ...) ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CPair _ τ)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : τ]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CPair _ τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:cdr e-) ⇒ : (U τ ...)]]])
-
-
-(define-typed-syntax first
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:first ⇒ : (C→ (Listof Any) Any)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:first e-) ⇒ : τ]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:first e-) ⇒ : (U τ ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ1 τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:first e-) ⇒ : τ1]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ1 τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:first e-) ⇒ : (U τ1 ...)]]])
-
-(define-typed-syntax rest
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:rest ⇒ : (Ccase-> (C→ (CListof Any) (CListof Any))
-                                (C→ (Listof Any) (Listof Any)))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:rest e-) ⇒ : (CListof τ)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:rest e-) ⇒ : (U (CListof τ) ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ1 τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:rest e-) ⇒ : (CList τ ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ1 τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:rest e-) ⇒ : (U (CList τ ...) ...)]]])
-
-(define-typed-syntax second
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:second ⇒ : (C→ (Listof Any) Any)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   --------
-   [⊢ [_ ≫ (ro:second e-) ⇒ : τ]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:second e-) ⇒ : (U τ ...)]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList τ1 τ2 τ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:second e-) ⇒ : τ2]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ1 τ2 τ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:second e-) ⇒ : (U τ2 ...)]]])
 
 ;; n must be Int bc Rosette does not have symbolic Nats
 (define-typed-syntax take
@@ -532,28 +273,6 @@
    --------
    [⊢ [_ ≫ (ro:take e- n-) ⇒ : (U (CList (U τ ...)) ...)]]])
 
-(define-typed-syntax length
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:length ⇒ : (Ccase-> (C→ (CListof Any) CNat)
-                                (C→ (Listof Any) Nat))]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇐ : (CListof Any)]]
-   --------
-   [⊢ [_ ≫ (ro:length e-) ⇒ : CNat]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof _) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:length e-) ⇒ : Nat]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList _ ...)]]
-   --------
-   [⊢ [_ ≫ (ro:length e-) ⇒ : CNat]]]
-  [(_ e) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList _ ...) ...)]]
-   --------
-   [⊢ [_ ≫ (ro:length e-) ⇒ : Nat]]])
-
 (define-typed-syntax reverse
   [_:id ≫ ;; TODO: use polymorphism
    --------
@@ -578,130 +297,21 @@
    --------
    [⊢ [_ ≫ (ro:reverse e-) ⇒ : (U (CList . τs/rev) ...)]]])
 
-(define-typed-syntax build-list
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:build-list ⇒ : (C→ CNat (C→ CNat Any) (CListof Any))]]]
-  [(_ n f) ≫
-   [⊢ [n ≫ n- ⇐ : CNat]]
-   [⊢ [f ≫ f- ⇒ : (~C→ ty1 ty2)]]
-   #:fail-unless (typecheck? #'ty1 ((current-type-eval) #'CNat))
-                 "expected function that consumes concrete Nat"
-   --------
-   [⊢ [_ ≫ (ro:build-list n- f-) ⇒ : (CListof ty2)]]])
-(define-typed-syntax map
-  #;[_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:map ⇒ : (C→ (C→ Any Any) (CListof Any) (CListof Any))]]]
-  [(_ f lst) ≫
-   [⊢ [f ≫ f- ⇒ : (~C→ ~! ty1 ty2)]]
-   [⊢ [lst ≫ lst- ⇐ : (CListof ty1)]]
-   --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof ty2)]]]
-  [(_ f lst) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~CListof ty1)]]
-   [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ ty2)
-          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
-                      #:when (syntax-parse ty-fn
-                               [(~C→ t1 _) #:when (typecheck? #'ty1 #'t1) #t]
-                               [_ #f]))
-            (displayln (syntax->datum ty-fn))
-            ty-fn)
-   --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof ty2)]]]
-  [(_ f lst) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~U* (~CListof ty1))]]
-   [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ ty2)
-          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
-                      #:when (syntax-parse ty-fn
-                               [(~C→ t1 _) #:when (typecheck? #'ty1 #'t1) #t]
-                               [_ #f]))
-            ty-fn)
-   --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof ty2)]]])
-
-;; TODO: finish andmap
-(define-typed-syntax andmap
-  #;[_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:andmap ⇒ : (C→ (C→ Any Bool) (CListof Any) Bool)]]]
-  [(_ f lst) ≫
-   [⊢ [f ≫ f- ⇒ : (~C→ ~! ty ty-bool)]]
-   [⊢ [lst ≫ lst- ⇒ : (~CListof _)]]
-   --------
-   [⊢ [_ ≫ (ro:andmap f- lst-) ⇒ : Bool]]]
-  #;[(_ f lst) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~CListof ty)]]
-   [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ ty2)
-          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
-                      #:when (syntax-parse ty-fn
-                               [(~C→ t1 _) #:when (typecheck? #'ty1 #'t1) #t]
-                               [_ #f]))
-            (displayln (syntax->datum ty-fn))
-            ty-fn)
-   --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof ty2)]]]
-  #;[(_ f lst) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~U* (~CListof ty1))]]
-   [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ ty2)
-          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
-                      #:when (syntax-parse ty-fn
-                               [(~C→ t1 _) #:when (typecheck? #'ty1 #'t1) #t]
-                               [_ #f]))
-            ty-fn)
-   --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof ty2)]]])
-
-(define-typed-syntax sort
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ [_ ≫ ro:sort ⇒ : (Ccase-> (C→ (CListof Any) LiftedPred2 (CListof Any))
-                                (C→ (Listof Any) LiftedPred2 (Listof Any)))]]]
-  [(_ e cmp) ≫
-   [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
-   [⊢ [cmp ≫ cmp- ⇐ : (C→ τ τ Bool)]]
-   --------
-   [⊢ [_ ≫ (ro:sort e- cmp-) ⇒ : (CListof τ)]]]
-  [(_ e cmp) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
-   [⊢ [cmp ≫ cmp- ⇐ : (C→ (U τ ...) (U τ ...) Bool)]]
-   --------
-   [⊢ [_ ≫ (ro:sort e- cmp-) ⇒ : (U (CListof τ) ...)]]]
-  [(_ e cmp) ≫
-   [⊢ [e ≫ e- ⇒ : (~CList . τs)]]
-   [⊢ [cmp ≫ cmp- ⇐ : (C→ (U . τs) (U . τs) Bool)]]
-   --------
-   [⊢ [_ ≫ (ro:sort e- cmp-) ⇒ : (CListof (U . τs))]]]
-  [(_ e cmp) ≫
-   [⊢ [e ≫ e- ⇒ : (~U* (~CList τ ...) ...)]]
-   [⊢ [cmp ≫ cmp- ⇐ : (C→ (U τ ... ...) (U τ ... ...) Bool)]]
-   --------
-   [⊢ [_ ≫ (ro:sort e- cmp-) ⇒ : (U (CList (U τ ...)) ...)]]])
-
 ;; ---------------------------------
 ;; IO and other built-in ops
 
-(provide (typed-out [void : (C→ CUnit)]
-                    [printf : (Ccase-> (C→ CString CUnit)
-                                       (C→ CString Any CUnit)
-                                       (C→ CString Any Any CUnit))]
+(provide (typed-out [void : (C→* [] [] #:rest (Listof Any) CUnit)]
                     [display : (C→ Any CUnit)]
                     [displayln : (C→ Any CUnit)]
                     [with-output-to-string : (C→ (C→ Any) CString)]
                     [string-contains? : (C→ CString CString CBool)]
                     [pretty-print : (C→ Any CUnit)]
-                    [error : (Ccase-> (C→ (CU CString CSymbol) CNothing)
-                                      (C→ CSymbol CString CNothing))]
-
+                    
                     [string-length : (C→ CString CNat)]
                     [string-append : (C→ CString CString CString)]
 
-                    [equal? : LiftedPred2]
-                    [eq? : LiftedPred2]
+                    [equal? : LiftedPredDeep2]
+                    [eq? : LiftedPredDeep2]
                     [distinct? : (Ccase-> (C→* [] [] #:rest (CListof CAny) CBool)
                                           (C→* [] [] #:rest (CListof Any) Bool)
                                           (C→* [] [] #:rest (Listof Any) Bool))]
@@ -830,6 +440,19 @@
                                         (C→ Num Num))]
                     [truncate : (Ccase-> (C→ CNum CNum)
                                          (C→ Num Num))]
+                    [exact-round : (Ccase-> (C→ CNat CNat)
+                                            (C→ Nat Nat)
+                                            (C→ CNum CInt)
+                                            (C→ Num Int))]
+                    [exact-floor : (Ccase-> (C→ CNat CNat)
+                                            (C→ Nat Nat)
+                                            (C→ CNum CInt)
+                                            (C→ Num Int))]
+                    [exact-ceiling : (Ccase-> (C→ CNat CNat)
+                                              (C→ Nat Nat)
+                                              (C→ CNum CInt)
+                                              (C→ Num Int))]
+                    
                     [sgn : (Ccase-> (C→ CZero CZero)
                                     (C→ Zero Zero)
                                     (C→ CInt CInt)
@@ -845,22 +468,20 @@
                                      (C→ Int Int Int)
                                      (C→ CNum CNum CNum)
                                      (C→ Num Num Num))]
+
+                    [exp : (C→ CNum CNum)]
+                    [log : (C→ CNum CNum)]
                     
-                    [not : LiftedPred]
-                    [xor : (Ccase-> (C→ CAny CAny CAny)
-                                    (C→ Any Any Any))]
-                    [false? : LiftedPred]
-                    
-                    [true : CTrue]
-                    [false : CFalse]
                     [real->integer : (C→ Num Int)]
-                    [string? : UnliftedPred]
-                    [number? : LiftedPred]
+                    [string? : (UnliftedPredFor CString)]
+                    [number? : (LiftedPredFor Num)]
                     [positive? : LiftedNumPred]
                     [negative? : LiftedNumPred]
                     [zero? : LiftedNumPred]
                     [even? : LiftedIntPred]
                     [odd? : LiftedIntPred]
+                    [exact-nonnegative-integer? : (LiftedPredFor Nat)]
+
                     [inexact->exact : (Ccase-> (C→ CNum CNum)
                                                (C→ Num Num))]
                     [exact->inexact : (Ccase-> (C→ CNum CNum)
@@ -883,44 +504,28 @@
 ;; ---------------------------------
 ;; more built-in ops
 
+(define-simple-macro
+  (define-solvable-type-predicate pred? ro-pred? CType Type)
+  (begin-
+    (provide- pred?)
+    (define-syntax- pred?
+      (make-variable-like-transformer
+       (attach (⊢ (mark-solvablem ro-pred?) : (LiftedPredFor Type))
+               'typefor
+               ((current-type-eval) #'(Term CType)))))))
+
 ;(define-rosette-primop boolean? : (C→ Any Bool))
-(define-typed-syntax boolean?
-  [_:id ≫
-   --------
-   [⊢ (mark-solvablem
-       ro:boolean?)
-      (⇒ : LiftedPred)
-      (⇒ typefor (Term CBool))]]
-  [(_ e) ≫
-   [⊢ e ≫ e- ⇒ ty]
-   --------
-   [⊢ (ro:boolean? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
+(define-solvable-type-predicate boolean? ro:boolean? CBool Bool)
 
 ;(define-rosette-primop integer? : (C→ Any Bool))
-(define-typed-syntax integer?
-  [_:id ≫
-   --------
-   [⊢ (mark-solvablem
-       ro:integer?)
-      (⇒ : LiftedPred)
-      (⇒ typefor (Term CInt))]]
-  [(_ e) ≫
-   [⊢ e ≫ e- ⇒ ty]
-   --------
-   [⊢ (ro:integer? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
+(define-solvable-type-predicate integer? ro:integer? CInt Int)
 
 ;(define-rosette-primop real? : (C→ Any Bool))
-(define-typed-syntax real?
-  [_:id ≫
-   --------
-   [⊢ (mark-solvablem
-       ro:real?)
-      (⇒ : LiftedPred)
-      (⇒ typefor (Term CNum))]]
-  [(_ e) ≫
-   [⊢ e ≫ e- ⇒ ty]
-   --------
-   [⊢ (ro:real? e-) ⇒ #,(if (concrete? #'ty) #'CBool #'Bool)]])
+(define-solvable-type-predicate real? ro:real? CNum Num)
+
+(provide (typed-out [concrete-boolean?
+                     : (C→* [Any] [] CBool :
+                            #:+ (@ 0 : CBool) #:- (!@ 0 : CBool))]))
 
 (define-typed-syntax time
   [(_ e) ≫
@@ -993,7 +598,7 @@
 
 (provide (typed-out [bv : (Ccase-> (C→ CInt CBVPred CBV)
                                    (C→ CInt CPosInt CBV))]
-                    [bv? : LiftedPred]
+                    [bv? : (LiftedPredFor BV)]
                     
                     [bveq : (C→ BV BV Bool)]
                     [bvslt : (C→ BV BV Bool)]
@@ -1114,9 +719,7 @@
   [_:id ≫
    --------
    [⊢ [_ ≫ ro:&& ⇒ :
-           (Ccase-> (C→ Bool)
-                    (C→ Bool Bool)
-                    (C→ Bool Bool Bool))]]]
+         (C→* [] [] #:rest (Listof Bool) Bool)]]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇐ : Bool] ...]
    --------
@@ -1125,39 +728,14 @@
   [_:id ≫
    --------
    [⊢ [_ ≫ ro:|| ⇒ :
-           (Ccase-> (C→ Bool)
-                    (C→ Bool Bool)
-                    (C→ Bool Bool Bool))]]]
+           (C→* [] [] #:rest (Listof Bool) Bool)]]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇐ : Bool] ...]
    --------
    [⊢ [_ ≫ (ro:|| e- ...) ⇒ : Bool]]])
 
-(define-typed-syntax and
-  [(_) ≫
-   --------
-   [⊢ [_ ≫ (ro:and) ⇒ : CTrue]]]
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇐ : Bool] ...]
-   --------
-   [⊢ [_ ≫ (ro:and e- ...) ⇒ : Bool]]]
-  [(_ e ... elast) ≫
-   [⊢ [e ≫ e- ⇒ : ty] ...]
-   [⊢ [elast ≫ elast- ⇒ : ty-last]]
-   --------
-   [⊢ [_ ≫ (ro:and e- ... elast-) ⇒ : #,(type-merge typeCFalse #'ty-last)]]])
-(define-typed-syntax or
-  [(_) ≫
-   --------
-   [⊢ [_ ≫ (ro:or) ⇒ : CFalse]]]
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇐ : Bool] ...]
-   --------
-   [⊢ [_ ≫ (ro:or e- ...) ⇒ : Bool]]]
-  [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇒ : ty] ...]
-   --------
-   [⊢ [_ ≫ (ro:or e- ...) ⇒ : #,(type-merge* (cons typeCFalse #'[ty ...]))]]])
+;; and, or, and not are defined in rosette/forms-pre-match.rkt
+
 (define-typed-syntax nand
   [(_) ≫
    --------
@@ -1184,7 +762,7 @@
 
 (provide (typed-out [sat? : UnliftedPred]
                     [unsat? : UnliftedPred]
-                    [solution? : UnliftedPred]
+                    [solution? : (UnliftedPredFor CSolution)]
                     [unknown? : UnliftedPred]
                     [sat : (Ccase-> (C→ CSolution)
                                     (C→ (CHashTable Any Any) CSolution))]
@@ -1320,7 +898,7 @@
 
 ;(define-rosette-primop gen:solver : CSolver)
 (provide (typed-out
-          [solver? : UnliftedPred]
+          [solver? : (UnliftedPredFor CSolver)]
           [solver-assert : (C→ CSolver (CListof Bool) CUnit)]
           [solver-clear : (C→ CSolver CUnit)]
           [solver-minimize : (C→ CSolver (CListof (U Int Num BV)) CUnit)]
@@ -1359,6 +937,21 @@
 
 (define-typed-syntax for/all
   ;; symbolic e
+  [(_ ([x:id e]) e_body) ⇐ τ_body ≫
+   [⊢ [e ≫ e- ⇒ : (~U* τ_case ...)]]
+   #:with τ_x (cond [(= 1 (stx-length #'[τ_case ...]))
+                     (stx-car #'[τ_case ...])]
+                    [(stx-andmap concrete? #'[τ_case ...])
+                     #'(CU τ_case ...)]
+                    [else
+                     #'(U τ_case ...)])
+   [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇐ : τ_body]]
+   ;; Merge the τ_body with itself
+   #:with τ_out (type-merge #'τ_body #'τ_body)
+   ;; Check that it's a subtype of τ_body, context is expecting that
+   [τ_out τ⊑ τ_body]
+   --------
+   [⊢ (ro:for/all ([x- e-]) e_body-)]]
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : (~U* τ_case ...)]]
    #:with τ_x (cond [(= 1 (stx-length #'[τ_case ...]))
@@ -1373,6 +966,12 @@
    --------
    [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]]
   ;; known concrete e
+  [(_ ([x:id e]) e_body) ⇐ τ_body ≫
+   [⊢ [e ≫ e- ⇒ : τ_x]]
+   #:when (concrete? #'τ_x)
+   [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇐ : τ_body]]
+   --------
+   [⊢ (ro:for/all ([x- e-]) e_body-)]]
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
    #:when (concrete? #'τ_x)
@@ -1381,6 +980,15 @@
    [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_body]]]
   ;; other, for example a symbolic constant, an Any type, or a symbolic union
   ;; type that didn't pass the first case
+  [(_ ([x:id e]) e_body) ⇐ τ_body ≫
+   [⊢ [e ≫ e- ⇒ : τ_x]]
+   [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇐ : τ_body]]
+   ;; Merge the τ_body with itself
+   #:with τ_out (type-merge #'τ_body #'τ_body)
+   ;; Check that it's a subtype of τ_body, context is expecting that
+   [τ_out τ⊑ τ_body]
+   --------
+   [⊢ (ro:for/all ([x- e-]) e_body-)]]
   [(_ ([x:id e]) e_body) ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
@@ -1397,4 +1005,38 @@
    --------
    [_ ≻ (for/all ([x e]) (for*/all ([x_rst e_rst] ...) e_body))]])
 
+;; ------------------------------------------------------------------------
+
+;; Errors
+
+(provide (typed-out
+          [exn:fail? (C→ Any Bool)]
+          [raise-argument-error (C→ CSymbol CString Any CNothing)]))
+
+(define-typed-syntax raise-arguments-error
+  [(_ name message (~seq field v) ...) ≫
+   [⊢ name ≫ name- ⇐ CSymbol]
+   [⊢ message ≫ message- ⇐ CString]
+   [⊢ [field ≫ field- ⇐ CString] ...]
+   [⊢ [v ≫ v- ⇐ Any] ...]
+   #:with [[field/v- ...] ...] #'[[field- v-] ...]
+   --------
+   [⊢ (ro:raise-arguments-error name- message- field/v- ... ...)
+      ⇒ CNothing]])
+
+;; ------------------------------------------------------------------------
+
+;; Other
+
+(provide define-syntax-rule
+         define-syntax)
+
+(define-typed-syntax begin0
+  [(_ e0:expr e:expr ...) ≫
+   [⊢ e0 ≫ e0- ⇒ τ]
+   [⊢ [e ≫ e- ⇐ Void] ...]
+   --------
+   [⊢ (ro:begin0 e0- e- ...) ⇒ τ]])
+
+;; ------------------------------------------------------------------------
 
