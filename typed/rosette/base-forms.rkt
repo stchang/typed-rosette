@@ -3,7 +3,6 @@
 (provide : define set! λ apply ann begin list
          let
          (rename-out [app #%app])
-         unsafe-assign-type unsafe-define/assign-type
          (for-syntax expand/ro))
 
 (require (only-in turnstile/examples/stlc+union ann)
@@ -101,10 +100,16 @@
   ;; var-assign/orig-binding :
   ;; Id (Listof Sym) (StxListof TypeStx) -> Stx
   (define (var-assign/orig-binding x seps τs)
-    (attachs (attach x 'orig-binding x)
-             seps
-             τs
-             #:ev (current-type-eval)))
+     (attachs 
+;      (attachs
+       (attach x 'orig-binding x)
+ ;      '(prop+ prop-)
+  ;     #`((Prop/ObjNotType #,x : False)
+   ;       (Prop/ObjType #,x : False))
+    ;   #:ev (current-type-eval))
+      seps
+      τs
+      #:ev (current-type-eval)))
 
   (current-var-assign var-assign/orig-binding))
 
@@ -662,18 +667,3 @@
    [⊢ (ro:let ([x- e-] ...) e_body-) ⇒ τ_body]])
 
 ;; ----------------------------------------------------------------------------
-
-;; Unsafely assigning types to values
-
-;; unsafe-assign-type doesn't typecheck anything within the expression
-(define-typed-syntax unsafe-assign-type
-  #:datum-literals [:]
-  [(_ e:expr : τ:expr) ≫
-   --------
-   [⊢ (ro:#%expression e) ⇒ : τ]])
-
-(define-syntax-parser unsafe-define/assign-type
-  #:datum-literals [:]
-  [(_ x:id : τ:expr e:expr)
-   #'(define x (unsafe-assign-type e : τ))])
-

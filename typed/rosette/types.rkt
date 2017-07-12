@@ -4,7 +4,7 @@
          CNothing Nothing
          Term
          CU U
-         Constant
+         Constant Solvable
          (for-syntax Any?
                      ~Term*
                      ~CU* ~U* CU*? U*?
@@ -46,12 +46,14 @@
          CHashTable
          (rename-out [CHashTable CHashof])
          CSequenceof
-         CBoxof CMBoxof CIBoxof MBoxof  IBoxof
+         CISetof CMSetof
+         CBoxof CMBoxof CIBoxof MBoxof IBoxof
          CVectorof CMVectorof CIVectorof CVector
          Vectorof MVectorof IVectorof
          (for-syntax ~CHashTable
                      (rename-out [~CHashTable ~CHashof])
                      ~CSequenceof
+                     ~CMSetof ~CISetof
                      ~CMBoxof ~CIBoxof
                      ~CMVectorof ~CIVectorof)
          ;; BV types
@@ -221,8 +223,10 @@
 ;; CMVectorof includes only mutable vectors
 (define-type-constructor CIVectorof #:arity = 1)
 (define-type-constructor CIBoxof #:arity = 1)
+(define-type-constructor CISetof #:arity = 1)
 (define-internal-type-constructor CMVectorof) ; #:arity = 1
 (define-internal-type-constructor CMBoxof) ; #:arity = 1
+(define-internal-type-constructor CMSetof) ; #:arity = 1
 
 (define-typed-syntax (CMVectorof τ:type) ≫
   #:fail-when (and (concrete? #'τ.norm) #'τ)
@@ -234,6 +238,11 @@
   "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMBoxof- τ.norm) ⇒ :: #%type])
+(define-typed-syntax (CMSetof τ:type) ≫
+  #:fail-when (and (concrete? #'τ.norm) #'τ)
+  "Mutable locations must have types that allow for symbolic values"
+  --------
+  [⊢ (CMSetof- τ.norm) ⇒ :: #%type])
 
 ;; TODO: Hash subtyping?
 ;; - invariant for now, like TR, though Rosette only uses immutable hashes?
@@ -567,6 +576,8 @@
 (define-named-type-alias Num (add-predm (U (Term CNum)) ro:real?))
 
 (define-named-type-alias BV (add-predm (U (Term CBV)) ro:bv?))
+
+(define-named-type-alias Solvable (U Bool Int Num BV))
 
 (define-named-type-alias CAsserts (CListof Bool))
 
@@ -1116,6 +1127,7 @@
 
 ;; (with-occurrence-env occurrence-env expr)
 (define-typed-syntax with-occurrence-env
+;  [(_ env b) ≫ #:do[(displayln 'env)(pretty-print (stx->datum #'env))]#:when #f ---    [⊢ (void ⇒ CNothing)]]
   [(_ #false body:expr) ≫
    #:with DEAD (syntax/loc #'body
                  (ro:assert #false "this should be dead code"))
@@ -1129,6 +1141,9 @@
    --------
    [⊢ (let- ([x- x] ...) body-)]]
   [(_ ([x:id τ:type] ...) body:expr) ≫
+   ;; #:do[(displayln 'with-occur-env)
+   ;;      (displayln (stx->datum #'(x ...)))
+   ;;      (pretty-print (stx->datum #'(τ ...)))]
    #:do [(define scope
            (make-syntax-delta-introducer (datum->syntax #'body '||) #f))]
    #:with [x* ...] (scope #'[x ...])

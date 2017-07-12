@@ -5,7 +5,8 @@
 
 (require (prefix-in ro: rosette/safe)
          "types.rkt"
-         "base-forms.rkt")
+         "base-forms.rkt"
+         "unsafe.rkt")
 
 ;; TODO:
 ;; Add a way to specify how properties like prop:procedure

@@ -14,6 +14,7 @@
          typed/rosette/base-forms
          typed/rosette/forms-pre-match
          typed/rosette/match-core
+         typed/rosette/unsafe
          (for-syntax racket/struct-info
                      racket/syntax
                      syntax/parse/class/local-value))

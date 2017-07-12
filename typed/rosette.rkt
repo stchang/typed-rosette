@@ -22,8 +22,10 @@
  "rosette/for-forms.rkt"
  "rosette/format.rkt"
  "rosette/vector.rkt"
+ "rosette/set.rkt"
  "rosette/hash.rkt"
  "rosette/function.rkt"
+ "rosette/unsafe.rkt"
  ;; base lang
  (prefix-in ro: (combine-in rosette rosette/lib/synthax
                             "rosette/concrete-predicate.rkt"))
@@ -45,13 +47,16 @@
                        "rosette/format.rkt"
                        "rosette/list.rkt"
                        "rosette/vector.rkt"
+                       "rosette/set.rkt"
                        "rosette/hash.rkt"
-                       "rosette/function.rkt")
-         (for-syntax get-pred expand/ro)
+                       "rosette/function.rkt"
+                       "rosette/unsafe.rkt")
+         (for-syntax get-pred expand/ro concrete?)
+         define-typed-param
          CAnyDeep CAny Any CNothing Nothing
          Term
          CU U (for-syntax ~CU* ~U*)
-         Constant
+         Constant Solvable
          Struct
          C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
@@ -59,8 +64,9 @@
          (for-syntax ~CListof)
          CVectorof MVectorof IVectorof Vectorof CMVectorof CIVectorof CVector
          CParamof ; TODO: symbolic Param not supported yet
+         CISetof CMSetof
          CBoxof MBoxof IBoxof CMBoxof CIBoxof CHashTable
-         (for-syntax ~CHashTable)
+         (for-syntax ~CMVectorof ~CMSetof ~CHashTable)
          CUnit Unit (for-syntax ~CUnit CUnit?)
          CNegInt NegInt
          CZero Zero
@@ -93,6 +99,25 @@
      #'(define-typed-syntax name #:export-as name . rst)]
     [(_ (name:id . pat) . rst)
      #'(define-typed-syntax name #:export-as name [(_ . pat) . rst])]))
+
+;; ---------------------------------
+;; define-typed-param
+(define-syntax (define-typed-param stx)
+  (syntax-parse stx
+    [(_ name:id (~datum :) ty)
+     #:with uname ((current-host-lang) #'name) ; untyped
+     #'(define-typed-syntax name
+         [_:id  ≫ --- [⊢ uname ⇒ (CParamof ty)]]
+         [(_)   ≫ --- [⊢ (uname) ⇒ ty]]
+         [(_ e) ≫
+          [⊢ e ≫ e- ⇒ _]
+          #:when (false? (typeof #'e-)) ; allow usage in untyped code
+          --------
+          [⊢ (uname e-) ⇒ CUnit]]
+         [(_ e) ≫
+          [⊢ e ≫ e- ⇐ ty]
+          --------
+          [⊢ (uname e-) ⇒ CUnit]])]))
 
 ;; ---------------------------------
 ;; define-symbolic
@@ -1039,4 +1064,21 @@
    [⊢ (ro:begin0 e0- e- ...) ⇒ τ]])
 
 ;; ------------------------------------------------------------------------
+;; undocumented
 
+;; TODO: add union
+
+;; returns all symbolic constants from e?
+(define-typed-syntax symbolics
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ _]
+   ---------
+   [⊢ (ro:symbolics e-) ⇒ (CListof Solvable)]])
+
+;; completes given model with given constants?
+(define-typed-syntax complete
+  [(_ m xs) ≫
+   [⊢ m ≫ m- ⇐ CSolution]
+   [⊢ xs ≫ xs- ⇒ (~CHashTable _ _)]
+   -----------
+   [⊢ (ro:complete m- xs-) ⇒ CSolution]])   

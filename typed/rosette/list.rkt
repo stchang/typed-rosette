@@ -1,6 +1,6 @@
 #lang turnstile
 
-(provide cons pair car cdr
+(provide cons pair car cdr null
          length list-ref first rest second make-list build-list
          map foldl member?
          cartesian-product* append* sort
@@ -10,6 +10,7 @@
          typed/rosette/types
          typed/rosette/bool
          typed/rosette/forms-pre-match
+         typed/rosette/unsafe
          (only-in turnstile/examples/stlc+tup
                   tup proj)
          (prefix-in ro: rosette))
@@ -23,6 +24,11 @@
                     [empty? : (Ccase-> (C→ (CListof Any) CBool)
                                        (C→ (Listof Any) Bool))]
                     [list? : LiftedPred]))
+
+(define-typed-syntax null
+  [(_ {τ}) ≫
+   --------
+   [⊢ ro:null ⇒ (CListof τ)]])
 
 (define-typed-syntax cons
   [_:id ≫ ;; TODO: use polymorphism
