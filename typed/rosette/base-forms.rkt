@@ -6,7 +6,7 @@
          unsafe-assign-type unsafe-define/assign-type
          (for-syntax expand/ro))
 
-(require (only-in turnstile/examples/stlc+union ann begin)
+(require (only-in turnstile/examples/stlc+union ann)
          (prefix-in ro: rosette/safe)
          "types.rkt")
 
@@ -292,6 +292,24 @@
    -------
    [⊢ (ro:λ (x- ... kw-arg- ... ... . rst-) body-)
       ⇒ (C→* [τ_in.norm ...] [[kw τ_kw.norm] ...] #:rest τ_rst.norm τ_out)]])
+
+;; ----------------------------------------------------------------------------
+
+;; Begin
+
+(define-typed-syntax begin
+  [(_ e_unit ... e) ⇐ τ_expected ≫
+   [⊢ e_unit ≫ e_unit- ⇒ _] ...
+   [⊢ e ≫ e- ⇐ τ_expected]
+   #:with stx- (transfer-props #'e- #'(begin- e_unit- ... e-))
+   --------
+   [⊢ stx-]]
+  [(_ e_unit ... e) ≫
+   [⊢ e_unit ≫ e_unit- ⇒ _] ...
+   [⊢ e ≫ e- ⇒ τ_e]
+   #:with stx- (transfer-props #'e- #'(begin- e_unit- ... e-))
+   --------
+   [⊢ stx- ⇒ τ_e]])
 
 ;; ----------------------------------------------------------------------------
 

@@ -114,3 +114,21 @@
       (f/intbool* x)
       0))
 
+;; ---------------------------------------------------------
+
+;; Testing occurrence typing through begin
+
+(: f1/begin : (C→ Any Int))
+(define (f1/begin x)
+  (if (begin (integer? x))
+      x
+      0))
+
+(: f2/begin : (C→ Any Int))
+(define (f2/begin x)
+  (if (integer? x)
+      (begin x)
+      0))
+
+;; ---------------------------------------------------------
+

@@ -1,7 +1,7 @@
 #lang turnstile
 ;; reuse unlifted forms as-is
 (reuse  
- let* letrec begin #%datum ann current-join ⊔
+ let* letrec #%datum ann current-join ⊔
  define-type-alias define-named-type-alias
  #:from turnstile/examples/stlc+union)
 (require
@@ -128,7 +128,7 @@
    #:fail-unless (syntax-e #'s?)
                  (format "Expected a Rosette-solvable type, given ~a." 
                          (syntax->datum #'pred?))
-   [([x ≫ x- : (Constant ty)] ...) ⊢ [(stlc+union:begin e ...) ≫ e- ⇒ τ_out]]
+   [([x ≫ x- : (Constant ty)] ...) ⊢ [(begin e ...) ≫ e- ⇒ τ_out]]
    --------
    [⊢ [_ ≫ (ro:let-values
             ([(x- ...) (ro:let ()
@@ -141,7 +141,7 @@
    #:fail-unless (syntax-e #'s?)
                  (format "Expected a Rosette-solvable type, given ~a." 
                          (syntax->datum #'pred?))
-   [([x ≫ x- : (Constant ty)] ...) ⊢ [(stlc+union:begin e ...) ≫ e- ⇒ τ_out]]
+   [([x ≫ x- : (Constant ty)] ...) ⊢ [(begin e ...) ≫ e- ⇒ τ_out]]
    --------
    [⊢ [_ ≫ (ro:let-values
             ([(x- ...) (ro:let ()
