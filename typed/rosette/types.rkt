@@ -824,12 +824,12 @@
   (define (type-merge/U/not-U as b)
     (define-values [as/b-shape as/without]
       (partition (λ (a) (types-same-single-shape a b)) as))
-    (displayln 'as)
-    (displayln (stx-map (compose pretty-print stx->datum) as))
-    (displayln 'as/b-shape)
-    (displayln (stx-map (compose pretty-print stx->datum) as/b-shape))
-    (displayln 'as/wo)
-    (displayln (stx-map (compose pretty-print stx->datum) as/without))
+    ;; (displayln 'as)
+    ;; (displayln (stx-map (compose pretty-print stx->datum) as))
+    ;; (displayln 'as/b-shape)
+    ;; (displayln (stx-map (compose pretty-print stx->datum) as/b-shape))
+    ;; (displayln 'as/wo)
+    ;; (displayln (stx-map (compose pretty-print stx->datum) as/without))
     (define b/with
       (for/fold ([b b])
                 ([a (in-list as/b-shape)])
