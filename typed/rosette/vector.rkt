@@ -77,7 +77,7 @@
 
 (define-typed-syntax vector->list
   [(_ v:expr) ≫
-   [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
+   [⊢ v ≫ v- ⇒ (~or (~CMVectorof τ) (~CIVectorof τ))]
    --------
    [⊢ (ro:vector->list v-) ⇒ (CListof τ)]])
 

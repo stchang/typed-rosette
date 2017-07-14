@@ -2,7 +2,7 @@
 
 (provide cons pair car cdr null
          length list-ref first rest second make-list build-list
-         map foldl member?
+         map foldl member? remove-duplicates
          cartesian-product* append* sort
          andmap)
 
@@ -242,10 +242,10 @@
    --------
    [⊢ ro:build-list ⇒ : (C→ CNat (C→ CNat Any) (CListof Any))]]
   [(_ n:expr f:expr) ≫
-   [⊢ n ≫ n- ⇐ : CNat]
+   [⊢ n ≫ n- ⇐ : CInt]
    [⊢ f ≫ f- ⇒ : (~C→ X Y)]
-   #:fail-unless (typecheck? #'X ((current-type-eval) #'CNat))
-                 "expected function that consumes concrete Nat"
+   #:fail-unless (typecheck? #'X ((current-type-eval) #'CInt))
+                 "expected function that consumes concrete Int"
    --------
    [⊢ [_ ≫ (ro:build-list n- f-) ⇒ : (CListof Y)]]])
 
@@ -263,40 +263,40 @@
    --------
    [⊢ [_ ≫ ro:map ⇒ : (C→ (C→ Any Any) (CListof Any) (CListof Any))]]]
   [(_ f:expr lst:expr) ⇐ (~CListof Y) ≫
-   [⊢ f ≫ f- ⇒ (~C→ X Y*)]
+   [⊢ f ≫ f- ⇒ (~C→ X ... Y*)]
    ; Y* must be usable as Y, because the Y* value will be used
    ; as an element the return value
    [Y* τ⊑ Y #:for f]
-   [⊢ lst ≫ lst- ⇐ (CListof X)]
+   [⊢ lst ≫ lst- ⇐ (CListof X)] ...
    --------
-   [⊢ (ro:map f- lst-)]]
-  [(_ f:expr lst:expr) ≫
-   [⊢ [f ≫ f- ⇒ : (~C→ ~! X Y)]]
-   [⊢ [lst ≫ lst- ⇐ : (CListof X)]]
+   [⊢ (ro:map f- lst- ...)]]
+  [(_ f:expr lst:expr ...) ≫
+   [⊢ [f ≫ f- ⇒ : (~C→ ~! X ... Y)]]
+   [⊢ [lst ≫ lst- ⇐ : (CListof X)] ...]
    --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof Y)]]]
-  [(_ f:expr lst:expr) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~CListof X)]]
+   [⊢ [_ ≫ (ro:map f- lst- ...) ⇒ : (CListof Y)]]]
+  [(_ f:expr lst:expr ...) ≫
+   [⊢ [lst ≫ lst- ⇒ : (~CListof X)] ...]
    [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ Y)
+   #:with (~C→ _ ... Y)
           (for/first ([ty-fn (stx->list #'(ty-fns ...))]
                       #:when (syntax-parse ty-fn
-                               [(~C→ X* _) #:when (typecheck? #'X #'X*) #t]
+                               [(~C→ X* ... _) #:when (typechecks? #'(X ...) #'(X* ...)) #t]
                                [_ #f]))
             ty-fn)
    --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof Y)]]]
-  [(_ f:expr lst:expr) ≫
-   [⊢ [lst ≫ lst- ⇒ : (~U* (~CListof X))]]
+   [⊢ [_ ≫ (ro:map f- lst- ...) ⇒ : (CListof Y)]]]
+  [(_ f:expr lst:expr ...) ≫
+   [⊢ [lst ≫ lst- ⇒ : (~U* (~CListof X))] ...]
    [⊢ [f ≫ f- ⇒ : (~Ccase-> ~! ty-fns ...)]] ; find first match
-   #:with (~C→ _ Y)
+   #:with (~C→ _  ... Y)
           (for/first ([ty-fn (stx->list #'(ty-fns ...))]
                       #:when (syntax-parse ty-fn
-                               [(~C→ X* _) #:when (typecheck? #'X #'X*) #t]
+                               [(~C→ X* ... _) #:when (typecheck? #'(X ...) #'(X* ...)) #t]
                                [_ #f]))
             ty-fn)
    --------
-   [⊢ [_ ≫ (ro:map f- lst-) ⇒ : (CListof Y)]]])
+   [⊢ [_ ≫ (ro:map f- lst- ...) ⇒ : (CListof Y)]]])
 
 
 
@@ -344,6 +344,12 @@
    [⊢ lst ≫ lst- ⇐ (CListof X)]
    --------
    [⊢ (ro:foldl f- base- lst-) ⇒ Y]])
+
+(define-typed-syntax remove-duplicates
+  [(_ lst) ≫
+   [⊢ lst ≫ lst- (⇐ (Listof Any)) (⇒ ty-out)]
+   --------
+   [⊢ (ro:remove-duplicates lst-) ⇒ ty-out]])
 
 (define member
   (unsafe-assign-type ro:member :

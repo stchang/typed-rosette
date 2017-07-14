@@ -3,11 +3,13 @@
 (provide : define set! λ apply ann begin list
          let
          (rename-out [app #%app])
-         (for-syntax expand/ro))
+         (for-syntax expand/ro)
+         unsafe-assign-type) ; ocelot needs this
 
 (require (only-in turnstile/examples/stlc+union ann)
          (prefix-in ro: rosette/safe)
-         "types.rkt")
+         "types.rkt"
+         (only-in typed/rosette/unsafe unsafe-assign-type)) ; ocelot needs this
 
 (begin-for-syntax
   ;; split-at* : [Listof A] [Listof Natural] -> [Listof [Listof A]]
@@ -201,9 +203,9 @@
       :-> τ_out
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
-   #:with lam (syntax/loc this-syntax
+   #:with lam (quasisyntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ...)
-                  (ann body* : τ_out)))
+                  #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
    [≻ (define f : (C→ τ_in ... [kw τ_kw] ... τ_out)
         lam)]]
@@ -212,9 +214,9 @@
       :-> τ_out
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
-   #:with lam (syntax/loc this-syntax
+   #:with lam (quasisyntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ... . [rst : τ_rst])
-                  (ann body* : τ_out)))
+                  #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
    [≻ (define f : (C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
         lam)]]
@@ -368,12 +370,14 @@
   ;; concrete functions
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
+;   #:do[(displayln (stx->datum #'f))]
    #:with f-- (expand/ro #'f)
    #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...]
                       τ_out
                       : #:+ posprop #:- negprop)
                 ~!)
    (typeof #'f--)
+;   #:do[(pretty-print (stx->datum #'[τ_a ...]))]
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length=? #'[a ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[a ...])
@@ -391,6 +395,8 @@
    #:with [a- ...] (stx-map expand/ro #'[a ...])
    #:with [b- ...] (stx-map expand/ro #'[b ...])
    #:with [τ_a* ...] (stx-map typeof #'(a- ...))
+   ;; #:do[(displayln "arg types")
+   ;;      (pretty-print (stx->datum #'[τ_a* ...]))]
    #:with [τ_b* ...] (stx-map typeof #'(b- ...))
    #:fail-unless (typechecks? #'[τ_a* ... τ_b* ...] #'[τ_a ... τ_b ...])
    (typecheck-fail-msg/multi #'[τ_a ... τ_b ...] #'[τ_a* ... τ_b* ...]

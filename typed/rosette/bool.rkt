@@ -38,6 +38,8 @@
          [(typecheck? #'ty2 typeCNothing) #'ty1]
          ;; else don't need to merge, but do need U
          [else #'(U ty1 ty2)])
+;; #:do[(displayln "if tyout1")
+;;      (pretty-print (stx->datum #'τ_out))]
    --------
    [⊢ [_ ≫ (ro:if e_tst-
                   e1-
@@ -51,6 +53,15 @@
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
    #:with τ_out (type-merge #'ty1 #'ty2)
+;; #:do[(displayln "if tyout2")
+;;      (displayln (stx->datum this-syntax))
+;;      (displayln "Ty1")
+;;      (displayln (stx->datum #'e1))
+;;      (pretty-print (stx->datum #'ty1))
+;;      (displayln "Ty2")
+;;      (displayln (stx->datum #'e2))
+;;      (pretty-print (stx->datum #'ty2))
+;;      (pretty-print (stx->datum #'τ_out))]
    --------
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
 

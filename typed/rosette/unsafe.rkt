@@ -3,7 +3,10 @@
 (require typed/rosette/types
          (prefix-in ro: rosette))
 
-(provide unsafe-assign-type unsafe-define/assign-type unsafe-cast-concrete)
+(provide unsafe-assign-type
+         unsafe-define/assign-type
+         unsafe-cast-concrete
+         unsafe-cast-nonfalse)
 
 ;; Unsafely assigning types to values
 
@@ -28,3 +31,13 @@
    [⊢ e ≫ e- ⇒ (~U* ty ...)]
    --------
    [⊢ e- ⇒ (CU ty ...)]])
+
+(define-typed-syntax unsafe-cast-nonfalse
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ (~CU* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   --------
+   [⊢ e- ⇒ (CU ty ...)]]
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ (~U* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   --------
+   [⊢ e- ⇒ (U ty ...)]])

@@ -810,7 +810,8 @@
   ;; type-merge/single-shape-solvable : Type Type -> Type
   (define (type-merge/single-shape-solvable a b)
     ((current-type-eval)
-     (cond [(typecheck? a b)
+     (cond ;[(types-same-singleton? a b) a]
+           [(typecheck? a b)
             #`(Term #,b)]
            [(typecheck? b a)
             #`(Term #,a)]
@@ -823,10 +824,16 @@
   (define (type-merge/U/not-U as b)
     (define-values [as/b-shape as/without]
       (partition (λ (a) (types-same-single-shape a b)) as))
+    (displayln 'as)
+    (displayln (stx-map (compose pretty-print stx->datum) as))
+    (displayln 'as/b-shape)
+    (displayln (stx-map (compose pretty-print stx->datum) as/b-shape))
+    (displayln 'as/wo)
+    (displayln (stx-map (compose pretty-print stx->datum) as/without))
     (define b/with
       (for/fold ([b b])
                 ([a (in-list as/b-shape)])
-        (type-merge/single-shape-solvable a b)))
+        (type-merge a b)#;(type-merge/single-shape-solvable a b)))
     ((current-type-eval) #`(U #,@as/without #,b/with)))
 
   ;; type-merge/U/U : (Listof Type) (Listof Type) -> Type
