@@ -810,8 +810,7 @@
   ;; type-merge/single-shape-solvable : Type Type -> Type
   (define (type-merge/single-shape-solvable a b)
     ((current-type-eval)
-     (cond ;[(types-same-singleton? a b) a]
-           [(typecheck? a b)
+     (cond [(typecheck? a b)
             #`(Term #,b)]
            [(typecheck? b a)
             #`(Term #,a)]
@@ -824,16 +823,10 @@
   (define (type-merge/U/not-U as b)
     (define-values [as/b-shape as/without]
       (partition (λ (a) (types-same-single-shape a b)) as))
-    ;; (displayln 'as)
-    ;; (displayln (stx-map (compose pretty-print stx->datum) as))
-    ;; (displayln 'as/b-shape)
-    ;; (displayln (stx-map (compose pretty-print stx->datum) as/b-shape))
-    ;; (displayln 'as/wo)
-    ;; (displayln (stx-map (compose pretty-print stx->datum) as/without))
     (define b/with
       (for/fold ([b b])
                 ([a (in-list as/b-shape)])
-        (type-merge a b)#;(type-merge/single-shape-solvable a b)))
+        (type-merge a b)))
     ((current-type-eval) #`(U #,@as/without #,b/with)))
 
   ;; type-merge/U/U : (Listof Type) (Listof Type) -> Type
@@ -1134,7 +1127,6 @@
 
 ;; (with-occurrence-env occurrence-env expr)
 (define-typed-syntax with-occurrence-env
-;  [(_ env b) ≫ #:do[(displayln 'env)(pretty-print (stx->datum #'env))]#:when #f ---    [⊢ (void ⇒ CNothing)]]
   [(_ #false body:expr) ≫
    #:with DEAD (syntax/loc #'body
                  (ro:assert #false "this should be dead code"))
@@ -1148,9 +1140,6 @@
    --------
    [⊢ (let- ([x- x] ...) body-)]]
   [(_ ([x:id τ:type] ...) body:expr) ≫
-   ;; #:do[(displayln 'with-occur-env)
-   ;;      (displayln (stx->datum #'(x ...)))
-   ;;      (pretty-print (stx->datum #'(τ ...)))]
    #:do [(define scope
            (make-syntax-delta-introducer (datum->syntax #'body '||) #f))]
    #:with [x* ...] (scope #'[x ...])

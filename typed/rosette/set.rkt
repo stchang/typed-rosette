@@ -40,11 +40,10 @@
    
 (define-typed-syntax set-add!
   [(_ s v) ≫
-   #:with s- (expand/ro #'s)
-   #:with ty (typeof #'s-)
-;   [⊢ s ≫ s- ⇒ ty];(~CMSetof τ)]
-;   #:do[(pretty-print (stx->datum #'ty))]
-   #:with (~CMSetof τ) #'ty
+   ;; #:with s- (expand/ro #'s)
+   ;; #:with ty (typeof #'s-)
+   [⊢ s ≫ s- ⇒ (~CMSetof τ)]
+   ;; #:with (~CMSetof τ) #'ty
    [⊢ v ≫ v- ⇐ τ]
    ----------
    [⊢ (set-add!- s- v-) ⇒ CUnit]])

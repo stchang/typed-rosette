@@ -152,6 +152,8 @@
    #:with [name-field ...]
    (for/list ([field (in-list (syntax->list #'[field ...]))])
      (format-id #'name "~a-~a" #'name field #:source #'name #:props #'name))
+   ;; always define setters for now, rely on dynamic check when not possible
+   ;; TODO: improve pattern to only define setters for mutable fields
    #:with [set-field ...]
    (for/list ([field (in-list (syntax->list #'[field ...]))])
      (format-id #'name "set-~a-~a!" #'name field #:source #'name #:props #'name))

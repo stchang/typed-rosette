@@ -102,16 +102,11 @@
   ;; var-assign/orig-binding :
   ;; Id (Listof Sym) (StxListof TypeStx) -> Stx
   (define (var-assign/orig-binding x seps τs)
-     (attachs 
-;      (attachs
-       (attach x 'orig-binding x)
- ;      '(prop+ prop-)
-  ;     #`((Prop/ObjNotType #,x : False)
-   ;       (Prop/ObjType #,x : False))
-    ;   #:ev (current-type-eval))
-      seps
-      τs
-      #:ev (current-type-eval)))
+    (attachs 
+     (attach x 'orig-binding x)
+     seps
+     τs
+     #:ev (current-type-eval)))
 
   (current-var-assign var-assign/orig-binding))
 
@@ -377,7 +372,6 @@
                       : #:+ posprop #:- negprop)
                 ~!)
    (typeof #'f--)
-;   #:do[(pretty-print (stx->datum #'[τ_a ...]))]
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length=? #'[a ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[a ...])
@@ -395,8 +389,6 @@
    #:with [a- ...] (stx-map expand/ro #'[a ...])
    #:with [b- ...] (stx-map expand/ro #'[b ...])
    #:with [τ_a* ...] (stx-map typeof #'(a- ...))
-   ;; #:do[(displayln "arg types")
-   ;;      (pretty-print (stx->datum #'[τ_a* ...]))]
    #:with [τ_b* ...] (stx-map typeof #'(b- ...))
    #:fail-unless (typechecks? #'[τ_a* ... τ_b* ...] #'[τ_a ... τ_b ...])
    (typecheck-fail-msg/multi #'[τ_a ... τ_b ...] #'[τ_a* ... τ_b* ...]

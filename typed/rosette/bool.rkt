@@ -12,7 +12,9 @@
 
 (provide if when unless cond else and or not)
 
-(define-for-syntax (ty-concrete-path? ty)
+;; conditionals use this to decide whether to consider multiple branches
+;; (and whether the result type should be symbolic)
+(define-for-syntax (ty-sym-false? ty)
   (or (concrete? ty) ; either concrete
       ; or non-bool symbolic
       ; (not a super-type of CFalse)
@@ -27,9 +29,7 @@
              (⇒ : ty_tst)
              (⇒ prop+ posprop)
              (⇒ prop- negprop)]]
-   #:when (ty-concrete-path? #'ty_tst)
-   ;; #:do [(displayln (stx->datum #'posprop))
-   ;;       (displayln (stx->datum #'negprop))]
+   #:when (ty-sym-false? #'ty_tst)
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
    #:with τ_out
@@ -38,8 +38,6 @@
          [(typecheck? #'ty2 typeCNothing) #'ty1]
          ;; else don't need to merge, but do need U
          [else #'(U ty1 ty2)])
-;; #:do[(displayln "if tyout1")
-;;      (pretty-print (stx->datum #'τ_out))]
    --------
    [⊢ [_ ≫ (ro:if e_tst-
                   e1-
@@ -53,15 +51,6 @@
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
    #:with τ_out (type-merge #'ty1 #'ty2)
-;; #:do[(displayln "if tyout2")
-;;      (displayln (stx->datum this-syntax))
-;;      (displayln "Ty1")
-;;      (displayln (stx->datum #'e1))
-;;      (pretty-print (stx->datum #'ty1))
-;;      (displayln "Ty2")
-;;      (displayln (stx->datum #'e2))
-;;      (pretty-print (stx->datum #'ty2))
-;;      (pretty-print (stx->datum #'τ_out))]
    --------
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
 
@@ -72,8 +61,7 @@
 (define-typed-syntax when
   [(_ condition:expr body:expr ...+) ≫ ; concrete path
    [⊢ condition ≫ condition- (⇒ : ty_tst) (⇒ prop+ posprop)]
-   #:when (ty-concrete-path? #'ty_tst)
-;   #:do [(displayln "when prop:")(displayln (stx->datum #'posprop))]
+   #:when (ty-sym-false? #'ty_tst)
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
    [⊢ (with-occurrence-prop posprop e) ≫ body- ⇒ τ]
    --------
@@ -88,8 +76,7 @@
 (define-typed-syntax unless
   [(_ condition:expr body:expr ...+) ≫ ; concrete path
    [⊢ condition ≫ condition- (⇒ : ty_tst) (⇒ prop- negprop)]
-   #:when (ty-concrete-path? #'ty_tst)
-;   #:do [(displayln "unless prop")(displayln (stx->datum #'negprop))]
+   #:when (ty-sym-false? #'ty_tst)
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
    [⊢ (with-occurrence-prop negprop e) ≫ body- ⇒ τ]
    --------
