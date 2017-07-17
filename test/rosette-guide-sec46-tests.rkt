@@ -33,13 +33,13 @@
 (define v1 (vector 1 2 #f))
 (define v2 (vector 1 2 #f))
 ;; mutable vectors are invariant
-(check-type v1 : (CMVectorof (U PosInt CFalse)))
-(check-type v1 : (CVectorof (U PosInt CFalse)))
-(check-not-type v1 : (CMVectorof (U Nat Bool)))
-(check-not-type v1 : (CVectorof (U Nat Bool)))
-(check-type v2 : (CMVectorof (U PosInt CFalse)))
-(check-type (eq? v1 v2) : Bool -> #f)
-(check-type (equal? v1 v2) : Bool -> #t)
+(check-type v1 : (CMVectorof (CU CPosInt CFalse)))
+(check-type v1 : (CVectorof (CU CPosInt CFalse)))
+(check-not-type v1 : (CMVectorof (CU CNat CBool)))
+(check-not-type v1 : (CVectorof (CU CNat CBool)))
+(check-type v2 : (CMVectorof (CU CPosInt CFalse)))
+(check-type (eq? v1 v2) : CBool -> #f)
+(check-type (equal? v1 v2) : CBool -> #t)
 
 ;; These are immutable, so they can have have concrete types
 (define v3 (vector-immutable 1 2 #f))

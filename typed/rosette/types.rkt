@@ -93,7 +93,8 @@
          add-typeform
          mark-solvablem
          mark-functionm
-         (for-syntax get-pred
+         (for-syntax current-sym-path? no-mutate? no-mut-msg
+                     get-pred
                      type-merge
                      type-merge*
                      typeCNothing
@@ -162,6 +163,18 @@
     (syntax-parse τ
       [(~Term* τ) (concrete-type-single-shape #'τ)]
       [_ (concrete-type-single-shape τ)]))
+
+  ;; indicates whether the path is currently symbolic
+  ;; needed for soundness,
+  ;;   eg reject mutation of concrete-typed vars in symbolic path
+  (define current-sym-path? (make-parameter #f))
+  (define (no-mutate? ty) (and (current-sym-path?) (concrete? ty)))
+  (define (no-mut-msg wh . args)
+    (apply
+     format
+     (string-append "Cannot mutate concrete " wh " when in a symbolic path")
+     args))
+
   )
 
 ;; TODO: update orig to use reduced type
@@ -229,18 +242,12 @@
 (define-internal-type-constructor CMSetof) ; #:arity = 1
 
 (define-typed-syntax (CMVectorof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMVectorof- τ.norm) ⇒ :: #%type])
 (define-typed-syntax (CMBoxof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMBoxof- τ.norm) ⇒ :: #%type])
 (define-typed-syntax (CMSetof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMSetof- τ.norm) ⇒ :: #%type])
 

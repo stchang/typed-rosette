@@ -56,12 +56,12 @@
 ;; 7.1.2 Symbolic Unions
 (define-symbolic b boolean?)
 (define v (vector 1))
-(check-type v : (CVectorof PosInt))
+(check-type v : (CVectorof CPosInt))
 (define w (vector 2 3))
-(check-type v : (CVectorof PosInt))
+(check-type w : (CVectorof CPosInt))
 (define s (if b v w))
-(check-type s : (Vectorof PosInt)) ;{[b #(1)] [(! b) #(2 3)]}
-(check-not-type s : (CVectorof PosInt)) ; check union doesnt have concrete type
+(check-type s : (Vectorof CPosInt)) ;{[b #(1)] [(! b) #(2 3)]}
+(check-not-type s : (CVectorof CPosInt)) ; check union doesnt have concrete type
 (check-type (type-of s) : (C→ Any Bool) -> vector?)
 (check-type (eq? s v) : Bool -> b)
 (check-type (eq? s w) : Bool -> (! b))
@@ -75,7 +75,7 @@
 (check-type v2 : (U CString CInt))
 (check-type v2 : (U CString CZero))
 (define u (if b (vector v2) 4))
-(check-type u : (U (CVectorof (U String Zero)) Int)) ;{[b #({[c "c"] [(! c) 0]})] [(! b) 4]}
+(check-type u : (U (CVectorof (U String CZero)) CInt)) ;{[b #({[c "c"] [(! c) 0]})] [(! b) 4]}
 (check-type (type-of u) : (C→ Any Bool) -> any/c)
 
 (check-type '(1 2) : (CListof CPosInt))

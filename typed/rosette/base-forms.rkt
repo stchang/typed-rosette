@@ -609,17 +609,14 @@
 
 ;; Variable Assignment
 
-;; This version of set! checks that it has the `type-decl-mutable` property.
-
+;; disallow mutation of concrete-typed variables when under symbolic path
 (define-typed-syntax set!
-  [(set! x:id e) ≫
-   [⊢ [x ≫ x- ⇒ : τ_x]]
-   #:fail-unless (typebool->bool (or (detach #'x- type-decl-mutable) typeCFalse))
-   (format "Cannot set! an immutable variable, `~a` must be declared mutable"
-           (syntax-e #'x))
-   [⊢ [e ≫ e- ⇐ : τ_x]]
+  [(set! x:id e:expr) ≫
+   [⊢ x ≫ x- ⇒ τ_x]
+   #:fail-when (no-mutate? #'τ_x) (no-mut-msg "variable ~a" (stx->datum #'x))
+   [⊢ e ≫ e- ⇐ τ_x]
    --------
-   [⊢ [_ ≫ (ro:set! x- e-) ⇒ : CUnit]]])
+   [⊢ (ro:set! x- e-) ⇒ CUnit]])
 
 ;; ----------------------------------------------------------------------------
 

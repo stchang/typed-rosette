@@ -48,8 +48,11 @@
              (⇒ : _)
              (⇒ prop+ posprop)
              (⇒ prop- negprop)]]
+   #:do[(define old-sym-path? (current-sym-path?))
+        (current-sym-path? #t)]
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
+   #:do[(current-sym-path? old-sym-path?)]
    #:with τ_out (type-merge #'ty1 #'ty2)
    --------
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
@@ -69,7 +72,10 @@
   [(_ condition:expr body:expr ...+) ≫ ; symbolic path
    [⊢ condition ≫ condition- (⇒ prop+ posprop)]
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   #:do[(define old-sym-path? (current-sym-path?))
+        (current-sym-path? #t)]
    [⊢ (with-occurrence-prop posprop e) ≫ body- ⇒ τ]
+   #:do[(current-sym-path? old-sym-path?)]
    --------
    [⊢ (ro:when condition- body-) ⇒ (U τ CVoid)]])
 
@@ -84,7 +90,10 @@
   [(_ condition:expr body:expr ...+) ≫ ; symbolic path
    [⊢ condition ≫ condition- (⇒ prop- negprop)]
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   #:do[(define old-sym-path? (current-sym-path?))
+        (current-sym-path? #t)]
    [⊢ (with-occurrence-prop negprop e) ≫ body- ⇒ τ]
+   #:do[(current-sym-path? old-sym-path?)]
    --------
    [⊢ (ro:unless condition- body-) ⇒ (U τ CVoid)]])
 
