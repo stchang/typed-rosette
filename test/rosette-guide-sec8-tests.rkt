@@ -72,3 +72,12 @@
  #:with-msg "Cannot mutate concrete hash when in a symbolic path")
 
 (typecheck-fail (when b (set-add! (set 1 2) 3)))
+
+(define (f [x : Int]) -> Int (add1 x))
+
+(typecheck-fail (when b (f 1))
+ #:with-msg "Cannot apply function with C→ type when in a symbolic path")
+
+(define/sym (g [x : Int]) -> Int (add1 x))
+
+(check-type (if b (g 1) (g 2)) : Int -> (if b 2 3))

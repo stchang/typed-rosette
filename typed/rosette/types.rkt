@@ -19,10 +19,9 @@
                      typed-struct-info-accessors
                      typed-struct-info-field-types)
          ;; Function types
-         C→ C→* Ccase->
-         →
+         C→ C→* C→/sym C→** Ccase-> → →/sym
          (for-syntax concrete-function-type?
-                     ~C→ ~C→* ~Ccase->
+                     ~C→ ~C→/sym ~C→* ~C→** ~Ccase->
                      C→? Ccase->?)
          ;; Propositions for Occurrence typing
          @ !@
@@ -93,7 +92,7 @@
          add-typeform
          mark-solvablem
          mark-functionm
-         (for-syntax current-sym-path? no-mutate? no-mut-msg
+         (for-syntax current-sym-path? no-mutate? no-mut-msg conc-fn-msg
                      get-pred
                      type-merge
                      type-merge*
@@ -174,7 +173,8 @@
      format
      (string-append "Cannot mutate concrete " wh " when in a symbolic path")
      args))
-
+  (define (conc-fn-msg)
+    "Cannot apply function with C→ type when in a symbolic path")
   )
 
 ;; TODO: update orig to use reduced type
@@ -310,7 +310,10 @@
 ;; ---------------------------------
 ;; Pattern Expanders for Types
 
+;; C→* may only be applied in concrete paths
+;; C→** may be applied in symbolic paths
 (define-internal-type-constructor C→*/internal) ; #:arity = 4
+(define-internal-type-constructor C→**/internal) ; #:arity = 4
 (define-internal-type-constructor MandArgs) ; #:arity >= 0
 (define-internal-type-constructor OptKws) ; #:arity >= 1
 
@@ -398,6 +401,16 @@
                 pat_out
                 : #:+ props.pat_posprop #:- props.pat_negprop)])))
 
+  (define-syntax ~C→/sym
+    (pattern-expander
+     (syntax-parser
+       [(_ pat_in:expr* ...
+           (~and pat_out:expr* (~not (~literal ...)))
+           props:result-prop-pat)
+        #'(~C→** [pat_in ...] []
+                pat_out
+                : #:+ props.pat_posprop #:- props.pat_negprop)])))
+
   (define (convert-opt-kws opt-kws)
     (syntax-parse opt-kws
       [(~OptKws (~KwArg ((~literal quote-syntax) kw) τ) ...)
@@ -425,6 +438,30 @@
                  (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
            (~RestArg pat_rst)
            (~Result pat_out props.pat_posprop props.pat_negprop))])))
+
+  ;; more or less duplicates ~C→*
+  (define-syntax ~C→**
+    (pattern-expander
+     (syntax-parser
+       [(_ [pat_in:expr* ...] [pat_kw:expr ...] pat_out:expr*
+           props:result-prop-pat)
+        #:with opt-kws (generate-temporary 'opt-kws)
+        #'(~C→**/internal
+           (~MandArgs pat_in ...)
+           (~and opt-kws
+                 (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
+           (~NoRestArg)
+           (~Result pat_out props.pat_posprop props.pat_negprop))]
+       [(_ [pat_in:expr* ...] [pat_kw:expr ...] #:rest pat_rst:expr
+           pat_out:expr*
+           props:result-prop-pat)
+        #:with opt-kws (generate-temporary 'opt-kws)
+        #'(~C→**/internal
+           (~MandArgs pat_in ...)
+           (~and opt-kws
+                 (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
+           (~RestArg pat_rst)
+           (~Result pat_out props.pat_posprop props.pat_negprop))])))
   )
 
 ;; ---------------------------------
@@ -435,7 +472,7 @@
   (syntax-parser
     [(_ . tys)
      #:do [(define (concrete-function-type? τ)
-             (or (C→/normal? τ) (C→*/internal? τ)))]
+             (or (C→/normal? τ) (C→*/internal? τ) (C→**/internal? τ)))]
      #:with tys+ (stx-map (current-type-eval) #'tys)
      #:fail-unless (stx-andmap concrete-function-type? #'tys+)
                    "Ccase-> require concrete function types"
@@ -574,6 +611,16 @@
           #`(U Cτ))
       this-syntax)]))
 
+(define-syntax →/sym
+  (syntax-parser
+    [(_ ty ...+)
+     #:with Cτ ((current-type-eval) #'(C→/sym ty ...))
+     (add-orig
+      (if (type-solvable? #'Cτ)
+          #`(U (Term Cτ))
+          #`(U Cτ))
+      this-syntax)]))
+
 (define-named-type-alias True (U (Term CTrue)))
 (define-named-type-alias False (U (Term CFalse)))
 (define-named-type-alias Bool (add-predm (U (Term CBool)) ro:boolean?))
@@ -599,7 +646,7 @@
 
 (begin-for-syntax
   (define (C→? τ)
-    (C→*/internal? τ))
+    (or (C→*/internal? τ) (C→**/internal? τ)))
   (define (concrete-function-type? τ)
     (or (C→? τ) (Ccase->? τ))))
 
@@ -635,11 +682,43 @@
                      (Result- τ_out- props.posprop props.negprop))
       ⇒ :: #%type]])
 
+;; C→** may be applied when in either symbolic or concrete path
+;; more or less duplicates C→*
+(define-typed-syntax C→**
+  [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] τ_out:expr*
+      props:result-prop) ≫
+   [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
+   [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]
+   [⊢ τ_out ≫ τ_out- ⇐ :: #%type]
+   --------
+   [⊢ (C→**/internal- (MandArgs- τ_in- ...)
+                     (OptKws- (KwArg- (quote-syntax kw) τ_kw-) ...)
+                     (NoRestArg-)
+                     (Result- τ_out- props.posprop props.negprop))
+      ⇒ :: #%type]]
+  [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] #:rest τ_rst
+      τ_out:expr*
+      props:result-prop) ≫
+   [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
+   [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]
+   [⊢ τ_rst ≫ τ_rst- ⇐ :: #%type]
+   [⊢ τ_out ≫ τ_out- ⇐ :: #%type]
+   --------
+   [⊢ (C→**/internal- (MandArgs- τ_in- ...)
+                     (OptKws- (KwArg- (quote-syntax kw) τ_kw-) ...)
+                     (RestArg- τ_rst-)
+                     (Result- τ_out- props.posprop props.negprop))
+      ⇒ :: #%type]])
+
 (define-typed-syntax C→
   [(_ τ_in:expr* ... [kw:keyword τ_kw:expr*] ... τ_out:expr*) ≫
    --------
    [≻ (C→* [τ_in ...] [[kw τ_kw] ...] τ_out)]])
 
+(define-typed-syntax C→/sym
+  [(_ τ_in:expr* ... [kw:keyword τ_kw:expr*] ... τ_out:expr*) ≫
+   --------
+   [≻ (C→** [τ_in ...] [[kw τ_kw] ...] τ_out)]])
 
 ;; ---------------------------------------------------------
 

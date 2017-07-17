@@ -98,12 +98,12 @@
 (check-type (f/or "five") : CInt -> 4)
 (check-type (f/or (list 1 2 3 4 5)) : CInt -> 0)
 
-(: bool->int : (C→ Bool Int))
-(define (bool->int b)
+(: bool->int : (C→/sym Bool Int))
+(define/sym (bool->int b)
   (if b 1 0))
 
-(: f/intbool* : (C→ (U Int Bool) Int))
-(define (f/intbool* x)
+(: f/intbool* : (C→/sym (U Int Bool) Int))
+(define/sym (f/intbool* x)
   (if (integer? x)
       x
       (bool->int x)))

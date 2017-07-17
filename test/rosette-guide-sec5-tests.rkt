@@ -5,8 +5,8 @@
 
 ; immutable transparent type
 (struct point ([x : Int] [y : Int]) #:transparent)
-(check-type point : (C→ Int Int CPoint))
-(check-type point : (C→ Int Int (Struct point Int Int)))
+(check-type point : (C→/sym Int Int CPoint))
+(check-type point : (C→/sym Int Int (Struct point Int Int)))
 (check-type point-x : (C→ CPoint Int))
 (check-type point-y : (C→ CPoint Int))
 (check-type point? : (C→ Any Bool))
