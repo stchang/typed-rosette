@@ -54,10 +54,11 @@
   [(_ generic-id:id
      (~or (~seq #:type-name Name:id)
           (~seq (~fail #:unless (id-lower-case? #'generic-id)
-                       (format "Expected lowercase struct name, given ~a" #'generic-id))
+                       (format "Expected lowercase generic name, given ~a" #'generic-id))
                 (~parse Name:id (id-upcase #'generic-id))))
      [(method-id:id . method-args) :-> method-τ_out]
-     ...)
+     ...
+     . opt-args)
    #:with gen-generic-id (format-id #'generic-id "gen:~a" #'generic-id)
    #:with [method-args- ...]
    (stx-map method-args-erase #'[method-args ...])
@@ -69,7 +70,7 @@
    #'(begin-
        (ro:define-generics generic-id*
          (method-id* . method-args*)
-         ...)
+         ... . opt-args)
        (define-syntax gen-generic-id
          (generic-interface-type-info
           #'gen-generic-id*

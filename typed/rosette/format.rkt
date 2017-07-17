@@ -3,7 +3,8 @@
 (provide ~v format fprintf printf error)
 
 (require typed/rosette/types
-         (only-in typed/rosette/base-forms define unsafe-assign-type)
+         (only-in typed/rosette/base-forms define)
+         typed/rosette/unsafe
          (prefix-in ro: rosette))
 
 ;; ----------------------------------------------------------------------------
@@ -49,6 +50,11 @@
    [⊢ (ro:printf fmt v- ...) ⇒ CUnit]])
 
 (define-typed-syntax error
+  [(_ fmt:expr v:expr ...) ≫
+   [⊢ fmt ≫ fmt- ⇐ CString]
+   [⊢ [v ≫ v- ⇐ Any] ...]
+   --------
+   [⊢ (ro:error fmt v- ...) ⇒ CNothing]]
   [(_ sym:expr fmt:str v:expr ...) ≫
    [⊢ sym ≫ sym- ⇐ CSymbol]
    #:fail-unless

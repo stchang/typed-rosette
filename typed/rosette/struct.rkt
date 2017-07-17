@@ -14,6 +14,7 @@
          typed/rosette/base-forms
          typed/rosette/forms-pre-match
          typed/rosette/match-core
+         typed/rosette/unsafe
          (for-syntax racket/struct-info
                      racket/syntax
                      syntax/parse/class/local-value))
@@ -139,7 +140,7 @@
   #:datum-literals [:]
   [(_ name:id (field:id ...+) . _)
    (raise-syntax-error #f "Missing type annotations for fields" this-syntax)]
-  [(_ name:id ([field:id : τ:type] ...)
+  [(_ name:id ([field:id : τ:type . fld-rst] ...)
       (~or (~seq #:type-name Name:id)
            (~seq (~fail #:unless (id-lower-case? #'name)
                         (format "Expected lowercase struct name, given ~a" #'name))
@@ -151,6 +152,13 @@
    #:with [name-field ...]
    (for/list ([field (in-list (syntax->list #'[field ...]))])
      (format-id #'name "~a-~a" #'name field #:source #'name #:props #'name))
+   ;; always define setters for now, rely on dynamic check when not possible
+   ;; TODO: improve pattern to only define setters for mutable fields
+   #:with [set-field ...]
+   (for/list ([field (in-list (syntax->list #'[field ...]))])
+     (format-id #'name "set-~a-~a!" #'name field #:source #'name #:props #'name))
+   #:with [set-field* ...]
+   ((make-syntax-introducer) #'[name-field ...])
    #:with [name* internal-name name?* name-field* ...]
    ((make-syntax-introducer) #'[name name name? name-field ...])
    #:with [opt- ...] ((attribute opts.get-opts-) #'CName)
@@ -158,7 +166,7 @@
    #:with n (datum->syntax #'here (stx-length #'[field ...]))
    #:with some-mutable? (attribute opts.some-mutable?)
    #'(begin-
-       (ro:struct name* [field ...] opt- ...)
+       (ro:struct name* [[field . fld-rst] ...] opt- ...)
        (define-struct-name name constructor/type internal-name CName name?
          [name-field ...]
          [τ.norm ...]
@@ -181,6 +189,13 @@
        (define name-field
          (unsafe-assign-type name-field* : (Ccase-> (C→ CName τ)
                                                     (C→ Name τ_merged))))
+       ...
+       (: set-field : (Ccase-> (C→ CName τ CUnit)
+                               (C→ Name τ_merged CUnit)))
+       ...
+       (define set-field
+         (unsafe-assign-type set-field* : (Ccase-> (C→ CName τ CUnit)
+                                                   (C→ Name τ_merged CUnit))))
        ...)]
   ;; Sub-structs
   ;; TODO: Allow defining a new type for the sub-struct that

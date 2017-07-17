@@ -1,7 +1,8 @@
 #lang turnstile
 
 (require typed/rosette/types
-         (only-in typed/rosette/base-forms begin unsafe-assign-type)
+         (only-in typed/rosette/base-forms begin)
+         typed/rosette/unsafe
          (prefix-in ro: rosette)
          (postfix-in - rosette))
 
@@ -9,7 +10,16 @@
 
 ;; if
 
-(provide if)
+(provide if when unless cond else and or not)
+
+;; conditionals use this to decide whether to consider multiple branches
+;; (and whether the result type should be symbolic)
+(define-for-syntax (ty-sym-false? ty)
+  (or (concrete? ty) ; either concrete
+      ; or non-bool symbolic
+      ; (not a super-type of CFalse)
+      (and (not (typecheck? ((current-type-eval) #'CFalse) ty))
+           (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) ty)))))
 
 ;; TODO: this is not precise enough
 ;; specifically, a symbolic non-bool should produce a concrete val
@@ -19,11 +29,7 @@
              (⇒ : ty_tst)
              (⇒ prop+ posprop)
              (⇒ prop- negprop)]]
-   #:when (or (concrete? #'ty_tst) ; either concrete
-              ; or non-bool symbolic
-              ; (not a super-type of CFalse)
-              (and (not (typecheck? ((current-type-eval) #'CFalse) #'ty_tst))
-                   (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) #'ty_tst))))
+   #:when (ty-sym-false? #'ty_tst)
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
    #:with τ_out
@@ -52,21 +58,35 @@
 
 ;; Other Conditionals
 
-(provide when unless cond else)
-
 (define-typed-syntax when
-  [(_ condition:expr body:expr ...+) ≫
-   [⊢ condition ≫ condition- (⇐ : Bool) (⇒ prop+ posprop)]
-   [⊢ (with-occurrence-prop posprop (begin body ...)) ≫ body- ⇒ τ]
+  [(_ condition:expr body:expr ...+) ≫ ; concrete path
+   [⊢ condition ≫ condition- (⇒ : ty_tst) (⇒ prop+ posprop)]
+   #:when (ty-sym-false? #'ty_tst)
+   #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   [⊢ (with-occurrence-prop posprop e) ≫ body- ⇒ τ]
    --------
-   [⊢ (ro:when condition- body-) ⇒ (U τ Void)]])
+   [⊢ (ro:when condition- body-) ⇒ (CU τ CVoid)]]
+  [(_ condition:expr body:expr ...+) ≫ ; symbolic path
+   [⊢ condition ≫ condition- (⇒ prop+ posprop)]
+   #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   [⊢ (with-occurrence-prop posprop e) ≫ body- ⇒ τ]
+   --------
+   [⊢ (ro:when condition- body-) ⇒ (U τ CVoid)]])
 
 (define-typed-syntax unless
-  [(_ condition:expr body:expr ...+) ≫
-   [⊢ condition ≫ condition- (⇐ : Bool) (⇒ prop- negprop)]
-   [⊢ (with-occurrence-prop negprop (begin body ...)) ≫ body- ⇒ τ]
+  [(_ condition:expr body:expr ...+) ≫ ; concrete path
+   [⊢ condition ≫ condition- (⇒ : ty_tst) (⇒ prop- negprop)]
+   #:when (ty-sym-false? #'ty_tst)
+   #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   [⊢ (with-occurrence-prop negprop e) ≫ body- ⇒ τ]
    --------
-   [⊢ (ro:unless condition- body-) ⇒ (U τ Void)]])
+   [⊢ (ro:unless condition- body-) ⇒ (CU τ CVoid)]]
+  [(_ condition:expr body:expr ...+) ≫ ; symbolic path
+   [⊢ condition ≫ condition- (⇒ prop- negprop)]
+   #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   [⊢ (with-occurrence-prop negprop e) ≫ body- ⇒ τ]
+   --------
+   [⊢ (ro:unless condition- body-) ⇒ (U τ CVoid)]])
 
 (define-syntax-parser cond
   #:literals [else]
@@ -81,8 +101,6 @@
 ;; ------------------------------------------------------------------------
 
 ;; and, or, not
-
-(provide and or not)
 
 (define-typed-syntax and
   [(_) ≫

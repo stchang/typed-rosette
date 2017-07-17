@@ -2,7 +2,7 @@
 
 (provide for/fold for for/list for/and for/or
          for*/list
-         in-list in-naturals in-range)
+         in-list in-naturals in-range in-set in-vector)
 
 (require typed/rosette/types
          (except-in typed/rosette/base-forms #%app)
@@ -14,7 +14,7 @@
 
 ;; NOTE:
 ;;   Rosette's for forms are unlifted, so these for syntax clases require
-;;   concrete sequence types and guaurd types.
+;;   concrete sequence types and guard types.
 
 (begin-for-syntax
   (define-splicing-syntax-class (for-clause-group env)
@@ -192,6 +192,18 @@
    [⊢ b ≫ b- ⇐ CNat]
    --------
    [⊢ (ro:in-range a- b-) ⇒ (CSequenceof CNat)]])
+
+(define-typed-syntax in-set
+  [(_ e:expr) ≫
+   [⊢ e ≫ e- ⇒ (~or (~CMSetof τ) (~CISetof τ))]
+   --------
+   [⊢ (ro:in-set e-) ⇒ (CSequenceof τ)]])
+
+(define-typed-syntax in-vector
+  [(_ e:expr) ≫
+   [⊢ e ≫ e- ⇒ (~or (~CMVectorof τ) (~CIVectorof τ))]
+   --------
+   [⊢ (ro:in-vector e-) ⇒ (CSequenceof τ)]])
 
 ;; ----------------------------------------------------------------------------
 

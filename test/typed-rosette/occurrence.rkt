@@ -2,7 +2,7 @@
 
 (require turnstile/rackunit-typechecking
          typed/rosette/types
-         (only-in typed/rosette/base-forms unsafe-assign-type)
+         typed/rosette/unsafe
          (prefix-in $ rosette))
 
 (define natural?

@@ -3,12 +3,13 @@
 (provide : define set! λ apply ann begin list
          let
          (rename-out [app #%app])
-         unsafe-assign-type unsafe-define/assign-type
-         (for-syntax expand/ro))
+         (for-syntax expand/ro)
+         unsafe-assign-type) ; ocelot needs this
 
 (require (only-in turnstile/examples/stlc+union ann)
          (prefix-in ro: rosette/safe)
-         "types.rkt")
+         "types.rkt"
+         (only-in typed/rosette/unsafe unsafe-assign-type)) ; ocelot needs this
 
 (begin-for-syntax
   ;; split-at* : [Listof A] [Listof Natural] -> [Listof [Listof A]]
@@ -101,10 +102,11 @@
   ;; var-assign/orig-binding :
   ;; Id (Listof Sym) (StxListof TypeStx) -> Stx
   (define (var-assign/orig-binding x seps τs)
-    (attachs (attach x 'orig-binding x)
-             seps
-             τs
-             #:ev (current-type-eval)))
+    (attachs 
+     (attach x 'orig-binding x)
+     seps
+     τs
+     #:ev (current-type-eval)))
 
   (current-var-assign var-assign/orig-binding))
 
@@ -196,9 +198,9 @@
       :-> τ_out
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
-   #:with lam (syntax/loc this-syntax
+   #:with lam (quasisyntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ...)
-                  (ann body* : τ_out)))
+                  #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
    [≻ (define f : (C→ τ_in ... [kw τ_kw] ... τ_out)
         lam)]]
@@ -207,9 +209,9 @@
       :-> τ_out
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
-   #:with lam (syntax/loc this-syntax
+   #:with lam (quasisyntax/loc this-syntax
                 (λ ([x : τ_in] ... [kw y : τ_kw e_def] ... . [rst : τ_rst])
-                  (ann body* : τ_out)))
+                  #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
    [≻ (define f : (C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
         lam)]]
@@ -363,6 +365,7 @@
   ;; concrete functions
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
+;   #:do[(displayln (stx->datum #'f))]
    #:with f-- (expand/ro #'f)
    #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...]
                       τ_out
@@ -662,18 +665,3 @@
    [⊢ (ro:let ([x- e-] ...) e_body-) ⇒ τ_body]])
 
 ;; ----------------------------------------------------------------------------
-
-;; Unsafely assigning types to values
-
-;; unsafe-assign-type doesn't typecheck anything within the expression
-(define-typed-syntax unsafe-assign-type
-  #:datum-literals [:]
-  [(_ e:expr : τ:expr) ≫
-   --------
-   [⊢ (ro:#%expression e) ⇒ : τ]])
-
-(define-syntax-parser unsafe-define/assign-type
-  #:datum-literals [:]
-  [(_ x:id : τ:expr e:expr)
-   #'(define x (unsafe-assign-type e : τ))])
-
