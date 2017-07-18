@@ -94,15 +94,13 @@
 
 (define/conc (f2) -> CUnit (set! x 2))
 
-;; The following defs/exprs are safe but currently rejected by the typechecker
-;; eg, when the binding is introduced in the symbolic path
+;; The following defs/exprs are safe but require "sym scopes" 
+;; to satisfy the type checker
 
-(typecheck-fail/toplvl
- (define (f3 [x : CInt]) -> CInt (set! x 1) x)
- #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
+(define (f3 [x : CInt]) -> CInt (set! x 1) x)
 
-(typecheck-fail
+(check-type
  (if b
      (let ([x 1]) (set! x 2) x)
      (let ([y 3]) (set! y 4) y))
- #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
+ : PosInt -> (if b 2 4))

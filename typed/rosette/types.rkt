@@ -92,7 +92,9 @@
          add-typeform
          mark-solvablem
          mark-functionm
-         (for-syntax current-sym-path? no-mutate? no-mut-msg conc-fn-msg
+         (for-syntax current-sym-path? current-sym-scope no-mut-msg conc-fn-msg
+                     no-mutate? not-current-sym-path? mk-path-sym mk-path-conc
+                     save-sym-path-info restore-sym-path-info 
                      get-pred
                      type-merge
                      type-merge*
@@ -175,6 +177,27 @@
      args))
   (define (conc-fn-msg)
     "Cannot apply function with C→ type when in a symbolic path")
+
+  ;; each new sym path is associated with a "sym scope"
+  ;; variables may be introduced and mutated within the same sym scope
+  (define current-sym-scope (make-parameter #f))
+  (define (mk-path-sym)
+    (current-sym-scope (gensym))
+    (current-sym-path? #t))
+  (define (mk-path-conc)
+    (current-sym-path? #f))
+  (define (not-current-sym-path? x)
+    (not (equal? (syntax-property x 'sym-scope) (current-sym-scope))))
+
+  ;; used to save previous values of current-sym-path?/scope
+  (define old-sym-path? (make-parameter (current-sym-path?)))
+  (define old-sym-scope (make-parameter (current-sym-scope)))
+  (define (save-sym-path-info)
+    (old-sym-path? (current-sym-path?))
+    (old-sym-scope (current-sym-scope)))
+  (define (restore-sym-path-info)
+    (current-sym-path? (old-sym-path?))
+    (current-sym-scope (old-sym-scope)))
   )
 
 ;; TODO: update orig to use reduced type
