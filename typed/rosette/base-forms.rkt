@@ -408,8 +408,8 @@
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
    #:do[(save-sym-path-info)
         (mk-path-conc)]
-   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
-   [⊢ (λ args body) ≫ f- ⇐ τ_unionized]
+   [⊢ (λ/conc args body) ≫ _ ⇐ τ_expected] ...
+   [⊢ (λ/conc args body) ≫ f- ⇐ τ_unionized]
    #:do[(restore-sym-path-info)]
    ---------
    [⊢ f-]]
