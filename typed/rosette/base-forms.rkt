@@ -1,6 +1,6 @@
 #lang turnstile
 
-(provide : define define/sym set! λ λ/sym apply ann begin list
+(provide : define define/conc set! λ λ/conc apply ann begin list
          let
          (rename-out [app #%app])
          (for-syntax expand/ro)
@@ -225,7 +225,7 @@
    --------
    [≻ (define f lam)]])
 
-(define-typed-syntax define/sym
+(define-typed-syntax define/conc
   #:datum-literals [:]
   ;; function with no rest argument
   [(_ (f:id [x:id : τ_in] ... [kw:keyword y:id : τ_kw e_def:expr] ...)
@@ -233,10 +233,10 @@
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
    #:with lam (quasisyntax/loc this-syntax
-                (λ/sym ([x : τ_in] ... [kw y : τ_kw e_def] ...)
+                (λ/conc ([x : τ_in] ... [kw y : τ_kw e_def] ...)
                   #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
-   [≻ (define f : (C→/sym τ_in ... [kw τ_kw] ... τ_out)
+   [≻ (define f : (C→/conc τ_in ... [kw τ_kw] ... τ_out)
         lam)]]
   ;; function with rest argument
   [(_ (f:id [x:id : τ_in] ... [kw:keyword y:id : τ_kw e_def:expr] ... . [rst:id : τ_rst])
@@ -244,7 +244,7 @@
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
    #:with lam (quasisyntax/loc this-syntax
-                (λ/sym ([x : τ_in] ... [kw y : τ_kw e_def] ... . [rst : τ_rst])
+                (λ/conc ([x : τ_in] ... [kw y : τ_kw e_def] ... . [rst : τ_rst])
                   #,(syntax/loc (stx-car #'(body ...)) (ann body* : τ_out))))
    --------
    [≻ (define f : (C→** [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
@@ -255,12 +255,13 @@
                          (:id ... (~seq :keyword [:id :expr]) ... . :id))))
       body ...+) ≫
    #:with body* (syntax/loc this-syntax (begin body ...))
-   #:with lam (syntax/loc this-syntax (λ/sym args body*))
+   #:with lam (syntax/loc this-syntax (λ/conc args body*))
    --------
    [≻ (define f lam)]])
 
 ;; This new version of λ handles keyword arguments.
-
+;; λ type checks its body twice, once each assuming conc and sym path,
+;; and thus may be applied in any type of path
 (define-typed-syntax λ
   #:datum-literals [:]
   ;; need expected type, no rest argument
@@ -271,8 +272,15 @@
    (format "keywords don't match, expected ~a, given ~a"
            (syntax->datum #'[kw* ...])
            (syntax->datum #'[kw ...]))
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw] ...]
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #t)]
+   ;; assume types are same in both kinds of paths, TODO: is this true?
+   [⊢ [e_def ≫ e_def- ⇐ τ_kw] ...] ; default arg must be double-checked too
    [[x ≫ x-- : τ_in] ... [y ≫ y-- : τ_kw] ... ⊢ body ≫ body- ⇐ τ_out]
+   #:do[(current-sym-path? #f)]
+   [⊢ [e_def ≫ _ ⇐ τ_kw] ...]
+   [[x ≫ _ : τ_in] ... [y ≫ _ : τ_kw] ... ⊢ body ≫ _ ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -281,8 +289,13 @@
   ;; need expected type, with rest argument
   [(_ (x:id ... . rst:id) e)
    ⇐ (~C→* [τ_in ...] [] #:rest τ_rst τ_out) ≫
-   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst]
-    ⊢ e ≫ e- ⇐ τ_out]
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #t)]
+   ;; assume types are same in both kinds of paths, TODO: is this true?
+   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst] ⊢ e ≫ e- ⇐ τ_out]
+   #:do[(current-sym-path? #f)]
+   [[x ≫ _ : τ_in] ... [rst ≫ _ : τ_rst] ⊢ e ≫ _ ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
                                        (list (length (stx->list #'[x ...]))))
    ---------
@@ -297,17 +310,30 @@
                                            (not (false? (attribute rst))))
                              #'[τ_expected ...])
    "wrong number of arguments"
-   [⊢ (λ args body) ≫ _ ⇐ τ_expected]
-   ...
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #t)]
+   ;; assume types are same in both kinds of paths, TODO: is this true?
+   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
    [⊢ (λ args body) ≫ f- ⇐ τ_unionized]
+   #:do[(current-sym-path? #f)]
+   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
+   [⊢ (λ args body) ≫ _ ⇐ τ_unionized]
+   #:do[(current-sym-path? old-sympath?)]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #t)]
+   ;; assume types are same in both kinds of paths, TODO: is this true?
    [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
    [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... ⊢ body ≫ body- ⇒ τ_out]
+   #:do[(current-sym-path? #f)]
+   [⊢ [e_def ≫ _ ⇐ τ_kw.norm] ...]
+   [[x ≫ _ : τ_in.norm] ... [y ≫ _ : τ_kw.norm] ... ⊢ body ≫ _ ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -317,9 +343,17 @@
   ;; no expected type, rest argument
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #t)]
+   ;; assume types are same in both kinds of paths, TODO: is this true?
    [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
    [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... [rst ≫ rst-- : τ_rst.norm]
     ⊢ body ≫ body- ⇒ τ_out]
+   #:do[(current-sym-path? #f)]
+   [⊢ [e_def ≫ _ ⇐ τ_kw.norm] ...]
+   [[x ≫ _ : τ_in.norm] ... [y ≫ _ : τ_kw.norm] ... [rst ≫ _ : τ_rst.norm]
+    ⊢ body ≫ _ ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...] [rst-]]
    (split-at* (stx->list #'[x-- ... y-- ... rst--])
               (list (length (stx->list #'[x ...]))
@@ -329,8 +363,8 @@
    [⊢ (ro:λ (x- ... kw-arg- ... ... . rst-) body-)
       ⇒ (C→* [τ_in.norm ...] [[kw τ_kw.norm] ...] #:rest τ_rst.norm τ_out)]])
 
-;; produces fns that may be applied in sym paths
-(define-typed-syntax λ/sym
+;; produces fns that may only be applied in concrete paths
+(define-typed-syntax λ/conc
   #:datum-literals [:]
   ;; need expected type, no rest argument
   [(_ (x:id ... (~seq kw:keyword [y:id e_def:expr]) ...) body)
@@ -340,8 +374,11 @@
    (format "keywords don't match, expected ~a, given ~a"
            (syntax->datum #'[kw* ...])
            (syntax->datum #'[kw ...]))
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #f)]
    [⊢ [e_def ≫ e_def- ⇐ τ_kw] ...]
    [[x ≫ x-- : τ_in] ... [y ≫ y-- : τ_kw] ... ⊢ body ≫ body- ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -350,8 +387,10 @@
   ;; need expected type, with rest argument
   [(_ (x:id ... . rst:id) e)
    ⇐ (~C→** [τ_in ...] [] #:rest τ_rst τ_out) ≫
-   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst]
-    ⊢ e ≫ e- ⇐ τ_out]
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #f)]
+   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst] ⊢ e ≫ e- ⇐ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
                                        (list (length (stx->list #'[x ...]))))
    ---------
@@ -366,29 +405,37 @@
                                            (not (false? (attribute rst))))
                              #'[τ_expected ...])
    "wrong number of arguments"
-   [⊢ (λ args body) ≫ _ ⇐ τ_expected]
-   ...
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #f)]
+   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
    [⊢ (λ args body) ≫ f- ⇐ τ_unionized]
+   #:do[(current-sym-path? old-sympath?)]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #f)]
    [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
    [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... ⊢ body ≫ body- ⇒ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
    -------
    [⊢ (ro:λ (x- ... kw-arg- ... ...) body-)
-      ⇒ (C→/sym τ_in ... [kw τ_kw] ... τ_out)]]
+      ⇒ (C→/conc τ_in ... [kw τ_kw] ... τ_out)]]
   ;; no expected type, rest argument
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
+   #:do[(define old-sympath? (current-sym-path?))
+        (current-sym-path? #f)]
    [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
    [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... [rst ≫ rst-- : τ_rst.norm]
     ⊢ body ≫ body- ⇒ τ_out]
+   #:do[(current-sym-path? old-sympath?)]
    #:with [[x- ...] [y- ...] [rst-]]
    (split-at* (stx->list #'[x-- ... y-- ... rst--])
               (list (length (stx->list #'[x ...]))
@@ -465,7 +512,7 @@
         (type->str #'τ_rst))])))
 
 (define-typed-syntax app
-  ;; concrete function, concrete path, no rest arg
+  ;; concrete function, any path, no rest arg
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
 ;   #:do[(displayln (stx->datum #'f))]
@@ -475,7 +522,6 @@
                       : #:+ posprop #:- negprop)
                 ~!)
    (typeof #'f--)
-   #:fail-when (current-sym-path?) (conc-fn-msg)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length=? #'[a ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[a ...])
@@ -504,14 +550,13 @@
       (⇒ : τ_out)
       (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
       (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
-  ;; concrete function, concrete path, with rest arg
+  ;; concrete function, any path, with rest arg
   [(_ f:expr ab:expr ... (~seq kw:keyword c:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)]
    #:with f-- (expand/ro #'f)
    #:with (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out
                       : #:+ posprop #:- negprop) ~!)
    (typeof #'f--)
-   #:fail-when (current-sym-path?) (conc-fn-msg)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length>=? #'[ab ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[ab ...])
@@ -548,7 +593,7 @@
       (⇒ : τ_out)
       (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
       (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
-  ;; concrete function, sym path, no rest arg
+  ;; concrete function, conc path, no rest arg
   [(_ f:expr a:expr ... (~seq kw:keyword b:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] τ_out) ~!)]
 ;   #:do[(displayln (stx->datum #'f))]
@@ -558,6 +603,7 @@
                       : #:+ posprop #:- negprop)
                 ~!)
    (typeof #'f--)
+   #:fail-when (current-sym-path?) (conc-fn-msg)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length=? #'[a ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[a ...])
@@ -586,13 +632,14 @@
       (⇒ : τ_out)
       (⇒ prop+ #,(syntax-local-introduce (prop-inst #'posprop)))
       (⇒ prop- #,(syntax-local-introduce (prop-inst #'negprop)))]]
-  ;; concrete function, sym path, with rest arg
+  ;; concrete function, conc path, with rest arg
   [(_ f:expr ab:expr ... (~seq kw:keyword c:expr) ...) ≫
    ;[⊢ f ≫ f-- ⇒ (~and (~C→* [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out) ~!)]
    #:with f-- (expand/ro #'f)
    #:with (~and (~C→** [τ_a ...] [[kw* τ_kw*] ...] #:rest τ_rst τ_out
                       : #:+ posprop #:- negprop) ~!)
    (typeof #'f--)
+   #:fail-when (current-sym-path?) (conc-fn-msg)
    #:with f- (replace-stx-loc #'f-- #'f)
    #:fail-unless (stx-length>=? #'[ab ...] #'[τ_a ...])
    (num-args-fail-msg #'f #'[τ_a ...] #'[ab ...])

@@ -73,11 +73,36 @@
 
 (typecheck-fail (when b (set-add! (set 1 2) 3)))
 
-(define (f [x : Int]) -> Int (add1 x))
+(define/conc (f [x : Int]) -> Int (add1 x))
 
 (typecheck-fail (when b (f 1))
  #:with-msg "Cannot apply function with C→ type when in a symbolic path")
 
-(define/sym (g [x : Int]) -> Int (add1 x))
+(define (g [x : Int]) -> Int (add1 x))
 
 (check-type (if b (g 1) (g 2)) : Int -> (if b 2 3))
+
+;; It's not possible to call whole-data structure mutating fns
+;; when in a symbolic path, unless those fns know how to handle symbolic args.
+;; So this excludes data structures not in rosette/safe, eg hash tables.
+;; (define hsym (ann (hash 1 2) : (U (CHashTable CPosInt CPosInt))))
+;; (when b (hash-clear! hsym))
+
+
+(typecheck-fail/toplvl (define (f2) -> CUnit (set! x 2))
+ #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
+
+(define/conc (f2) -> CUnit (set! x 2))
+
+;; The following defs/exprs are safe but currently rejected by the typechecker
+;; eg, when the binding is introduced in the symbolic path
+
+(typecheck-fail/toplvl
+ (define (f3 [x : CInt]) -> CInt (set! x 1) x)
+ #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
+
+(typecheck-fail
+ (if b
+     (let ([x 1]) (set! x 2) x)
+     (let ([y 3]) (set! y 4) y))
+ #:with-msg "Cannot mutate concrete variable x when in a symbolic path")

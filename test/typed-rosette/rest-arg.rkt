@@ -2,8 +2,8 @@
 
 (require turnstile/rackunit-typechecking)
 
-(: foldl/int : (C→/sym (→/sym Int Int Int) Int (Listof Int) Int))
-(define/sym (foldl/int f b xs)
+(: foldl/int : (C→ (→ Int Int Int) Int (Listof Int) Int))
+(define (foldl/int f b xs)
   (if (empty? xs)
       b
       (foldl/int f (f (first xs) b) (rest xs))))
@@ -11,7 +11,7 @@
 (: f : (C→* [] [] #:rest (Listof Int) Int))
 (define f
   (λ xs
-    (foldl/int (λ/sym ([x : Int] [acc : Int])
+    (foldl/int (λ ([x : Int] [acc : Int])
                  (+ x (* 10 acc)))
                0
                xs)))

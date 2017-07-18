@@ -179,7 +179,7 @@
          (add-predm (U (Struct name τ_merged ...)) name?))
        (define-syntax- constructor/type
          (make-variable-like-transformer
-          (⊢ name* : (C→/sym τ.norm ... CName))))
+          (⊢ name* : (C→ τ.norm ... CName))))
        (: name? : (LiftedPredFor Name))
        (define name?
          (unsafe-assign-type name?* : (LiftedPredFor Name)))

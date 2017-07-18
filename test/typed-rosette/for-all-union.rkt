@@ -36,26 +36,26 @@
 
 ;; ------------------------------------------------------------------------
 
-(define/sym (c-true) -> CTrue #true)
-(define/sym (c-false) -> CFalse #false)
-(define/sym (c-bool) -> CBool #false)
+(define (c-true) -> CTrue #true)
+(define (c-false) -> CFalse #false)
+(define (c-bool) -> CBool #false)
 
-(define/sym (c-nat) -> CNat 0)
-(define/sym (c-int) -> CInt 0)
-(define/sym (c-num) -> CNum 0)
+(define (c-nat) -> CNat 0)
+(define (c-int) -> CInt 0)
+(define (c-num) -> CNum 0)
 
-(define/sym (c-bv) -> CBV (bv 0 1))
-(define/sym (c-str) -> CString "")
+(define (c-bv) -> CBV (bv 0 1))
+(define (c-str) -> CString "")
 
-(define/sym (u-c-bool-c-nat) -> (U CBool CNat) 0)
-(define/sym (u-c-bool-c-str) -> (U CBool CString) "")
-(define/sym (u-c-false-c-nat) -> (U CFalse CNat) 0)
-(define/sym (u-c-false-c-str) -> (U CFalse CString) "")
+(define (u-c-bool-c-nat) -> (U CBool CNat) 0)
+(define (u-c-bool-c-str) -> (U CBool CString) "")
+(define (u-c-false-c-nat) -> (U CFalse CNat) 0)
+(define (u-c-false-c-str) -> (U CFalse CString) "")
 
-(define/sym (cu-c-bool-c-nat) -> (CU CBool CNat) 0)
-(define/sym (cu-c-bool-c-str) -> (CU CBool CString) "")
-(define/sym (cu-c-false-c-nat) -> (CU CFalse CNat) 0)
-(define/sym (cu-c-false-c-str) -> (CU CFalse CString) "")
+(define (cu-c-bool-c-nat) -> (CU CBool CNat) 0)
+(define (cu-c-bool-c-str) -> (CU CBool CString) "")
+(define (cu-c-false-c-nat) -> (CU CFalse CNat) 0)
+(define (cu-c-false-c-str) -> (CU CFalse CString) "")
 
 ;; Tests for merging singletons, the only cases where it
 ;; doesn't produce a U or Term type, because

@@ -19,9 +19,9 @@
                      typed-struct-info-accessors
                      typed-struct-info-field-types)
          ;; Function types
-         C→ C→* C→/sym C→** Ccase-> → →/sym
+         C→ C→* C→/conc C→** Ccase-> → →/conc
          (for-syntax concrete-function-type?
-                     ~C→ ~C→/sym ~C→* ~C→** ~Ccase->
+                     ~C→ ~C→/conc ~C→* ~C→** ~Ccase->
                      C→? Ccase->?)
          ;; Propositions for Occurrence typing
          @ !@
@@ -310,8 +310,8 @@
 ;; ---------------------------------
 ;; Pattern Expanders for Types
 
-;; C→* may only be applied in concrete paths
-;; C→** may be applied in symbolic paths
+;; C→* may be applied in both symbolic and concrete paths
+;; C→** may be applied in only concrete paths
 (define-internal-type-constructor C→*/internal) ; #:arity = 4
 (define-internal-type-constructor C→**/internal) ; #:arity = 4
 (define-internal-type-constructor MandArgs) ; #:arity >= 0
@@ -401,7 +401,7 @@
                 pat_out
                 : #:+ props.pat_posprop #:- props.pat_negprop)])))
 
-  (define-syntax ~C→/sym
+  (define-syntax ~C→/conc
     (pattern-expander
      (syntax-parser
        [(_ pat_in:expr* ...
@@ -611,10 +611,10 @@
           #`(U Cτ))
       this-syntax)]))
 
-(define-syntax →/sym
+(define-syntax →/conc
   (syntax-parser
     [(_ ty ...+)
-     #:with Cτ ((current-type-eval) #'(C→/sym ty ...))
+     #:with Cτ ((current-type-eval) #'(C→/conc ty ...))
      (add-orig
       (if (type-solvable? #'Cτ)
           #`(U (Term Cτ))
@@ -682,7 +682,7 @@
                      (Result- τ_out- props.posprop props.negprop))
       ⇒ :: #%type]])
 
-;; C→** may be applied when in either symbolic or concrete path
+;; C→** may be applied only in concrete paths
 ;; more or less duplicates C→*
 (define-typed-syntax C→**
   [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] τ_out:expr*
@@ -715,7 +715,7 @@
    --------
    [≻ (C→* [τ_in ...] [[kw τ_kw] ...] τ_out)]])
 
-(define-typed-syntax C→/sym
+(define-typed-syntax C→/conc
   [(_ τ_in:expr* ... [kw:keyword τ_kw:expr*] ... τ_out:expr*) ≫
    --------
    [≻ (C→** [τ_in ...] [[kw τ_kw] ...] τ_out)]])

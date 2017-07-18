@@ -213,8 +213,8 @@
 
 ;; these examples uses symbolic lists
 (check-type
- (letrec ([[ones : (C→/sym Int (Listof Int))]
-           (lambda/sym ([n : Int])
+ (letrec ([[ones : (C→ Int (Listof Int))]
+           (lambda ([n : Int])
              (if (<= n 0)
                  (list)
                  (cons 1 (ones (- n 1)))))])
@@ -223,8 +223,8 @@
  : Unit)
 
 (check-type
- (letrec ([[ones : (C→/sym Int (Listof Int))]
-           (lambda/sym ([n : Int])
+ (letrec ([[ones : (C→ Int (Listof Int))]
+           (lambda ([n : Int])
              (if (<= n 0)
                  (list)
                  (cons 1 (ones (- n 1)))))])
@@ -233,8 +233,8 @@
 
 ;; inf loop
 (check-type
- (letrec ([[ones : (C→/sym Int (Listof Int))]
-           (lambda/sym ([n : Int])
+ (letrec ([[ones : (C→ Int (Listof Int))]
+           (lambda ([n : Int])
              (if (<= n 0)
                  (list)
                  (cons 1 (ones (- n 1)))))])
@@ -243,8 +243,8 @@
 
 ;; drop lambda annotation
 (check-type
- (letrec ([[ones : (C→/sym Int (Listof Int))]
-           (lambda/sym (n)
+ (letrec ([[ones : (C→ Int (Listof Int))]
+           (lambda (n)
              (if (<= n 0)
                  (list)
                  (cons 1 (ones (- n 1)))))])
@@ -253,8 +253,8 @@
  : Unit)
 
 (check-type
- (letrec ([[adder : (C→/sym (CListof Int) Int (CListof Int))]
-           (lambda/sym (vs n)
+ (letrec ([[adder : (C→ (CListof Int) Int (CListof Int))]
+           (lambda (vs n)
              (if (null? vs)
                  (list)
                  (cons (+ (car vs) n) (adder (cdr vs) n))))])
