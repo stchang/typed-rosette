@@ -57,19 +57,19 @@
 ; The following call produces an incorrect state. Intuitively, we expect h
 ; to be empty if b is true and unchanged otherwise.
 (typecheck-fail (when b (hash-clear! h))
- #:with-msg "Cannot mutate concrete hash when in a symbolic path")
+ #:with-msg "Cannot mutate concrete hash h when in a symbolic path")
 
 (typecheck-fail (unless b (hash-clear! h))
- #:with-msg "Cannot mutate concrete hash when in a symbolic path")
+ #:with-msg "Cannot mutate concrete hash h when in a symbolic path")
 
 (typecheck-fail (unless b (hash-ref! h 1 2))
- #:with-msg "Cannot mutate concrete hash when in a symbolic path")
+ #:with-msg "Cannot mutate concrete hash h when in a symbolic path")
 
 (typecheck-fail (when b (hash-set! h 1 2))
- #:with-msg "Cannot mutate concrete hash when in a symbolic path")
+ #:with-msg "Cannot mutate concrete hash h when in a symbolic path")
 
 (typecheck-fail (when b (hash-remove! h 1))
- #:with-msg "Cannot mutate concrete hash when in a symbolic path")
+ #:with-msg "Cannot mutate concrete hash h when in a symbolic path")
 
 (typecheck-fail (when b (set-add! (set 1 2) 3)))
 

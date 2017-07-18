@@ -104,7 +104,7 @@
 (define-typed-syntax hash-clear!
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ (~CHashTable _ _)]
-   #:fail-when (no-mutate? #'hsh-) (no-mut-msg "hash ~a" (stx->datum #'hsh))
+   #:fail-when (no-mutate? #'e-) (no-mut-msg "hash ~a" (stx->datum #'e))
    --------
    [⊢ (hash-clear!- e-) ⇒ CUnit]])
 
