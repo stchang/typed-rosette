@@ -68,7 +68,7 @@
 (define-typed-syntax vector-set!
   [(_ v:expr i:expr x:expr) ≫
    [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
-   #:fail-when (no-mutate? #'τ) (no-mut-msg "vector elements")
+   #:fail-when (no-mutate/ty? #'τ) (no-mut-msg "vector elements")
    [⊢ i ≫ i- ⇐ Int]
    [⊢ x ≫ x- ⇐ τ]
    --------

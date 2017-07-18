@@ -847,8 +847,7 @@
 (define-typed-syntax set!
   [(set! x:id e:expr) ≫
    [⊢ x ≫ x- ⇒ τ_x]
-   #:fail-when (and (no-mutate? #'τ_x) (not-current-sym-path? #'x-))
-               (no-mut-msg "variable ~a" (stx->datum #'x))
+   #:fail-when (no-mutate? #'x-)  (no-mut-msg "variable ~a" (stx->datum #'x))
    [⊢ e ≫ e- ⇐ τ_x]
    --------
    [⊢ (ro:set! x- e-) ⇒ CUnit]])

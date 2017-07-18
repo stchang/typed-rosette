@@ -94,10 +94,19 @@
 
 (define/conc (f2) -> CUnit (set! x 2))
 
+;; sym path introduced in both makes this not ok, despite define/conc
+(typecheck-fail/toplvl
+ (define/conc (f3) -> CUnit (when b (set! x 2)))
+ #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
+
 ;; The following defs/exprs are safe but require "sym scopes" 
 ;; to satisfy the type checker
 
-(define (f3 [x : CInt]) -> CInt (set! x 1) x)
+(define (f4 [x : CInt]) -> CInt (set! x 1) x)
+
+(typecheck-fail/toplvl
+ (define (f5 [x : CInt]) -> CInt (when b (set! x 1) x))
+ #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
 
 (check-type
  (if b

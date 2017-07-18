@@ -41,7 +41,7 @@
 (define-typed-syntax set-add!
   [(_ s v) ≫
    [⊢ s ≫ s- ⇒ (~CMSetof τ)]
-   #:fail-when (current-sym-path?) (no-mut-msg "set")
+   #:fail-when (no-mutate? #'s-) (no-mut-msg "set")
    [⊢ v ≫ v- ⇐ τ]
    ----------
    [⊢ (set-add!- s- v-) ⇒ CUnit]])

@@ -93,7 +93,8 @@
          mark-solvablem
          mark-functionm
          (for-syntax current-sym-path? current-sym-scope no-mut-msg conc-fn-msg
-                     no-mutate? not-current-sym-path? mk-path-sym mk-path-conc
+                     no-mutate? no-mutate/ty? not-current-sym-scope?
+                     mk-path-sym mk-path-conc
                      save-sym-path-info restore-sym-path-info 
                      get-pred
                      type-merge
@@ -169,7 +170,10 @@
   ;; needed for soundness,
   ;;   eg reject mutation of concrete-typed vars in symbolic path
   (define current-sym-path? (make-parameter #f))
-  (define (no-mutate? ty) (and (current-sym-path?) (concrete? ty)))
+  (define (no-mutate/ty? ty)
+    (and (current-sym-path?) (concrete? ty)))
+  (define (no-mutate? e)
+    (and (no-mutate/ty? (typeof e)) (not-current-sym-scope? e)))
   (define (no-mut-msg wh . args)
     (apply
      format
@@ -179,14 +183,15 @@
     "Cannot apply function with C→ type when in a symbolic path")
 
   ;; each new sym path is associated with a "sym scope"
-  ;; variables may be introduced and mutated within the same sym scope
-  (define current-sym-scope (make-parameter #f))
+  ;; - variables may be introduced and mutated within the same sym scope
+  ;; - define an initial symscope to avoid confusion when stx doesnt have prop
+  (define current-sym-scope (make-parameter (gensym)))
   (define (mk-path-sym)
     (current-sym-scope (gensym))
     (current-sym-path? #t))
   (define (mk-path-conc)
     (current-sym-path? #f))
-  (define (not-current-sym-path? x)
+  (define (not-current-sym-scope? x)
     (not (equal? (syntax-property x 'sym-scope) (current-sym-scope))))
 
   ;; used to save previous values of current-sym-path?/scope
