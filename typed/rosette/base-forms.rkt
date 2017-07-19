@@ -35,7 +35,15 @@
        (and (not rest?)
             (= num-args (stx-length #'[τ_in ...]))
             (equal? kws (syntax->datum #'[kw ...])))]
+      [(~C→** [τ_in ...] [[kw τ_kw] ...] τ_out)
+       (and (not rest?)
+            (= num-args (stx-length #'[τ_in ...]))
+            (equal? kws (syntax->datum #'[kw ...])))]
       [(~C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
+       (and rest?
+            (= num-args (stx-length #'[τ_in ...]))
+            (equal? kws (syntax->datum #'[kw ...])))]
+      [(~C→** [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out)
        (and rest?
             (= num-args (stx-length #'[τ_in ...]))
             (equal? kws (syntax->datum #'[kw ...])))]))
@@ -62,6 +70,18 @@
                                    (transpose #'[[τ_kw ...] ...]))
        #:with τ_out* (U/preserve-concreteness #'[τ_out ...])
        #'(C→* [τ_in* ...] [[kw* τ_kw*] ...] τ_out*)]
+      [[(~C→** [τ_in ...] [[kw τ_kw] ...] τ_out) ...]
+       #:fail-unless (all-equal? (stx-map stx-length #'[[τ_in ...] ...]))
+       "function types must have the same arity"
+       #:fail-unless (all-equal? (stx-map syntax->datum #'[[kw ...] ...]))
+       "function types must have the same keywords"
+       #:with [τ_in* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_in ...] ...]))
+       #:with [kw* ...] (stx-car #'[[kw ...] ...])
+       #:with [τ_kw* ...] (stx-map U/preserve-concreteness
+                                   (transpose #'[[τ_kw ...] ...]))
+       #:with τ_out* (U/preserve-concreteness #'[τ_out ...])
+       #'(C→** [τ_in* ...] [[kw* τ_kw*] ...] τ_out*)]
       [[(~C→* [τ_in ...] [[kw τ_kw] ...] #:rest τ_rst τ_out) ...]
        #:fail-unless (all-equal? (stx-map stx-length #'[[τ_in ...] ...]))
        "function types must have the same arity"
@@ -286,6 +306,11 @@
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
    ---------
    [⊢ (ro:λ (x- ... kw-arg- ... ...) body-)]]
+  ;; need expected type, no rest argument, concrete path only
+  [(_ (arg ...) body)
+   ⇐ (~C→** [τ_in ...] [[kw* τ_kw] ...] τ_out) ≫
+   ---------
+   [≻ (λ/conc (arg ...) body)]]
   ;; need expected type, with rest argument
   [(_ (x:id ... . rst:id) e)
    ⇐ (~C→* [τ_in ...] [] #:rest τ_rst τ_out) ≫
@@ -482,7 +507,14 @@
     (syntax-parse τ_f
       [(~C→* [τ_a ...] [] _) 
        (string-join (stx-map type->str #'[τ_a ...]) ", ")]
+      [(~C→** [τ_a ...] [] _) 
+       (string-join (stx-map type->str #'[τ_a ...]) ", ")]
       [(~C→* [τ_a ...] [] #:rest τ_rst _) 
+       (format
+        "~a, @ ~a"
+        (string-join (stx-map type->str #'[τ_a ...]) ", ")
+        (type->str #'τ_rst))]
+      [(~C→** [τ_a ...] [] #:rest τ_rst _) 
        (format
         "~a, @ ~a"
         (string-join (stx-map type->str #'[τ_a ...]) ", ")
@@ -498,7 +530,30 @@
           #'[kw ...]
           #'[τ_b ...])
          ", "))]
+      [(~C→** [τ_a ...] [[kw τ_b] ...] _)
+       (format
+        "~a [, ~a ]"
+        (string-join (stx-map type->str #'[τ_a ...]) ", ")
+        (string-join
+         (stx-map
+          (λ (kw τ_b)
+            (format "~s ~a" (syntax->datum kw) (type->str τ_b)))
+          #'[kw ...]
+          #'[τ_b ...])
+         ", "))]
       [(~C→* [τ_a ...] [[kw τ_b] ...] #:rest τ_rst _)
+       (format
+        "~a [, ~a ], @ ~a"
+        (string-join (stx-map type->str #'[τ_a ...]) ", ")
+        (string-join
+         (stx-map
+          (λ (kw τ_b)
+            (format "~s ~a" (syntax->datum kw) (type->str τ_b)))
+          #'[kw ...]
+          #'[τ_b ...])
+         ", ")
+        (type->str #'τ_rst))]
+      [(~C→** [τ_a ...] [[kw τ_b] ...] #:rest τ_rst _)
        (format
         "~a [, ~a ], @ ~a"
         (string-join (stx-map type->str #'[τ_a ...]) ", ")
@@ -704,6 +759,20 @@
                (and p
                     (typecheck? τ_b (second p))))
              (list #'τ_out #'posprop #'negprop))]
+       [(~C→** [τ_a* ...] [[kw* τ_kw*] ...] τ_out
+               : #:+ posprop #:- negprop)
+        #:when (not (current-sym-path?))
+        (define kws/τs*
+          (for/list ([kw (in-list (syntax->datum #'[kw* ...]))]
+                     [τ (in-list (syntax->list #'[τ_kw* ...]))])
+            (list kw τ)))
+        (and (typechecks? #'[τ_a ...] #'[τ_a* ...])
+             (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
+                       [τ_b (in-list (syntax->list #'[τ_b ...]))])
+               (define p (assoc kw kws/τs*))
+               (and p
+                    (typecheck? τ_b (second p))))
+             (list #'τ_out #'posprop #'negprop))]
        [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out
               : #:+ posprop #:- negprop)
         #:when (stx-length>=? #'[τ_a ...] #'[τ_a* ...])
@@ -832,6 +901,10 @@
    (for/or ([τ_f (in-list (stx->list #'[τ_f ...]))])
      (syntax-parse τ_f
        [(~C→* [] [] #:rest τ_rst* τ_out)
+        (and (typecheck? #'τ_lst #'τ_rst*)
+             #'τ_out)]
+       [(~C→** [] [] #:rest τ_rst* τ_out)
+        #:when (not (current-sym-path?))
         (and (typecheck? #'τ_lst #'τ_rst*)
              #'τ_out)]
        [_ #false]))

@@ -64,19 +64,25 @@
    #:do [(define nb (stx-length #'[b ...]))
          (define results
            (filter
-            list?
+            syntax?
             (for/list ([τ_f (in-list (stx->list #'[τ_f ...]))])
-              (define/syntax-parse (~C→ τ_ab ... τ_c) τ_f)
-              (define na (- (stx-length #'[τ_ab ...]) nb))
-              (define-values [τs_a τs_b]
-                (split-at (stx->list #'[τ_ab ...]) na))
-              (and (typechecks? #'[τ_b* ...] τs_b)
-                   (list τs_a #'τ_c)))))]
+              (syntax-parse τ_f
+                [(~C→ τ_ab ... τ_c)
+                 (define na (- (stx-length #'[τ_ab ...]) nb))
+                 (define-values [τs_a τs_b]
+                   (split-at (stx->list #'[τ_ab ...]) na))
+                 (and (typechecks? #'[τ_b* ...] τs_b)
+                      #`(C→ #,@τs_a τ_c))]
+                [(~C→/conc τ_ab ... τ_c)
+                 (define na (- (stx-length #'[τ_ab ...]) nb))
+                 (define-values [τs_a τs_b]
+                   (split-at (stx->list #'[τ_ab ...]) na))
+                 (and (typechecks? #'[τ_b* ...] τs_b)
+                      #`(C→/conc #,@τs_a τ_c))]))))]
    #:fail-when (empty? results) "no cases match"
-   #:with [([τ_a ...] τ_c) ...] results
+   #:with [τ_a->c ...] results
    --------
-   [⊢ (partialr* f- b- ...) ⇒ : (Ccase-> (C→ τ_a ... τ_c)
-                                         ...)]])
+   [⊢ (partialr* f- b- ...) ⇒ : (Ccase-> τ_a->c ...)]])
 
 ;; ----------------------------------------------------------------------------
 

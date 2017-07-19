@@ -1358,6 +1358,13 @@
              (typecheck? #'s2 #'t2)
              (prop-implies? #'sp+ #'tp+)
              (prop-implies? #'sp- #'tp-))]
+       [((~C→/conc s1 ... s2 : #:+ sp+ #:- sp-)
+         (~or (~C→/conc t1 ... t2 : #:+ tp+ #:- tp-)
+              (~C→ t1 ... t2 : #:+ tp+ #:- tp-)))
+        (and (typechecks? #'(t1 ...) #'(s1 ...))
+             (typecheck? #'s2 #'t2)
+             (prop-implies? #'sp+ #'tp+)
+             (prop-implies? #'sp- #'tp-))]
        [((~C→* [s1 ...] [] #:rest srst s2 : #:+ sp+ #:- sp-)
          (~C→* [t1 ...] []             t2 : #:+ tp+ #:- tp-))
         (define sn (stx-length #'[s1 ...]))
