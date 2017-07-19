@@ -19,10 +19,9 @@
                      typed-struct-info-accessors
                      typed-struct-info-field-types)
          ;; Function types
-         C→ C→* Ccase->
-         →
+         C→ C→* C→/conc C→** Ccase-> → →/conc
          (for-syntax concrete-function-type?
-                     ~C→ ~C→* ~Ccase->
+                     ~C→ ~C→/conc ~C→* ~C→** ~Ccase->
                      C→? Ccase->?)
          ;; Propositions for Occurrence typing
          @ !@
@@ -93,7 +92,11 @@
          add-typeform
          mark-solvablem
          mark-functionm
-         (for-syntax get-pred
+         (for-syntax current-sym-path? current-sym-scope no-mut-msg conc-fn-msg
+                     no-mutate? no-mutate/ty? not-current-sym-scope?
+                     mk-path-sym mk-path-conc
+                     save-sym-path-info restore-sym-path-info 
+                     get-pred
                      type-merge
                      type-merge*
                      typeCNothing
@@ -162,6 +165,44 @@
     (syntax-parse τ
       [(~Term* τ) (concrete-type-single-shape #'τ)]
       [_ (concrete-type-single-shape τ)]))
+
+  ;; indicates whether the path is currently symbolic
+  ;; needed for soundness,
+  ;;   eg reject mutation of concrete-typed vars in symbolic path
+  (define current-sym-path? (make-parameter #f))
+  (define (no-mutate/ty? ty)
+    (and (current-sym-path?) (concrete? ty)))
+  (define (no-mutate? e)
+    (and (no-mutate/ty? (typeof e)) (not-current-sym-scope? e)))
+  (define (no-mut-msg wh . args)
+    (apply
+     format
+     (string-append "Cannot mutate concrete " wh " when in a symbolic path")
+     args))
+  (define (conc-fn-msg)
+    "Cannot apply function with C→ type when in a symbolic path")
+
+  ;; each new sym path is associated with a "sym scope"
+  ;; - variables may be introduced and mutated within the same sym scope
+  ;; - define an initial symscope to avoid confusion when stx doesnt have prop
+  (define current-sym-scope (make-parameter (gensym)))
+  (define (mk-path-sym)
+    (current-sym-scope (gensym))
+    (current-sym-path? #t))
+  (define (mk-path-conc)
+    (current-sym-path? #f))
+  (define (not-current-sym-scope? x)
+    (not (equal? (syntax-property x 'sym-scope) (current-sym-scope))))
+
+  ;; used to save previous values of current-sym-path?/scope
+  (define old-sym-path? (make-parameter (current-sym-path?)))
+  (define old-sym-scope (make-parameter (current-sym-scope)))
+  (define (save-sym-path-info)
+    (old-sym-path? (current-sym-path?))
+    (old-sym-scope (current-sym-scope)))
+  (define (restore-sym-path-info)
+    (current-sym-path? (old-sym-path?))
+    (current-sym-scope (old-sym-scope)))
   )
 
 ;; TODO: update orig to use reduced type
@@ -229,18 +270,12 @@
 (define-internal-type-constructor CMSetof) ; #:arity = 1
 
 (define-typed-syntax (CMVectorof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMVectorof- τ.norm) ⇒ :: #%type])
 (define-typed-syntax (CMBoxof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMBoxof- τ.norm) ⇒ :: #%type])
 (define-typed-syntax (CMSetof τ:type) ≫
-  #:fail-when (and (concrete? #'τ.norm) #'τ)
-  "Mutable locations must have types that allow for symbolic values"
   --------
   [⊢ (CMSetof- τ.norm) ⇒ :: #%type])
 
@@ -303,7 +338,10 @@
 ;; ---------------------------------
 ;; Pattern Expanders for Types
 
+;; C→* may be applied in both symbolic and concrete paths
+;; C→** may be applied in only concrete paths
 (define-internal-type-constructor C→*/internal) ; #:arity = 4
+(define-internal-type-constructor C→**/internal) ; #:arity = 4
 (define-internal-type-constructor MandArgs) ; #:arity >= 0
 (define-internal-type-constructor OptKws) ; #:arity >= 1
 
@@ -391,6 +429,16 @@
                 pat_out
                 : #:+ props.pat_posprop #:- props.pat_negprop)])))
 
+  (define-syntax ~C→/conc
+    (pattern-expander
+     (syntax-parser
+       [(_ pat_in:expr* ...
+           (~and pat_out:expr* (~not (~literal ...)))
+           props:result-prop-pat)
+        #'(~C→** [pat_in ...] []
+                pat_out
+                : #:+ props.pat_posprop #:- props.pat_negprop)])))
+
   (define (convert-opt-kws opt-kws)
     (syntax-parse opt-kws
       [(~OptKws (~KwArg ((~literal quote-syntax) kw) τ) ...)
@@ -418,6 +466,30 @@
                  (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
            (~RestArg pat_rst)
            (~Result pat_out props.pat_posprop props.pat_negprop))])))
+
+  ;; more or less duplicates ~C→*
+  (define-syntax ~C→**
+    (pattern-expander
+     (syntax-parser
+       [(_ [pat_in:expr* ...] [pat_kw:expr ...] pat_out:expr*
+           props:result-prop-pat)
+        #:with opt-kws (generate-temporary 'opt-kws)
+        #'(~C→**/internal
+           (~MandArgs pat_in ...)
+           (~and opt-kws
+                 (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
+           (~NoRestArg)
+           (~Result pat_out props.pat_posprop props.pat_negprop))]
+       [(_ [pat_in:expr* ...] [pat_kw:expr ...] #:rest pat_rst:expr
+           pat_out:expr*
+           props:result-prop-pat)
+        #:with opt-kws (generate-temporary 'opt-kws)
+        #'(~C→**/internal
+           (~MandArgs pat_in ...)
+           (~and opt-kws
+                 (~parse [pat_kw ...] (convert-opt-kws #'opt-kws)))
+           (~RestArg pat_rst)
+           (~Result pat_out props.pat_posprop props.pat_negprop))])))
   )
 
 ;; ---------------------------------
@@ -428,7 +500,7 @@
   (syntax-parser
     [(_ . tys)
      #:do [(define (concrete-function-type? τ)
-             (or (C→/normal? τ) (C→*/internal? τ)))]
+             (or (C→/normal? τ) (C→*/internal? τ) (C→**/internal? τ)))]
      #:with tys+ (stx-map (current-type-eval) #'tys)
      #:fail-unless (stx-andmap concrete-function-type? #'tys+)
                    "Ccase-> require concrete function types"
@@ -567,6 +639,16 @@
           #`(U Cτ))
       this-syntax)]))
 
+(define-syntax →/conc
+  (syntax-parser
+    [(_ ty ...+)
+     #:with Cτ ((current-type-eval) #'(C→/conc ty ...))
+     (add-orig
+      (if (type-solvable? #'Cτ)
+          #`(U (Term Cτ))
+          #`(U Cτ))
+      this-syntax)]))
+
 (define-named-type-alias True (U (Term CTrue)))
 (define-named-type-alias False (U (Term CFalse)))
 (define-named-type-alias Bool (add-predm (U (Term CBool)) ro:boolean?))
@@ -592,7 +674,7 @@
 
 (begin-for-syntax
   (define (C→? τ)
-    (C→*/internal? τ))
+    (or (C→*/internal? τ) (C→**/internal? τ)))
   (define (concrete-function-type? τ)
     (or (C→? τ) (Ccase->? τ))))
 
@@ -628,11 +710,43 @@
                      (Result- τ_out- props.posprop props.negprop))
       ⇒ :: #%type]])
 
+;; C→** may be applied only in concrete paths
+;; more or less duplicates C→*
+(define-typed-syntax C→**
+  [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] τ_out:expr*
+      props:result-prop) ≫
+   [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
+   [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]
+   [⊢ τ_out ≫ τ_out- ⇐ :: #%type]
+   --------
+   [⊢ (C→**/internal- (MandArgs- τ_in- ...)
+                     (OptKws- (KwArg- (quote-syntax kw) τ_kw-) ...)
+                     (NoRestArg-)
+                     (Result- τ_out- props.posprop props.negprop))
+      ⇒ :: #%type]]
+  [(_ [τ_in:expr* ...] [[kw:keyword τ_kw:expr*] ...] #:rest τ_rst
+      τ_out:expr*
+      props:result-prop) ≫
+   [⊢ [τ_in ≫ τ_in- ⇐ :: #%type] ...]
+   [⊢ [τ_kw ≫ τ_kw- ⇐ :: #%type] ...]
+   [⊢ τ_rst ≫ τ_rst- ⇐ :: #%type]
+   [⊢ τ_out ≫ τ_out- ⇐ :: #%type]
+   --------
+   [⊢ (C→**/internal- (MandArgs- τ_in- ...)
+                     (OptKws- (KwArg- (quote-syntax kw) τ_kw-) ...)
+                     (RestArg- τ_rst-)
+                     (Result- τ_out- props.posprop props.negprop))
+      ⇒ :: #%type]])
+
 (define-typed-syntax C→
   [(_ τ_in:expr* ... [kw:keyword τ_kw:expr*] ... τ_out:expr*) ≫
    --------
    [≻ (C→* [τ_in ...] [[kw τ_kw] ...] τ_out)]])
 
+(define-typed-syntax C→/conc
+  [(_ τ_in:expr* ... [kw:keyword τ_kw:expr*] ... τ_out:expr*) ≫
+   --------
+   [≻ (C→** [τ_in ...] [[kw τ_kw] ...] τ_out)]])
 
 ;; ---------------------------------------------------------
 
@@ -1240,6 +1354,13 @@
           (typecheck? t t2))]
        [((~C→ s1 ... s2 : #:+ sp+ #:- sp-)
          (~C→ t1 ... t2 : #:+ tp+ #:- tp-))
+        (and (typechecks? #'(t1 ...) #'(s1 ...))
+             (typecheck? #'s2 #'t2)
+             (prop-implies? #'sp+ #'tp+)
+             (prop-implies? #'sp- #'tp-))]
+       [((~C→/conc s1 ... s2 : #:+ sp+ #:- sp-)
+         (~or (~C→/conc t1 ... t2 : #:+ tp+ #:- tp-)
+              (~C→ t1 ... t2 : #:+ tp+ #:- tp-)))
         (and (typechecks? #'(t1 ...) #'(s1 ...))
              (typecheck? #'s2 #'t2)
              (prop-implies? #'sp+ #'tp+)

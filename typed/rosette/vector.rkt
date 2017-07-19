@@ -23,20 +23,20 @@
 ;; mutable constructor
 (define-typed-syntax vector
   [(_ e:expr ...) ≫
-   [⊢ [e ≫ e- ⇒ : τ] ...]
-   #:with τ* (type-merge*
-              (stx-map type-merge #'[τ ...] #'[τ ...]))
+   [⊢ e ≫ e- ⇒ τ] ...
    --------
-   [⊢ [_ ≫ (ro:vector e- ...) ⇒ : (CMVectorof (U τ*))]]])
+   [⊢ (ro:vector e- ...) ⇒ #,(if (stx-andmap concrete? #'(τ ...))
+                                 #'(CMVectorof (CU τ ...))
+                                 #'(CMVectorof (U τ ...)))]])
 
 ;; immutable constructor
 (define-typed-syntax vector-immutable
   [(_ e:expr ...) ≫
-   [⊢ [e ≫ e- ⇒ : τ] ...]
+   [⊢ e ≫ e- ⇒ τ] ...
    --------
-   [⊢ [_ ≫ (ro:vector-immutable e- ...) ⇒ : #,(if (stx-andmap concrete? #'(τ ...))
-                                                  #'(CIVectorof (CU τ ...))
-                                                  #'(CIVectorof (U τ ...)))]]])
+   [⊢ (ro:vector-immutable e- ...) ⇒ #,(if (stx-andmap concrete? #'(τ ...))
+                                           #'(CIVectorof (CU τ ...))
+                                           #'(CIVectorof (U τ ...)))]])
 
 (define-typed-syntax vector-ref
   [(_ v:expr i:expr) ≫
@@ -68,6 +68,7 @@
 (define-typed-syntax vector-set!
   [(_ v:expr i:expr x:expr) ≫
    [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
+   #:fail-when (no-mutate/ty? #'τ) (no-mut-msg "vector elements")
    [⊢ i ≫ i- ⇐ Int]
    [⊢ x ≫ x- ⇐ τ]
    --------

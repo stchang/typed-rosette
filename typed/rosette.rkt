@@ -31,11 +31,12 @@
                             "rosette/concrete-predicate.rkt"))
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
-(provide : define set! λ apply ann begin
+(provide : define define/conc set! λ λ/conc apply ann begin
          let
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda]
+                     [λ/conc lambda/conc]
                      [ro:begin splicing-begin])
          match match-let _ var ?
          (all-from-out "rosette/bool.rkt"
@@ -58,7 +59,8 @@
          CU U (for-syntax ~CU* ~U*)
          Constant Solvable
          Struct
-         C→ C→* → (for-syntax ~C→ ~C→* C→? concrete-function-type?)
+         C→ C→* C→/conc C→** → →/conc (for-syntax ~C→ ~C→* ~C→/conc ~C→** C→?
+                                                  concrete-function-type?)
          Ccase-> (for-syntax ~Ccase-> Ccase->?) ; TODO: sym case-> not supported
          CListof Listof CList CPair Pair
          (for-syntax ~CListof)

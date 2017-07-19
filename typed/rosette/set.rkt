@@ -40,10 +40,8 @@
    
 (define-typed-syntax set-add!
   [(_ s v) ≫
-   ;; #:with s- (expand/ro #'s)
-   ;; #:with ty (typeof #'s-)
    [⊢ s ≫ s- ⇒ (~CMSetof τ)]
-   ;; #:with (~CMSetof τ) #'ty
+   #:fail-when (no-mutate? #'s-) (no-mut-msg "set")
    [⊢ v ≫ v- ⇐ τ]
    ----------
    [⊢ (set-add!- s- v-) ⇒ CUnit]])

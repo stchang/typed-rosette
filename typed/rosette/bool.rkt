@@ -48,8 +48,11 @@
              (⇒ : _)
              (⇒ prop+ posprop)
              (⇒ prop- negprop)]]
+   #:do[(save-sym-path-info)
+        (mk-path-sym)]
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
    [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
+   #:do[(restore-sym-path-info)]
    #:with τ_out (type-merge #'ty1 #'ty2)
    --------
    [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
@@ -69,7 +72,10 @@
   [(_ condition:expr body:expr ...+) ≫ ; symbolic path
    [⊢ condition ≫ condition- (⇒ prop+ posprop)]
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   #:do[(save-sym-path-info)
+        (mk-path-sym)]
    [⊢ (with-occurrence-prop posprop e) ≫ body- ⇒ τ]
+   #:do[(restore-sym-path-info)]
    --------
    [⊢ (ro:when condition- body-) ⇒ (U τ CVoid)]])
 
@@ -84,7 +90,10 @@
   [(_ condition:expr body:expr ...+) ≫ ; symbolic path
    [⊢ condition ≫ condition- (⇒ prop- negprop)]
    #:with e (datum->stx #'condition (cons 'begin #'(body ...)))
+   #:do[(save-sym-path-info)
+        (mk-path-sym)]
    [⊢ (with-occurrence-prop negprop e) ≫ body- ⇒ τ]
+   #:do[(restore-sym-path-info)]
    --------
    [⊢ (ro:unless condition- body-) ⇒ (U τ CVoid)]])
 

@@ -123,7 +123,8 @@
 
 ;; Safe vector mutation
 
-(define y2 (vector 0 1 2))
+;; will mutate y2, so y2 must have symbolic elements
+(define y2 (vector (ann 0 : Nat) 1 2))
 
 (define-symbolic b1 b2 boolean?)
 
@@ -152,7 +153,7 @@
             : (MVectorof Nat)
             -> (vector 0 1 4))
 
-(define y3 (vector 0 1 2))
+(define y3 (vector (ann 0 : Nat) 1 2))
 
 ;; If b2 is true, then y3[1] should be 5, otherwise y3[2] should be 5:
 (check-type (vector-set! y3 (if b2 1 2) 5)
