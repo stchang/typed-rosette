@@ -29,7 +29,7 @@ install:
 script:
  - raco test --package typed-rosette
  # Install the Typed Rosette version of Ocelot
- - raco pkg install -j 1 --auto git://github.com/AlexKnauth/ocelot#typed-rosette-concrete-path
+ - raco pkg install -j 1 --auto git://github.com/AlexKnauth/ocelot#typed-rosette
  - raco setup
 
 after_success:
