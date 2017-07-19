@@ -78,7 +78,7 @@
 (define-typed-syntax hash-set!
   [(_ hsh:expr key:expr val:expr) ≫
    [⊢ hsh ≫ hsh- ⇒ : (~CHashof τ_key τ_val)]
-   #:fail-when (no-mutate? #'hsh-) (no-mut-msg "hash ~a" (stx->datum #'hsh))
+   #:fail-when (current-sym-path?) (no-mut-msg "hash ~a" (stx->datum #'hsh))
    [⊢ key ≫ key- ⇐ : τ_key]
    [⊢ val ≫ val- ⇐ : τ_val]
    --------
@@ -87,7 +87,7 @@
 (define-typed-syntax hash-ref!
   [(_ hsh:expr key:expr to-set:expr) ≫
    [⊢ hsh ≫ hsh- ⇒ : (~CHashof τ_key τ_val)]
-   #:fail-when (no-mutate? #'hsh-) (no-mut-msg "hash ~a" (stx->datum #'hsh))
+   #:fail-when (current-sym-path?) (no-mut-msg "hash ~a" (stx->datum #'hsh))
    [⊢ key ≫ key- ⇐ : τ_key]
    [⊢ to-set ≫ to-set- ⇐ : (C→ τ_val)]
    --------
@@ -96,7 +96,7 @@
 (define-typed-syntax hash-remove!
   [(_ hsh:expr key:expr) ≫
    [⊢ hsh ≫ hsh- ⇒ : (~CHashof τ_key τ_val)]
-   #:fail-when (no-mutate? #'hsh-) (no-mut-msg "hash ~a" (stx->datum #'hsh))
+   #:fail-when (current-sym-path?) (no-mut-msg "hash ~a" (stx->datum #'hsh))
    [⊢ key ≫ key- ⇐ : τ_key]
    --------
    [⊢ (ro:hash-remove! hsh- key-) ⇒ : CVoid]])
@@ -104,7 +104,7 @@
 (define-typed-syntax hash-clear!
   [(_ e) ≫
    [⊢ e ≫ e- ⇒ (~CHashTable _ _)]
-   #:fail-when (no-mutate? #'e-) (no-mut-msg "hash ~a" (stx->datum #'e))
+   #:fail-when (current-sym-path?) (no-mut-msg "hash ~a" (stx->datum #'e))
    --------
    [⊢ (hash-clear!- e-) ⇒ CUnit]])
 
