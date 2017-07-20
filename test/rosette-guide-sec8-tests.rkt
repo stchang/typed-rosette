@@ -76,7 +76,7 @@
 (define/conc (f [x : Int]) -> Int (add1 x))
 
 (typecheck-fail (when b (f 1))
- #:with-msg "Cannot apply function with C→ type when in a symbolic path")
+ #:with-msg "Cannot apply function with C→/conc type when in a symbolic path")
 
 (define (g [x : Int]) -> Int (add1 x))
 

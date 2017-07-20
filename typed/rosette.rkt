@@ -1084,3 +1084,8 @@
    [⊢ xs ≫ xs- ⇒ (~CHashTable _ _)]
    -----------
    [⊢ (ro:complete m- xs-) ⇒ CSolution]])   
+
+(define-typed-syntax (syntax e) ≫
+;  [⊢ e ≫ e- ⇒ _]
+  ----------
+  [⊢ (syntax- e) ⇒ CStx])

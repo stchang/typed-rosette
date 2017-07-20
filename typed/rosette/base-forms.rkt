@@ -754,20 +754,6 @@
                (and p
                     (typecheck? τ_b (second p))))
              (list #'τ_out #'posprop #'negprop))]
-       [(~C→** [τ_a* ...] [[kw* τ_kw*] ...] τ_out
-               : #:+ posprop #:- negprop)
-        #:when (not (current-sym-path?))
-        (define kws/τs*
-          (for/list ([kw (in-list (syntax->datum #'[kw* ...]))]
-                     [τ (in-list (syntax->list #'[τ_kw* ...]))])
-            (list kw τ)))
-        (and (typechecks? #'[τ_a ...] #'[τ_a* ...])
-             (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
-                       [τ_b (in-list (syntax->list #'[τ_b ...]))])
-               (define p (assoc kw kws/τs*))
-               (and p
-                    (typecheck? τ_b (second p))))
-             (list #'τ_out #'posprop #'negprop))]
        [(~C→* [τ_a* ...] [[kw* τ_kw*] ...] #:rest τ_rst* τ_out
               : #:+ posprop #:- negprop)
         #:when (stx-length>=? #'[τ_a ...] #'[τ_a* ...])
@@ -779,6 +765,21 @@
             (list kw τ)))
         (and (typechecks? #'[τ_fst ...] #'[τ_a* ...])
              (typecheck? ((current-type-eval) #'(CList τ_rst ...)) #'τ_rst*)
+             (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
+                       [τ_b (in-list (syntax->list #'[τ_b ...]))])
+               (define p (assoc kw kws/τs*))
+               (and p
+                    (typecheck? τ_b (second p))))
+             (list #'τ_out #'posprop #'negprop))]
+       [(~C→** [τ_a* ...] [[kw* τ_kw*] ...] τ_out
+               : #:+ posprop #:- negprop)
+        #:with ~! #'()
+        #:fail-when (current-sym-path?) (conc-fn-msg)
+        (define kws/τs*
+          (for/list ([kw (in-list (syntax->datum #'[kw* ...]))]
+                     [τ (in-list (syntax->list #'[τ_kw* ...]))])
+            (list kw τ)))
+        (and (typechecks? #'[τ_a ...] #'[τ_a* ...])
              (for/and ([kw (in-list (syntax->datum #'[kw ...]))]
                        [τ_b (in-list (syntax->list #'[τ_b ...]))])
                (define p (assoc kw kws/τs*))
@@ -899,7 +900,7 @@
         (and (typecheck? #'τ_lst #'τ_rst*)
              #'τ_out)]
        [(~C→** [] [] #:rest τ_rst* τ_out)
-        #:when (not (current-sym-path?))
+        #:fail-when (current-sym-path?) (conc-fn-msg)
         (and (typecheck? #'τ_lst #'τ_rst*)
              #'τ_out)]
        [_ #false]))

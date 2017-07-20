@@ -6,7 +6,8 @@
 (provide unsafe-assign-type
          unsafe-define/assign-type
          unsafe-cast-concrete
-         unsafe-cast-nonfalse)
+         unsafe-cast-nonfalse
+         unsafe-strip-term)
 
 ;; Unsafely assigning types to values
 
@@ -34,10 +35,24 @@
 
 (define-typed-syntax unsafe-cast-nonfalse
   [(_ e) ≫
-   [⊢ e ≫ e- ⇒ (~CU* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   [⊢ e ≫ e- ⇒ (~CU* (~and (~not ~CFalse) ty1) ... ~CFalse
+                     (~and (~not ~CFalse) ty2) ...)]
    --------
-   [⊢ e- ⇒ (CU ty ...)]]
+   [⊢ e- ⇒ (CU ty1 ... ty2 ...)]]
   [(_ e) ≫
-   [⊢ e ≫ e- ⇒ (~U* ~CFalse ... (~and (~not ~CFalse) ty) ... ~CFalse ...)]
+   [⊢ e ≫ e- ⇒ (~U* (~and (~not ~CFalse) ty1) ... ~CFalse
+                    (~and (~not ~CFalse) ty2) ...)]
    --------
-   [⊢ e- ⇒ (U ty ...)]])
+   [⊢ e- ⇒ (U ty1 ... ty2 ...)]])
+
+(define-typed-syntax unsafe-strip-term
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ (~Term* τ)]
+   ------------------------
+   [⊢ e- ⇒ : τ]]
+  [(_ e) ≫
+   [⊢ e ≫ e- ⇒ (~U* (~or (~Term* ty1) ty2) ...)]
+   ------------------------
+   [⊢ e- ⇒ : (U ty1 ... ty2 ...)]])
+   
+   
