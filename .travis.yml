@@ -30,8 +30,10 @@ script:
  - raco test --package typed-rosette
  # Install the Typed Rosette version of Ocelot
  - raco pkg install -j 1 --auto git://github.com/AlexKnauth/ocelot#typed-rosette
+ - raco pkg install -j 1 --auto git://bitbucket.org/stchang:incremental.git#typed
  - raco setup
 
 after_success:
  # this currently fails 1 out of 728 tests
  - raco test --package ocelot
+ - raco test --package incremental
