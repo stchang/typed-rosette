@@ -522,7 +522,8 @@
                     [modulo : (Ccase-> (C→ CNat CNat CNat)
                                        (C→ CInt CInt CInt)
                                        (C→ Int Int Int))]
-                    
+                    ;; not in rosette/safe
+                    [random : (C→ CNat CNat)]
                     ;; rosette-specific
                     [pc : (C→ Bool)]
                     [asserts : (C→ CAsserts)]
