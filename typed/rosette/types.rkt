@@ -180,7 +180,7 @@
      (string-append "Cannot mutate concrete " wh " when in a symbolic path")
      args))
   (define (conc-fn-msg)
-    "Cannot apply function with C→ type when in a symbolic path")
+    "Cannot apply function with C→/conc type when in a symbolic path")
 
   ;; each new sym path is associated with a "sym scope"
   ;; - variables may be introduced and mutated within the same sym scope

@@ -53,6 +53,11 @@
    [⊢ [v ≫ v- ⇒ : (~U* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]]
    [⊢ [i ≫ i- ⇐ : Int]]
    --------
+   [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]]]
+  [(_ v:expr i:expr) ≫
+   [⊢ [v ≫ v- ⇒ : (~CU* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]]
+   [⊢ [i ≫ i- ⇐ : Int]]
+   --------
    [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]]])
 
 (define-typed-syntax vector-length
@@ -67,10 +72,19 @@
 
 (define-typed-syntax vector-set!
   [(_ v:expr i:expr x:expr) ≫
-   [⊢ v ≫ v- ⇒ (~CMVectorof τ)]
+   [⊢ v ≫ v- ⇒ (~CMVectorof ~! τ)]
    #:fail-when (no-mutate/ty? #'τ) (no-mut-msg "vector elements")
    [⊢ i ≫ i- ⇐ Int]
    [⊢ x ≫ x- ⇐ τ]
+   --------
+   [⊢ (ro:vector-set! v- i- x-) ⇒ CUnit]]
+  [(_ v:expr i:expr x:expr) ≫
+   [⊢ v ≫ v- ⇒ (~CU* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]
+   #:fail-when (stx-ormap no-mutate/ty? #'(τ ...))
+               (no-mut-msg "vector elements")
+   [⊢ i ≫ i- ⇐ Int]
+   [⊢ x ≫ x- ⇐ (U τ ...)]
+;   #:when (stx-andmap (lambda (t) (typecheck? #'τ_x t)) #'(τ ...))
    --------
    [⊢ (ro:vector-set! v- i- x-) ⇒ CUnit]])
 

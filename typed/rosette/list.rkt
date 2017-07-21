@@ -1,10 +1,11 @@
 #lang turnstile
 
 (provide cons pair car cdr null
-         length list-ref first rest second make-list build-list
-         map foldl member? remove-duplicates
+         length list-ref first rest second
+         map filter foldl for-each member? remove-duplicates
          cartesian-product* append* sort
-         andmap)
+         andmap ormap
+         build-list make-list range)
 
 (require (rename-in typed/rosette/base-forms [#%app tro:#%app])
          typed/rosette/types
@@ -237,25 +238,6 @@
    --------
    [⊢ [_ ≫ (ro:second lst-) ⇒ : (U τ2 ...)]]])
 
-(define-typed-syntax build-list
-  [_:id ≫ ;; TODO: use polymorphism
-   --------
-   [⊢ ro:build-list ⇒ : (C→ CNat (C→ CNat Any) (CListof Any))]]
-  [(_ n:expr f:expr) ≫
-   [⊢ n ≫ n- ⇐ : CInt]
-   [⊢ f ≫ f- ⇒ : (~C→ X Y)]
-   #:fail-unless (typecheck? #'X ((current-type-eval) #'CInt))
-                 "expected function that consumes concrete Int"
-   --------
-   [⊢ [_ ≫ (ro:build-list n- f-) ⇒ : (CListof Y)]]])
-
-(define-typed-syntax make-list
-  [(_ n:expr v:expr) ≫
-   [⊢ n ≫ n- ⇐ : CNat]
-   [⊢ v ≫ v- ⇒ : τ]
-   --------
-   [⊢ (ro:make-list n- v-) ⇒ : (CListof τ)]])
-
 ;; ------------------------------------------------------------------------
 
 (define-typed-syntax map
@@ -298,7 +280,50 @@
    --------
    [⊢ [_ ≫ (ro:map f- lst- ...) ⇒ : (CListof Y)]]])
 
+(define-typed-syntax filter
+  [(_ f:expr lst:expr) ≫
+   [⊢ [f ≫ f- ⇒ : (~C→ ~! X Bool)]]
+   [⊢ [lst ≫ lst- ⇐ (CListof X)]]
+   --------
+   [⊢ [_ ≫ (ro:filter f- lst-) ⇒ : (CListof X)]]])
 
+(define-typed-syntax for-each
+  [(_ f lst ...) ≫
+   [⊢ f ≫ f- ⇒ (~C→ ty1 ... _)]
+   [⊢ lst ≫ lst- ⇐ (CListof ty1)] ...
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ f ≫ f- ⇒ (~C→ ~! ty1 ... _)]
+   [⊢ lst ≫ lst- ⇐ (Listof ty1)] ...
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ lst ≫ lst- ⇒ (~CListof ty1)] ...
+   [⊢ f ≫ f- ⇒ (~Ccase-> ~! ty-fns ...)] ; find first match
+   #:with (~C→ _ _)
+          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
+                      #:when (syntax-parse ty-fn
+                               [(~C→ t1 ... _)
+                                #:when (typechecks? #'(ty1 ...) #'(t1 ...))
+                                #t]
+                               [_ #f]))
+            ty-fn)
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ lst ≫ lst- ⇒ (~U* (~CListof ty1))] ...
+   [⊢ f ≫ f- ⇒ (~Ccase-> ~! ty-fns ...)] ; find first match
+   #:with (~C→ _ _)
+          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
+                      #:when (syntax-parse ty-fn
+                               [(~C→ t1 ... _)
+                                #:when (typechecks? #'(ty1 ...) #'(t1 ...))
+                                #t]
+                               [_ #f]))
+            ty-fn)
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]])
 
 (define-typed-syntax foldl
   [(_ f:expr base:expr lst:expr) ⇐ Y ≫
@@ -399,7 +424,7 @@
 
 ;; ------------------------------------------------------------------------
 
-;; TODO: finish andmap
+;; TODO: finish andmap and ormap
 (define-typed-syntax andmap
   #;[_:id ≫ ;; TODO: use polymorphism
    --------
@@ -437,3 +462,46 @@
             ty-fn)
    --------
    [⊢ [_ ≫ (ro:andmap f- lst-) ⇒ : (CListof ty2)]]])
+
+(define-typed-syntax ormap
+  [(_ f lst) ≫
+   [⊢ [f ≫ f- ⇒ : (~C→ ~! ty ty-bool : #:+ p+ #:- _)]]
+   [⊢ [lst ≫ lst- ⇐ : (CListof ty)]]
+   #:with prop_out+
+   (syntax-parse #'p+
+     [(~Prop/IndexType (_ 0) τ_elem)
+      #`(Prop/ObjType #,(get-arg-obj #'lst-) : (CListof τ_elem))]
+     [_ #`Prop/Top])
+   --------
+   [⊢ [_ ≫ (ro:ormap f- lst-) (⇒ : ty-bool) (⇒ prop+ prop_out+)]]])
+
+
+;; ----------------------------------------------------------------------------
+;; not rosette/safe
+
+(define-typed-syntax build-list
+  [_:id ≫ ;; TODO: use polymorphism
+   --------
+   [⊢ ro:build-list ⇒ : (C→ CNat (C→ CNat Any) (CListof Any))]]
+  [(_ n:expr f:expr) ≫
+   [⊢ n ≫ n- ⇐ : CInt]
+   [⊢ f ≫ f- ⇒ : (~C→ X Y)]
+   #:fail-unless (typecheck? #'X ((current-type-eval) #'CInt))
+                 "expected function that consumes concrete Int"
+   --------
+   [⊢ [_ ≫ (ro:build-list n- f-) ⇒ : (CListof Y)]]])
+
+(define-typed-syntax make-list
+  [(_ n:expr v:expr) ≫
+   [⊢ n ≫ n- ⇐ : CNat]
+   [⊢ v ≫ v- ⇒ : τ]
+   --------
+   [⊢ (ro:make-list n- v-) ⇒ : (CListof τ)]])
+
+(define-typed-syntax range
+  [(_ n:expr) ≫
+   [⊢ n ≫ n- ⇐ CNat]
+   ------------------
+   [⊢ (ro:range n-) ⇒ (CListof CNat)]])
+
+   

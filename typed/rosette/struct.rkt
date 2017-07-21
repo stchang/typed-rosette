@@ -140,7 +140,7 @@
   #:datum-literals [:]
   [(_ name:id (field:id ...+) . _)
    (raise-syntax-error #f "Missing type annotations for fields" this-syntax)]
-  [(_ name:id ([field:id : τ:type . fld-rst] ...)
+  [(_ name:id ([field:id : τ:type . fld-opts] ...)
       (~or (~seq #:type-name Name:id)
            (~seq (~fail #:unless (id-lower-case? #'name)
                         (format "Expected lowercase struct name, given ~a" #'name))
@@ -152,21 +152,24 @@
    #:with [name-field ...]
    (for/list ([field (in-list (syntax->list #'[field ...]))])
      (format-id #'name "~a-~a" #'name field #:source #'name #:props #'name))
-   ;; always define setters for now, rely on dynamic check when not possible
-   ;; TODO: improve pattern to only define setters for mutable fields
-   #:with [set-field ...]
-   (for/list ([field (in-list (syntax->list #'[field ...]))])
-     (format-id #'name "set-~a-~a!" #'name field #:source #'name #:props #'name))
-   #:with [set-field* ...]
-   ((make-syntax-introducer) #'[name-field ...])
-   #:with [name* internal-name name?* name-field* ...]
-   ((make-syntax-introducer) #'[name name name? name-field ...])
+   #:with [(set-field! setter-ty) ...]
+   (for/list ([field (in-list (syntax->list #'[field ...]))]
+              [fopts (in-list (syntax->list #'[fld-opts ...]))]
+              [fldty (in-list (syntax->list #'[τ ...]))]
+              #:unless (null? (stx->datum fopts)))
+     (list
+      (format-id #'name "set-~a-~a!" #'name field #:source #'name #:props #'name)
+      #`(C→ CName #,fldty CUnit)))
+   ;; set-field! must be part of this stx-introducing,
+   ;; if it uses a separate mk-stx-intro call, it wont get the right scopes
+   #:with [name* internal-name name?* (name-field* ...) (set-field!* ...)]
+   ((make-syntax-introducer) #'[name name name? (name-field ...) (set-field! ...)])
    #:with [opt- ...] ((attribute opts.get-opts-) #'CName)
    #:with [τ_merged ...] (stx-map type-merge #'[τ.norm ...] #'[τ.norm ...])
    #:with n (datum->syntax #'here (stx-length #'[field ...]))
    #:with some-mutable? (attribute opts.some-mutable?)
    #'(begin-
-       (ro:struct name* [[field . fld-rst] ...] opt- ...)
+       (ro:struct name* [[field . fld-opts] ...] opt- ...)
        (define-struct-name name constructor/type internal-name CName name?
          [name-field ...]
          [τ.norm ...]
@@ -190,13 +193,14 @@
          (unsafe-assign-type name-field* : (Ccase-> (C→ CName τ)
                                                     (C→ Name τ_merged))))
        ...
-       (: set-field : (Ccase-> (C→ CName τ CUnit)
+       (: set-field! : setter-ty #;(Ccase-> (C→ CName τ CUnit)
                                (C→ Name τ_merged CUnit)))
        ...
-       (define set-field
-         (unsafe-assign-type set-field* : (Ccase-> (C→ CName τ CUnit)
+       (define set-field!
+         (unsafe-assign-type set-field!* : setter-ty #;(Ccase-> (C→ CName τ CUnit)
                                                    (C→ Name τ_merged CUnit))))
        ...)]
+;;       )]
   ;; Sub-structs
   ;; TODO: Allow defining a new type for the sub-struct that
   ;;       is a distinct subtype of the parent's type.

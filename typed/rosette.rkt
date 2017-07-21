@@ -522,7 +522,8 @@
                     [modulo : (Ccase-> (C→ CNat CNat CNat)
                                        (C→ CInt CInt CInt)
                                        (C→ Int Int Int))]
-                    
+                    ;; not in rosette/safe
+                    [random : (C→ CNat CNat)]
                     ;; rosette-specific
                     [pc : (C→ Bool)]
                     [asserts : (C→ CAsserts)]
@@ -601,7 +602,8 @@
           [clear-terms! 
            : (Ccase-> (C→ CUnit)
                       (C→ CFalse CUnit)
-                      (C→ (CListof Any) CUnit))])) ; list of terms
+                      (C→ (CListof Any) CUnit))] ; list of terms
+          [clear-state! : (C→ CUnit)]))
 
 ;; ---------------------------------
 ;; BV Types and Operations
@@ -1084,3 +1086,8 @@
    [⊢ xs ≫ xs- ⇒ (~CHashTable _ _)]
    -----------
    [⊢ (ro:complete m- xs-) ⇒ CSolution]])   
+
+(define-typed-syntax (syntax e) ≫
+;  [⊢ e ≫ e- ⇒ _]
+  ----------
+  [⊢ (syntax- e) ⇒ CStx])
