@@ -27,10 +27,14 @@ install:
  - raco pkg install --auto -n typed-rosette
 
 script:
+ - git clone git@github.com:stchang/incremental
+ - cd incremental
+ - git checkout typed
+ - cd ..
+ - raco pkg install --auto incremental
  - raco test --package typed-rosette
  # Install the Typed Rosette version of Ocelot
  - raco pkg install -j 1 --auto git://github.com/AlexKnauth/ocelot#typed-rosette
- - raco pkg install -j 1 --auto git://bitbucket.org/stchang:incremental.git#typed
  - raco setup
 
 after_success:
