@@ -7,7 +7,9 @@
          unsafe-define/assign-type
          unsafe-cast-concrete
          unsafe-cast-nonfalse
-         unsafe-strip-term)
+         unsafe-strip-term
+         untyped-let
+         untyped-begin)
 
 ;; Unsafely assigning types to values
 
@@ -55,4 +57,12 @@
    ------------------------
    [⊢ e- ⇒ : (U ty1 ... ty2 ...)]])
    
-   
+;; untyped passthroughs --------------------------------------------------
+
+(define-typed-syntax (untyped-let () . args) ≫
+  ---------
+  [⊢ (begin- . args) ⇒ Any])
+
+(define-typed-syntax (untyped-begin . args) ≫
+  ---------
+  [⊢ (begin- . args) ⇒ Any])

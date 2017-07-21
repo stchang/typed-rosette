@@ -601,7 +601,8 @@
           [clear-terms! 
            : (Ccase-> (C→ CUnit)
                       (C→ CFalse CUnit)
-                      (C→ (CListof Any) CUnit))])) ; list of terms
+                      (C→ (CListof Any) CUnit))] ; list of terms
+          [clear-state! : (C→ CUnit)]))
 
 ;; ---------------------------------
 ;; BV Types and Operations

@@ -2,7 +2,7 @@
 
 (provide cons pair car cdr null
          length list-ref first rest second
-         map filter foldl member? remove-duplicates
+         map filter foldl for-each member? remove-duplicates
          cartesian-product* append* sort
          andmap ormap
          build-list make-list range)
@@ -286,6 +286,44 @@
    [⊢ [lst ≫ lst- ⇐ (CListof X)]]
    --------
    [⊢ [_ ≫ (ro:filter f- lst-) ⇒ : (CListof X)]]])
+
+(define-typed-syntax for-each
+  [(_ f lst ...) ≫
+   [⊢ f ≫ f- ⇒ (~C→ ty1 ... _)]
+   [⊢ lst ≫ lst- ⇐ (CListof ty1)] ...
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ f ≫ f- ⇒ (~C→ ~! ty1 ... _)]
+   [⊢ lst ≫ lst- ⇐ (Listof ty1)] ...
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ lst ≫ lst- ⇒ (~CListof ty1)] ...
+   [⊢ f ≫ f- ⇒ (~Ccase-> ~! ty-fns ...)] ; find first match
+   #:with (~C→ _ _)
+          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
+                      #:when (syntax-parse ty-fn
+                               [(~C→ t1 ... _)
+                                #:when (typechecks? #'(ty1 ...) #'(t1 ...))
+                                #t]
+                               [_ #f]))
+            ty-fn)
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]]
+  [(_ f lst ...) ≫
+   [⊢ lst ≫ lst- ⇒ (~U* (~CListof ty1))] ...
+   [⊢ f ≫ f- ⇒ (~Ccase-> ~! ty-fns ...)] ; find first match
+   #:with (~C→ _ _)
+          (for/first ([ty-fn (stx->list #'(ty-fns ...))]
+                      #:when (syntax-parse ty-fn
+                               [(~C→ t1 ... _)
+                                #:when (typechecks? #'(ty1 ...) #'(t1 ...))
+                                #t]
+                               [_ #f]))
+            ty-fn)
+   --------
+   [⊢ (ro:for-each f- lst- ...) ⇒ CUnit]])
 
 (define-typed-syntax foldl
   [(_ f:expr base:expr lst:expr) ⇐ Y ≫

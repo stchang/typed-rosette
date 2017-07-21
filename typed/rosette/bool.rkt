@@ -165,6 +165,12 @@
          (⇒ prop- (Prop/And p- ...))]]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : ty] ...]
+   #:when (stx-andmap concrete? #'(ty ...))
+   #:with (~CFalse ... non-f . rst) #'(ty ...) ; use first non-false type
+   --------
+   [⊢ [_ ≫ (ro:or e- ...) ⇒ : non-f]]]
+  [(_ e ...) ≫
+   [⊢ [e ≫ e- ⇒ : ty] ...]
    --------
    [⊢ [_ ≫ (ro:or e- ...) ⇒ : #,(type-merge* (cons typeCFalse #'[ty ...]))]]])
 
