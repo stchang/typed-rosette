@@ -94,8 +94,7 @@
          mark-functionm
          (for-syntax current-sym-path? current-sym-scope no-mut-msg conc-fn-msg
                      no-mutate? no-mutate/ty? not-current-sym-scope?
-                     mk-path-sym mk-path-conc
-                     save-sym-path-info restore-sym-path-info 
+                     new-sym-scope
                      get-pred
                      type-merge
                      type-merge*
@@ -185,24 +184,11 @@
   ;; each new sym path is associated with a "sym scope"
   ;; - variables may be introduced and mutated within the same sym scope
   ;; - define an initial symscope to avoid confusion when stx doesnt have prop
-  (define current-sym-scope (make-parameter (gensym)))
-  (define (mk-path-sym)
-    (current-sym-scope (gensym))
-    (current-sym-path? #t))
-  (define (mk-path-conc)
-    (current-sym-path? #f))
+  (define (new-sym-scope) (gensym))
+  (define current-sym-scope (make-parameter (new-sym-scope)))
+  
   (define (not-current-sym-scope? x)
     (not (equal? (syntax-property x 'sym-scope) (current-sym-scope))))
-
-  ;; used to save previous values of current-sym-path?/scope
-  (define old-sym-path? (make-parameter (current-sym-path?)))
-  (define old-sym-scope (make-parameter (current-sym-scope)))
-  (define (save-sym-path-info)
-    (old-sym-path? (current-sym-path?))
-    (old-sym-scope (current-sym-scope)))
-  (define (restore-sym-path-info)
-    (current-sym-path? (old-sym-path?))
-    (current-sym-scope (old-sym-scope)))
   )
 
 ;; TODO: update orig to use reduced type

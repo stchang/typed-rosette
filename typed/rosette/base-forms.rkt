@@ -287,15 +287,16 @@
    (format "keywords don't match, expected ~a, given ~a"
            (syntax->datum #'[kw* ...])
            (syntax->datum #'[kw ...]))
-   #:do[(save-sym-path-info)
-        (mk-path-sym)]
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw] ...] ; default arg must be double-checked too
-   [[x ≫ x-- : τ_in] ... [y ≫ y-- : τ_kw] ... ⊢ body ≫ body- ⇐ τ_out]
-   #:do[(mk-path-conc)]
-   [⊢ [e_def ≫ _ ⇐ τ_kw] ...]
-   [[x ≫ _ : τ_in] ... [y ≫ _ : τ_kw] ... ⊢ body ≫ _ ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in] ...
+    [y ≫ y-- : τ_kw] ... ⊢ [body ≫ body- ⇐ τ_out]
+                            [e_def ≫ e_def- ⇐ τ_kw] ... ; typecheck default arg
+                            #:modes[(current-sym-path? #t)
+                                    (current-sym-scope (new-sym-scope))]]
+   [[x ≫ _ : τ_in] ...
+    [y ≫ _ : τ_kw] ... ⊢ [body ≫ _ ⇐ τ_out]
+                          [e_def ≫ _ ⇐ τ_kw] ...
+                          #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -309,13 +310,14 @@
   ;; need expected type, with rest argument
   [(_ (x:id ... . rst:id) e)
    ⇐ (~C→* [τ_in ...] [] #:rest τ_rst τ_out) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-sym)]
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst] ⊢ e ≫ e- ⇐ τ_out]
-   #:do[(mk-path-conc)]
-   [[x ≫ _ : τ_in] ... [rst ≫ _ : τ_rst] ⊢ e ≫ _ ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in] ...
+    [rst ≫ rst-- : τ_rst] ⊢ [e ≫ e- ⇐ τ_out]
+                             #:modes[(current-sym-path? #t)
+                                     (current-sym-scope (new-sym-scope))]]
+   [[x ≫ _ : τ_in] ...
+    [rst ≫ _ : τ_rst] ⊢ [e ≫ _ ⇐ τ_out]
+                         #:mode current-sym-path? #f]
    #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
                                        (list (length (stx->list #'[x ...]))))
    ---------
@@ -331,29 +333,31 @@
                              #'[τ_expected ...])
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
-   #:do[(save-sym-path-info)
-        (mk-path-sym)]
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
-   [⊢ (λ args body) ≫ f- ⇐ τ_unionized]
-   #:do[(mk-path-conc)]
-   [⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
-   [⊢ (λ args body) ≫ _ ⇐ τ_unionized]
-   #:do[(restore-sym-path-info)]
+   ;; TODO: these two can't be combined bc ellipses
+   [⊢ [(λ args body) ≫ _ ⇐ τ_expected]
+      #:modes[(current-sym-path? #t)
+              (current-sym-scope (new-sym-scope))]] ...
+   [⊢ [(λ args body) ≫ f- ⇐ τ_unionized]
+      #:modes[(current-sym-path? #t)
+              (current-sym-scope (new-sym-scope))]]
+   [⊢ [(λ args body) ≫ _ ⇐ τ_expected] #:mode current-sym-path? #f] ...
+   [⊢ [(λ args body) ≫ _ ⇐ τ_unionized] #:mode current-sym-path? #f]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-sym)]
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
-   [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... ⊢ body ≫ body- ⇒ τ_out]
-   #:do[(mk-path-conc)]
-   [⊢ [e_def ≫ _ ⇐ τ_kw.norm] ...]
-   [[x ≫ _ : τ_in.norm] ... [y ≫ _ : τ_kw.norm] ... ⊢ body ≫ _ ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in.norm] ...
+    [y ≫ y-- : τ_kw.norm] ... ⊢ [body ≫ body- ⇒ τ_out]
+                                 [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                 #:modes[(current-sym-path? #t)
+                                         (current-sym-scope (new-sym-scope))]]
+   [[x ≫ _ : τ_in.norm] ...
+    [y ≫ _ : τ_kw.norm] ... ⊢ [body ≫ _ ⇐ τ_out]
+                               [e_def ≫ _ ⇐ τ_kw.norm] ...
+                               #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -363,17 +367,18 @@
   ;; no expected type, rest argument
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-sym)]
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
-   [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... [rst ≫ rst-- : τ_rst.norm]
-    ⊢ body ≫ body- ⇒ τ_out]
-   #:do[(mk-path-conc)]
-   [⊢ [e_def ≫ _ ⇐ τ_kw.norm] ...]
-   [[x ≫ _ : τ_in.norm] ... [y ≫ _ : τ_kw.norm] ... [rst ≫ _ : τ_rst.norm]
-    ⊢ body ≫ _ ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in.norm] ...
+    [y ≫ y-- : τ_kw.norm] ... 
+    [rst ≫ rst-- : τ_rst.norm] ⊢ [body ≫ body- ⇒ τ_out]
+                                  [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                 #:modes[(current-sym-path? #t)
+                                         (current-sym-scope (new-sym-scope))]]
+   [[x ≫ _ : τ_in.norm] ...
+    [y ≫ _ : τ_kw.norm] ...
+    [rst ≫ _ : τ_rst.norm] ⊢ [body ≫ _ ⇐ τ_out]
+                              [e_def ≫ _ ⇐ τ_kw.norm] ...
+                              #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...] [rst-]]
    (split-at* (stx->list #'[x-- ... y-- ... rst--])
               (list (length (stx->list #'[x ...]))
@@ -394,11 +399,10 @@
    (format "keywords don't match, expected ~a, given ~a"
            (syntax->datum #'[kw* ...])
            (syntax->datum #'[kw ...]))
-   #:do[(save-sym-path-info)
-        (mk-path-conc)]
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw] ...]
-   [[x ≫ x-- : τ_in] ... [y ≫ y-- : τ_kw] ... ⊢ body ≫ body- ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in] ...
+    [y ≫ y-- : τ_kw] ... ⊢ [body ≫ body- ⇐ τ_out]
+                            [e_def ≫ e_def- ⇐ τ_kw] ...
+                            #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -407,10 +411,9 @@
   ;; need expected type, with rest argument
   [(_ (x:id ... . rst:id) e)
    ⇐ (~C→** [τ_in ...] [] #:rest τ_rst τ_out) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-conc)]
-   [[x ≫ x-- : τ_in] ... [rst ≫ rst-- : τ_rst] ⊢ e ≫ e- ⇐ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in] ...
+    [rst ≫ rst-- : τ_rst] ⊢ [e ≫ e- ⇐ τ_out]
+                            #:mode current-sym-path? #f]
    #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
                                        (list (length (stx->list #'[x ...]))))
    ---------
@@ -426,21 +429,17 @@
                              #'[τ_expected ...])
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
-   #:do[(save-sym-path-info)
-        (mk-path-conc)]
-   [⊢ (λ/conc args body) ≫ _ ⇐ τ_expected] ...
-   [⊢ (λ/conc args body) ≫ f- ⇐ τ_unionized]
-   #:do[(restore-sym-path-info)]
+   [⊢ [(λ/conc args body) ≫ _ ⇐ τ_expected] #:mode current-sym-path? #f] ...
+   [⊢ [(λ/conc args body) ≫ f- ⇐ τ_unionized] #:mode current-sym-path? #f]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-conc)]
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
-   [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... ⊢ body ≫ body- ⇒ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in.norm] ...
+    [y ≫ y-- : τ_kw.norm] ... ⊢ [body ≫ body- ⇒ τ_out]
+                                [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -450,12 +449,11 @@
   ;; no expected type, rest argument
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
-   #:do[(save-sym-path-info)
-        (mk-path-conc)]
-   [⊢ [e_def ≫ e_def- ⇐ τ_kw.norm] ...]
-   [[x ≫ x-- : τ_in.norm] ... [y ≫ y-- : τ_kw.norm] ... [rst ≫ rst-- : τ_rst.norm]
-    ⊢ body ≫ body- ⇒ τ_out]
-   #:do[(restore-sym-path-info)]
+   [[x ≫ x-- : τ_in.norm] ...
+    [y ≫ y-- : τ_kw.norm] ...
+    [rst ≫ rst-- : τ_rst.norm] ⊢ [body ≫ body- ⇒ τ_out]
+                                 [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                 #:mode current-sym-path? #f]
    #:with [[x- ...] [y- ...] [rst-]]
    (split-at* (stx->list #'[x-- ... y-- ... rst--])
               (list (length (stx->list #'[x ...]))
