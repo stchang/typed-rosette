@@ -9,7 +9,8 @@
 (require (only-in turnstile/examples/stlc+union ann)
          (prefix-in ro: rosette/safe)
          "types.rkt"
-         (only-in typed/rosette/unsafe unsafe-assign-type)) ; ocelot needs this
+         (only-in typed/rosette/unsafe unsafe-assign-type) ; ocelot needs this
+         (for-syntax syntax/parse/class/local-value))
 
 (begin-for-syntax
   ;; split-at* : [Listof A] [Listof Natural] -> [Listof [Listof A]]
@@ -135,20 +136,20 @@
 ;; Declaring Types before Definitions
 
 (begin-for-syntax
-  (define type-decl-internal-id 'type-decl-internal-id)
-  (define type-decl-internal-id-for 'type-decl-internal-id-for)
-  (define type-decl-mutable 'type-decl-mutable)
   (define (typebool->bool b)
     (syntax-parse b [~CTrue #true] [~CFalse #false]))
+
+  (struct type-decl [internal-id internal-id-for type mutable?]
+    #:property prop:procedure
+    (λ (this stx)
+      (match-define (type-decl x- x type mutable?) this)
+      ((make-variable-like-transformer (assign-type x- type)) stx)))
+  
   (define-syntax-class id/type-decl
     #:attributes [internal-id type]
-    [pattern x:id
-      ;; expand x in such a way that an unbound identifier
-      ;; won't be an error
-      #:with x* (local-expand #'x 'expression #false)
-      #:attr internal-id (syntax-property #'x* type-decl-internal-id)
-      #:when (attribute internal-id)
-      #:with type (typeof #'x*)])
+    [pattern (~var x (local-value type-decl?))
+      #:attr internal-id (type-decl-internal-id (attribute x.local-value))
+      #:with type (type-decl-type (attribute x.local-value))])
   (define-splicing-syntax-class mut-kw
     #:attributes [mutable? mutable?/tb]
     [pattern (~seq)           #:attr mutable? #f #:attr mutable?/tb typeCFalse]
@@ -168,19 +169,13 @@
             "Mutable variable type must allow for Rosette's symbolic merging\n"
             "  merged type: ~a")
            (type->str #'τ_merged))
+   #:with mutable? (attribute mut.mutable?)
    --------
    [≻ (define-syntax- x
-        (make-variable-like-transformer
-         (set-stx-prop/preserved
-          (set-stx-prop/preserved
-           (set-stx-prop/preserved
-            (⊢ x- : τ.norm)
-            type-decl-internal-id
-            (syntax-local-introduce #'x-))
-           type-decl-internal-id-for
-           (syntax-local-introduce #'x))
-          type-decl-mutable
-          #'mut.mutable?/tb)))]])
+        (type-decl #'x-
+                   #'x
+                   #'τ.norm
+                   'mutable?))]])
 
 ;; ----------------------------------------------------------------------------
 
