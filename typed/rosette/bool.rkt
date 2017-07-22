@@ -161,11 +161,13 @@
          (⇒ prop+ (Prop/Or p+ ...))
          (⇒ prop- (Prop/And p- ...))]]]
   [(_ e ...) ≫
-   [⊢ [e ≫ e- ⇒ : ty] ...]
-   #:when (stx-andmap concrete? #'(ty ...))
-   #:with (~CFalse ... non-f . rst) #'(ty ...) ; use first non-false type
+   [⊢ [e ≫ e- (⇐ : CAny) (⇒ : ty) (⇒ prop+ p+) (⇒ prop- p-)]
+      ...]
    --------
-   [⊢ [_ ≫ (ro:or e- ...) ⇒ : non-f]]]
+   [⊢ [_ ≫ (ro:or e- ...)
+         (⇒ : (CU CFalse ty ...))
+         (⇒ prop+ (Prop/Or p+ ...))
+         (⇒ prop- (Prop/And p- ...))]]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : ty] ...]
    --------
