@@ -45,7 +45,8 @@
    [⊢ e ≫ e- ⇒ (~U* (~and (~not ~CFalse) ty1) ... ~CFalse
                     (~and (~not ~CFalse) ty2) ...)]
    --------
-   [⊢ e- ⇒ (U ty1 ... ty2 ...)]])
+   [⊢ e- ⇒ (U ty1 ... ty2 ...)]]
+  [(_ e) ≫ --- [≻ e]])
 
 (define-typed-syntax unsafe-strip-term
   [(_ e) ≫

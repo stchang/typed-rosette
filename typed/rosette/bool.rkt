@@ -161,8 +161,9 @@
          (⇒ prop+ (Prop/Or p+ ...))
          (⇒ prop- (Prop/And p- ...))]]]
   [(_ e ...) ≫
-   [⊢ [e ≫ e- (⇐ : CAny) (⇒ : ty) (⇒ prop+ p+) (⇒ prop- p-)]
+   [⊢ [e ≫ e- (⇒ : ty) (⇒ prop+ p+) (⇒ prop- p-)]
       ...]
+   #:when (stx-andmap concrete? #'(ty ...))
    --------
    [⊢ [_ ≫ (ro:or e- ...)
          (⇒ : (CU CFalse ty ...))
