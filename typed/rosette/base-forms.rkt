@@ -334,15 +334,12 @@
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   ;; TODO: these two can't be combined bc ellipses
-   [⊢ [(λ args body) ≫ _ ⇐ τ_expected]
-      #:modes[(current-sym-path? #t)
-              (current-sym-scope (new-sym-scope))]] ...
-   [⊢ [(λ args body) ≫ f- ⇐ τ_unionized]
-      #:modes[(current-sym-path? #t)
-              (current-sym-scope (new-sym-scope))]]
-   [⊢ [(λ args body) ≫ _ ⇐ τ_expected] #:mode current-sym-path? #f] ...
-   [⊢ [(λ args body) ≫ _ ⇐ τ_unionized] #:mode current-sym-path? #f]
+   #:modes [(current-sym-path? #t) (current-sym-scope (new-sym-scope))]
+           [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
+            [⊢ (λ args body) ≫ f- ⇐ τ_unionized]]
+   #:mode current-sym-path? #f
+          [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
+           [⊢ (λ args body) ≫ _ ⇐ τ_unionized]]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
@@ -429,8 +426,9 @@
                              #'[τ_expected ...])
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
-   [⊢ [(λ/conc args body) ≫ _ ⇐ τ_expected] #:mode current-sym-path? #f] ...
-   [⊢ [(λ/conc args body) ≫ f- ⇐ τ_unionized] #:mode current-sym-path? #f]
+   #:mode current-sym-path? #f
+          [[⊢ (λ/conc args body) ≫ _ ⇐ τ_expected] ...
+           [⊢ (λ/conc args body) ≫ f- ⇐ τ_unionized]]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
