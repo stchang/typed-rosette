@@ -105,7 +105,7 @@
 (define (f4 [x : CInt]) -> CInt (set! x 1) x)
 
 (typecheck-fail/toplvl
- (define (f5 [x : CInt]) -> CInt (when b (set! x 1) x))
+ (define (f5 [x : CInt]) -> (U CInt CUnit) (when b (set! x 1) x))
  #:with-msg "Cannot mutate concrete variable x when in a symbolic path")
 
 (check-type

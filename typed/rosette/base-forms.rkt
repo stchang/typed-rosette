@@ -119,17 +119,20 @@
 
 ;; Environments and Variables
 
-(begin-for-syntax
-  ;; var-assign/orig-binding :
-  ;; Id (Listof Sym) (StxListof TypeStx) -> Stx
-  (define (var-assign/orig-binding x seps τs)
-    (attachs 
-     (attach (attach x 'orig-binding x) 'sym-scope (current-sym-scope))
-     seps
-     τs
-     #:ev (current-type-eval)))
+(define-typed-variable-syntax #:name #%tro-var
+ [(_ x : τ (~optional (~seq mut? mut?-val)
+                      #:defaults ([mut?-val typeCFalse]))) ≫
+  ---------
+  [⊢ x (⇒ : τ) (⇒ mut? mut?-val)]])
 
-  (current-var-assign var-assign/orig-binding))
+(begin-for-syntax
+  ;; TODO: is there any way to push these into #%tro-var?
+  (current-var-assign
+   (lambda (x seps τs)
+     (attachs
+      ((macro-var-assign #'#%tro-var) x seps τs)
+      '(orig-binding sym-scope)
+      (list x (current-sym-scope))))))
 
 ;; ----------------------------------------------------------------------------
 
