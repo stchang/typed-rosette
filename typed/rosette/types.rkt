@@ -93,6 +93,7 @@
          mark-solvablem
          mark-functionm
          (for-syntax current-sym-path? current-sym-scope no-mut-msg conc-fn-msg
+                     conc-path symb-path
                      no-mutate? no-mutate/ty? not-current-sym-scope?
                      new-sym-scope
                      get-pred
@@ -125,7 +126,8 @@
          (rename-in "../rosette-util.rkt" [bitvector? lifted-bitvector?])
          "concrete-predicate.rkt")
 
-(require (for-syntax racket/struct-info
+(require (for-syntax turnstile/mode
+                     racket/struct-info
                      syntax/id-table
                      syntax/parse/class/local-value
                      syntax/parse/class/struct-id))
@@ -186,7 +188,21 @@
   ;; - define an initial symscope to avoid confusion when stx doesnt have prop
   (define (new-sym-scope) (gensym))
   (define current-sym-scope (make-parameter (new-sym-scope)))
-  
+
+  (define (symb-path)
+    (define old-path? (current-sym-path?))
+    (define old-scope (current-sym-scope))
+    (mode
+     (lambda () (current-sym-path? #t)
+                (current-sym-scope (new-sym-scope)))
+     (lambda () (current-sym-path? old-path?)
+                (current-sym-scope old-scope))))
+  (define (conc-path)
+    (define old-path? (current-sym-path?))
+    (mode
+     (lambda () (current-sym-path? #f))
+     (lambda () (current-sym-path? old-path?))))
+
   (define (not-current-sym-scope? x)
     (not (equal? (syntax-property x 'sym-scope) (current-sym-scope))))
   )

@@ -291,16 +291,15 @@
            (syntax->datum #'[kw* ...])
            (syntax->datum #'[kw ...]))
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [[x ≫ x-- : τ_in] ...
-    [y ≫ y-- : τ_kw] ... ⊢ [body ≫ body- ⇐ τ_out]
-                            [e_def ≫ e_def- ⇐ τ_kw] ... ; typecheck default arg
-                            #:modes[(current-sym-path? #t)
-                                    (current-sym-scope (new-sym-scope))]]
-   [[x ≫ _ : τ_in] ...
-    [y ≫ _ : τ_kw] ... ⊢ [body ≫ _ ⇐ τ_out]
-                          [e_def ≫ _ ⇐ τ_kw] ...
-                          #:mode current-sym-path? #f]
-   #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
+   [[x ≫ x* : τ_in] ...
+    [y ≫ y* : τ_kw] ... ⊢ [body ≫ body- ⇐ τ_out]
+                           [e_def ≫ e_def- ⇐ τ_kw] ... ; typecheck default arg
+                           #:mode (symb-path)]
+   [[x ≫ _  : τ_in] ...
+    [y ≫ _  : τ_kw] ... ⊢ [body ≫ _ ⇐ τ_out]
+                           [e_def ≫ _ ⇐ τ_kw] ...
+                           #:mode (conc-path)]
+   #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x* ... y* ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
    ---------
@@ -311,20 +310,15 @@
    ---------
    [≻ (λ/conc (arg ...) body)]]
   ;; need expected type, with rest argument
-  [(_ (x:id ... . rst:id) e)
-   ⇐ (~C→* [τ_in ...] [] #:rest τ_rst τ_out) ≫
+  [(_ (x:id ... . xs:id) e)
+   ⇐ (~C→* [τ_in ...] [] #:rest τ_xs τ_out) ≫
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [[x ≫ x-- : τ_in] ...
-    [rst ≫ rst-- : τ_rst] ⊢ [e ≫ e- ⇐ τ_out]
-                             #:modes[(current-sym-path? #t)
-                                     (current-sym-scope (new-sym-scope))]]
-   [[x ≫ _ : τ_in] ...
-    [rst ≫ _ : τ_rst] ⊢ [e ≫ _ ⇐ τ_out]
-                         #:mode current-sym-path? #f]
-   #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
+   [[x ≫ x* : τ_in] ... [xs ≫ xs* : τ_xs] ⊢ [e ≫ e- ⇐ τ_out] #:mode (symb-path)]
+   [[x ≫ _  : τ_in] ... [xs ≫ _   : τ_xs] ⊢ [e ≫ _  ⇐ τ_out] #:mode (conc-path)]
+   #:with [[x- ...] [xs-]] (split-at* (stx->list #'[x* ... xs*])
                                        (list (length (stx->list #'[x ...]))))
    ---------
-   [⊢ (ro:λ (x- ... . rst-) e-)]]
+   [⊢ (ro:λ (x- ... . xs-) e-)]]
   ;; use case-> expected type, no rest argument
   [(_ (~and args (~or (x:id ... (~seq kw:keyword [y:id e_def:expr]) ...)
                       (x:id ... (~seq kw:keyword [y:id e_def:expr]) ... . rst:id)))
@@ -337,28 +331,25 @@
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   #:modes [(current-sym-path? #t) (current-sym-scope (new-sym-scope))]
-           [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
-            [⊢ (λ args body) ≫ f- ⇐ τ_unionized]]
-   #:mode current-sym-path? #f
-          [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
-           [⊢ (λ args body) ≫ _ ⇐ τ_unionized]]
+   #:mode (symb-path) [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
+                       [⊢ (λ args body) ≫ f- ⇐ τ_unionized]]
+   #:mode (conc-path) [[⊢ (λ args body) ≫ _ ⇐ τ_expected] ...
+                       [⊢ (λ args body) ≫ _ ⇐ τ_unionized]]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ...)
       body) ≫
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [[x ≫ x-- : τ_in.norm] ...
-    [y ≫ y-- : τ_kw.norm] ... ⊢ [body ≫ body- ⇒ τ_out]
-                                 [e_def ≫ e_def- ⇐ τ_kw.norm] ...
-                                 #:modes[(current-sym-path? #t)
-                                         (current-sym-scope (new-sym-scope))]]
-   [[x ≫ _ : τ_in.norm] ...
-    [y ≫ _ : τ_kw.norm] ... ⊢ [body ≫ _ ⇐ τ_out]
-                               [e_def ≫ _ ⇐ τ_kw.norm] ...
-                               #:mode current-sym-path? #f]
-   #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
+   [[x ≫ x* : τ_in.norm] ...
+    [y ≫ y* : τ_kw.norm] ... ⊢ [body ≫ body- ⇒ τ_out]
+                                [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                #:mode (symb-path)]
+   [[x ≫ _  : τ_in.norm] ...
+    [y ≫ _  : τ_kw.norm] ... ⊢ [body ≫ _ ⇐ τ_out]
+                                [e_def ≫ _ ⇐ τ_kw.norm] ...
+                                #:mode (conc-path)]
+   #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x* ... y* ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
    -------
@@ -368,19 +359,18 @@
   [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
    ;; assume types are same in both kinds of paths, TODO: is this true?
-   [[x ≫ x-- : τ_in.norm] ...
-    [y ≫ y-- : τ_kw.norm] ... 
-    [rst ≫ rst-- : τ_rst.norm] ⊢ [body ≫ body- ⇒ τ_out]
-                                  [e_def ≫ e_def- ⇐ τ_kw.norm] ...
-                                 #:modes[(current-sym-path? #t)
-                                         (current-sym-scope (new-sym-scope))]]
-   [[x ≫ _ : τ_in.norm] ...
-    [y ≫ _ : τ_kw.norm] ...
-    [rst ≫ _ : τ_rst.norm] ⊢ [body ≫ _ ⇐ τ_out]
-                              [e_def ≫ _ ⇐ τ_kw.norm] ...
-                              #:mode current-sym-path? #f]
+   [[x ≫ x* : τ_in.norm] ...
+    [y ≫ y* : τ_kw.norm] ... 
+    [rst ≫ rst* : τ_rst.norm] ⊢ [body ≫ body- ⇒ τ_out]
+                                 [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                 #:mode (symb-path)]
+   [[x ≫ _  : τ_in.norm] ...
+    [y ≫ _  : τ_kw.norm] ...
+    [rst ≫ _    : τ_rst.norm] ⊢ [body ≫ _ ⇐ τ_out]
+                                 [e_def ≫ _ ⇐ τ_kw.norm] ...
+                                 #:mode (conc-path)]
    #:with [[x- ...] [y- ...] [rst-]]
-   (split-at* (stx->list #'[x-- ... y-- ... rst--])
+   (split-at* (stx->list #'[x* ... y* ... rst*])
               (list (length (stx->list #'[x ...]))
                     (length (stx->list #'[y ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -402,22 +392,20 @@
    [[x ≫ x-- : τ_in] ...
     [y ≫ y-- : τ_kw] ... ⊢ [body ≫ body- ⇐ τ_out]
                             [e_def ≫ e_def- ⇐ τ_kw] ...
-                            #:mode current-sym-path? #f]
+                            #:mode (conc-path)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
    ---------
    [⊢ (ro:λ (x- ... kw-arg- ... ...) body-)]]
   ;; need expected type, with rest argument
-  [(_ (x:id ... . rst:id) e)
-   ⇐ (~C→** [τ_in ...] [] #:rest τ_rst τ_out) ≫
-   [[x ≫ x-- : τ_in] ...
-    [rst ≫ rst-- : τ_rst] ⊢ [e ≫ e- ⇐ τ_out]
-                            #:mode current-sym-path? #f]
-   #:with [[x- ...] [rst-]] (split-at* (stx->list #'[x-- ... rst--])
+  [(_ (x:id ... . xs:id) e)
+   ⇐ (~C→** [τ_in ...] [] #:rest τ_xs τ_out) ≫
+   [[x ≫ x* : τ_in] ... [xs ≫ xs* : τ_xs] ⊢ [e ≫ e- ⇐ τ_out] #:mode (conc-path)]
+   #:with [[x- ...] [xs-]] (split-at* (stx->list #'[x* ... xs*])
                                        (list (length (stx->list #'[x ...]))))
    ---------
-   [⊢ (ro:λ (x- ... . rst-) e-)]]
+   [⊢ (ro:λ (x- ... . xs-) e-)]]
   ;; use case-> expected type, no rest argument
   [(_ (~and args (~or (x:id ... (~seq kw:keyword [y:id e_def:expr]) ...)
                       (x:id ... (~seq kw:keyword [y:id e_def:expr]) ... . rst:id)))
@@ -429,9 +417,8 @@
                              #'[τ_expected ...])
    "wrong number of arguments"
    #:with τ_unionized (C→-map-union #'[τ_expected ...])
-   #:mode current-sym-path? #f
-          [[⊢ (λ/conc args body) ≫ _ ⇐ τ_expected] ...
-           [⊢ (λ/conc args body) ≫ f- ⇐ τ_unionized]]
+   #:mode (conc-path) [[⊢ (λ/conc args body) ≫ _ ⇐ τ_expected] ...
+                       [⊢ (λ/conc args body) ≫ f- ⇐ τ_unionized]]
    ---------
    [⊢ f-]]
   ;; no expected type, keyword arguments
@@ -439,8 +426,8 @@
       body) ≫
    [[x ≫ x-- : τ_in.norm] ...
     [y ≫ y-- : τ_kw.norm] ... ⊢ [body ≫ body- ⇒ τ_out]
-                                [e_def ≫ e_def- ⇐ τ_kw.norm] ...
-                                #:mode current-sym-path? #f]
+                                 [e_def ≫ e_def- ⇐ τ_kw.norm] ...
+                                 #:mode (conc-path)]
    #:with [[x- ...] [y- ...]] (split-at* (stx->list #'[x-- ... y-- ...])
                                          (list (length (stx->list #'[x ...]))))
    #:with [[kw-arg- ...] ...] #'[[kw [y- e_def-]] ...]
@@ -454,7 +441,7 @@
     [y ≫ y-- : τ_kw.norm] ...
     [rst ≫ rst-- : τ_rst.norm] ⊢ [body ≫ body- ⇒ τ_out]
                                  [e_def ≫ e_def- ⇐ τ_kw.norm] ...
-                                 #:mode current-sym-path? #f]
+                                 #:mode (conc-path)]
    #:with [[x- ...] [y- ...] [rst-]]
    (split-at* (stx->list #'[x-- ... y-- ... rst--])
               (list (length (stx->list #'[x ...]))
