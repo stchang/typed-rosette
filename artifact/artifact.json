@@ -2,8 +2,8 @@
   "builders": [{
     "type": "virtualbox-iso",
     "guest_os_type": "Ubuntu_64",
-    "iso_url": "http://releases.ubuntu.com/14.04.3/ubuntu-14.04.3-server-amd64.iso",
-    "iso_checksum": "a3b345908a826e262f4ea1afeb357fd09ec0558cf34e6c9112cead4bb55ccdfb",
+    "iso_url": "http://releases.ubuntu.com/16.04.3/ubuntu-16.04.3-server-amd64.iso",
+    "iso_checksum": "a06cd926f5855d4f21fb4bc9978a35312f815fbda0d0ef7fdc846861f4fc4600",
     "iso_checksum_type": "sha256",
     "ssh_username": "artifact",
     "ssh_password": "artifact",
@@ -34,8 +34,8 @@
     },
     {
       "type": "file",
-      "source": "popl2017-artifact.tar",
-      "destination": "/home/artifact/popl2017-artifact.tar"
+      "source": "popl2018-artifact.tar",
+      "destination": "/home/artifact/popl2018-artifact.tar"
     },
     {
       "type": "shell",

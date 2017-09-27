@@ -1,7 +1,7 @@
-artifact: Type Systems as Macros
+artifact: Symbolic Types for Lenient Symbolic Execution
 ===
 
-This is the source code for the artifact for "Type Systems as Macros".
+This is the source code for the artifact that accompanies "Symbolic Types for Lenient Symbolic Execution".
 
 To build the artifact:
 - Install [packer](https://www.packer.io), [Racket](https://racket-lang.org),
@@ -12,7 +12,7 @@ To build the artifact:
   `.ovf` file.
 - We recommend creating the VM with 2GB of RAM.
 
-Inside the VM, the Desktop folder will have a copy of the POPL 2017 paper, a
+Inside the VM, the Desktop folder will have a copy of the POPL 2018 paper, a
 shortcut to the DrRacket IDE, and a `README.html` with detailed instructions.
 
 VM username: `artifact`

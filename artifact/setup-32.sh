@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-# Setup script for POPL 2017 artifact, "Type Systems as Macros" (32-bit version)
+# Setup script for POPL 2018 artifact, "Symbolic Types for Lenient Symbolic Execution" (32-bit version)
 
 ## -----------------------------------------------------------------------------
 # Global variables
 
-RKT_INSTALLER="racket-6.6-i386-linux.sh"
-ARTIFACT="popl2017-artifact"
+RKT_INSTALLER="racket-6.10.1-i386-linux.sh"
+ARTIFACT="popl2018-artifact"
 ARTIFACT_TAR="${ARTIFACT}.tar"
-PAPER_TITLE="type-systems-as-macros"
+PAPER_TITLE="popl18-paper"
 DESKTOP="/home/artifact/Desktop"
 
 ## -----------------------------------------------------------------------------
@@ -30,7 +30,7 @@ chown -R artifact ~/.ssh
 
 cd ~
 # first download Racket v6.6
-wget http://mirror.racket-lang.org/installers/6.6/${RKT_INSTALLER}
+wget http://mirror.racket-lang.org/installers/6.10.1/${RKT_INSTALLER}
 # Do a local install. A unix-style install is preferable in some ways, but the
 # permissions are a pain when overriding packages
 sh ${RKT_INSTALLER} --in-place --dest ~/racket

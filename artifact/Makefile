@@ -1,9 +1,9 @@
 all:
-	git archive --prefix=popl2017-artifact/ --remote=../ -o popl2017-artifact.tar popl2017-artifact
+	git archive --prefix=popl2018-artifact/ --remote=../ -o popl2018-artifact.tar popl2018-artifact
 	packer build artifact.json
 
 32-bit:
-	git archive --prefix=popl2017-artifact/ --remote=../ -o popl2017-artifact.tar popl2017-artifact
+	git archive --prefix=popl2018-artifact/ --remote=../ -o popl2018-artifact.tar popl2018-artifact
 	packer build artifact-32.json
 
 readme:

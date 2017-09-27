@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-# Setup script for POPL 2017 artifact, "Type Systems as Macros"
+# Setup script for POPL 2018 artifact, "Symbolic Types for Lenient Symbolic Execution"
 
 ## -----------------------------------------------------------------------------
 # Global variables
 
-RKT_INSTALLER="racket-6.6-x86_64-linux.sh"
-ARTIFACT="popl2017-artifact"
+RKT_INSTALLER="racket-6.10.1-x86_64-linux.sh"
+ARTIFACT="popl2018-artifact"
 ARTIFACT_TAR="${ARTIFACT}.tar"
-PAPER_TITLE="type-systems-as-macros"
+PAPER_TITLE="popl18-paper"
 DESKTOP="/home/artifact/Desktop"
 
 ## -----------------------------------------------------------------------------
