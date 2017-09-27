@@ -1,0 +1,13 @@
+steps not included in script that builds artifact VM:
+1) does not set Racket prefs
+- memory limit
+- disable unneeded tools
+- open in tab by default
+- line numbers
+- reduce recent file list?
+- disable "Enable key bindings in menu" (enables emacs mode)
+  - need this to enable unicode input
+2) does not set FireFox prefs
+- default to unicode 
+  - need to check Automatically detect encoding -> Japanese
+3) centering wallpaper
