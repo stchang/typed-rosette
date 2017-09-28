@@ -145,14 +145,15 @@ The following files may also be accessed via the VM Desktop:
 
 
 @; -----------------------------------------------------------------------------
-@section[#:tag "examples"]{Code From the Paper (sections 2-5)}
+@section[#:tag "examples"]{Code From the Paper}
 
-For readability and conciseness, the paper sometimes presents stylized code
-that may not run exactly as presented. This artifact, however, presents runnable versions of all the paper's examples.
+For readability and conciseness, the paper sometimes stylizes code that may not
+run exactly as presented. This artifact, however, includes and describes
+runnable versions of all the paper's examples.
 
 The file links below open in the browser by default. (If not viewing in the VM,
-you may need to adjust your browser's "Text Encoding" to display Unicode.) Open
-with DrRacket to run the files.
+you may need to adjust your browser's "Text Encoding" to display Unicode.) To
+run the files, run with @tt{racket} on the command line, or open with DrRacket.
 
 @subsection{Paper section 1}
 
@@ -218,6 +219,53 @@ In this program, the raw Racket @racket[integer?] is imported with a
 value. Since @racket[x] is a symbolic value, the type checker raises a type error.
 
 @subsection{Paper section 2}
+
+The paper's second section introduces Rosette via examples and motivates the
+need for Typed Rosette.
+
+The first part of the section introduces basic computing with symbolic values
+in Rosette and shows one example of interacting with the solver. These programs
+use the restricted @racket[rosette/safe] language, which does not allow lenient
+symbolic execution. These "safe" Rosette examples are already described in the
+paper and are mostly straightforward so we will not repeat the explanations
+here. Runnable versions of the safe examples may be viewed here:
+
+@file-url[POPL-EXAMPLES]{sec2-rosette-safe-examples.rkt}
+
+Using the full @racket[rosette] language instead of @racket[rosette/safe],
+programmers can take advantage of lenient symbolic execution and use the full
+Racket language. The first @tt{#lang rosette} example, viewable here:
+
+@file-url[POPL-EXAMPLES]{sec2-rosette-unsafe-hash-example.rkt}
+
+uses (unlifted) hash
+tables and tries to prove that the list is always sorted with the specified
+constraints. Even we expect that the constraints are sufficient to specify
+sortedness, the solver returns a "counterexample" that supposedly violates our
+constraints. Inspecting this "counterexample", however, reveals that it is not
+actually a counterexample--- it still results in a sorted hash!
+
+
+At this point, Rosette programmers are stumped, since the program has failed
+silently. Specifically, the solver has returned an unexpected result but the
+programmer has no information with which to look for the cause of the problem
+in the program. Even worse, an inattentive programmer may not think anything is
+wrong and instead accept the result of solver as correct. This highlights the
+problems with lenient symbolic execution.
+
+
+In contrast, the same example in Typed Rosette produces a type error that
+pinpoints the exact source of the problem. Specifically, @racket[hash-ref] is
+unlifted, i.e., it does not recognize symbolic keys, but the programmer has
+given it a symbolic value.
+
+The full program is here:
+
+@file-url[POPL-EXAMPLES]{sec2-typed-rosette-hash-example.rkt}
+
+
+
+@subsection{}
 
 @file-url[POPL-EXAMPLES]
 @itemlist[@item{@file-url[POPL-EXAMPLES]{lam.rkt}: defines a language with only
