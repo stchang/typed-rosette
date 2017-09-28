@@ -12,7 +12,7 @@
 @(define DOCS (build-path TURNSTILE "doc" "turnstile" "index.html"))
 @(define GUIDE (build-path TURNSTILE "doc" "turnstile" "The_Turnstile_Guide.html"))
 @(define REF (build-path TURNSTILE "doc" "turnstile" "The_Turnstile_Reference.html"))
-@(define POPL-EXAMPLES (build-path MACROTYPES "examples" "popl2018"))
+@(define POPL-EXAMPLES (build-path ARTIFACT "examples"))
 @(define RACKET-EXAMPLES (build-path MACROTYPES "examples"))
 @(define TURNSTILE-EXAMPLES (build-path TURNSTILE "examples"))
 @(define TURNSTILE-TEST (build-path TURNSTILE-EXAMPLES "tests"))
@@ -24,7 +24,7 @@
 
 @(define REPO-URL "https://github.com/stchang/typed-rosette")
 @(define POPL-URL "http://www.ccs.neu.edu/home/stchang/popl2018")
-@(define VM-URL (string-append POPL-URL "/" "type-systems-as-macros.ova"))
+@(define VM-URL (string-append POPL-URL "/" "typed-rosette.ova"))
 
 @(define (file:// p) ;; Path -> String
    (string-append "file://" (path->string p)))
@@ -49,19 +49,22 @@ Our artifact is a VM image that contains:
 @itemlist[
   @item{a copy of the POPL 2018 camera-ready @hyperlink[@file://[PAPER]]{[link]},}
   @item{a distribution of the Racket programming language (v6.10.1),}
-  @item{and the @racket[turnstile] library and its documentation.}
+  @item{and the @racket[typed-rosette] language and some of its libraries.}
  ]
 
 The goals of this artifact are to:
 @itemlist[
-  @item{package the library associated with the paper,}
-  @item{provide runnable code for each stylized example in the paper,}
-  @item{and show how the tables in the paper were computed.}
+  @item{package the @racket[typed-rosette] language described in the paper,}
+  @item{provide runnable code for each example in the paper,}
+  @item{and review a few of the evaluation examples.}
+  @;item{and show how the tables in the paper were computed.}
  ]
 
 
 @; -----------------------------------------------------------------------------
 @section{Artifact Setup and Installation}
+
+Skip this section if you are already reading this document from within the VM.
 
 The artifact may be installed in two ways:
 @itemlist[@item{@secref{vm} (recommended)}
@@ -71,8 +74,6 @@ The VM image is configured to automatically login to the @tt{artifact} user
 account. The password for the account is also @tt{artifact}. The account has
 root privileges using @tt{sudo} without a password.
 
-Skip the rest of this section if you are already reading this document from
-within the VM.
 
 @subsection[#:tag "vm"]{VirtualBox VM image}
 
@@ -146,19 +147,75 @@ The following files may also be accessed via the VM Desktop:
 @; -----------------------------------------------------------------------------
 @section[#:tag "examples"]{Code From the Paper (sections 2-5)}
 
-For readability and conciseness, the paper presents simplified code that is
-stylized with colors and abbreviations. Thus code examples from the paper may
-not run as presented. However, runnable versions of the paper's examples are
-available in this artifact and are explained in this section.
-
-Note that code presented in the paper (this section) may differ slightly from
-the code used for evaluation (@seclink["tables"]{section 5}), e.g., in the
-quality of their error messages. This artifact always points to the code
-being discussed.
+For readability and conciseness, the paper sometimes presents stylized code
+that may not run exactly as presented. This artifact, however, presents runnable versions of all the paper's examples.
 
 The file links below open in the browser by default. (If not viewing in the VM,
 you may need to adjust your browser's "Text Encoding" to display Unicode.) Open
 with DrRacket to run the files.
+
+@subsection{Paper section 1}
+
+The paper's intro section contains a single example that demonstrates the kind
+of unintuitive errors that can occur in a naive implementation of lenient
+symbolic execution, where symbolic values mix with code that may not recognize
+them. Specifically, here is the example in (untyped) Rosette:
+
+@codeblock{
+#lang rosette
+
+(define-symbolic x integer?) ; defines symbolic value x
+
+;; ok because Rosette lifts `integer?` to handle symbolic vals
+(if (integer? x)
+    (add1 x)
+    (error "can't add non-int")) ; => symbolic value (+ x 1)
+
+;; import raw Racket's `integer?`, as `unlifted-int?`
+(require (only-in racket [integer? unlifted-int?]))
+
+(if (unlifted-int? x)
+    (add1 x)
+    (error "can't add non-int")) ; => errors}
+
+This program is also available in @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
+
+The first @racket[if] expression is valid because Rosette's @racket[integer?]
+function recognizes symbolic values.
+
+The second @racket[if] expression, however, reaches the error branch even
+though @racket[x] is an integer because the base @racket[integer?] predicate
+from @emph{Racket}, which we have renamed to @racket[unlifted-int?], does not
+recognize symbolic values.
+
+If the "else" branch did not happen throw an error, the program would instead
+silently return the incorrect value.
+
+In contrast, our Typed Rosette language reports type errors when symbolic
+values flow to positions that do not recognize them:
+
+@codeblock{
+#lang typed/rosette
+
+(define-symbolic x integer?) ; defines symbolic value x
+
+;; ok because `integer?` is lifted to handle symbolic vals
+(if (integer? x)
+    (add1 x)
+    (error "can't add non-int")) ; => symbolic value (+ 1 x)
+
+;; import raw Racket's `integer?`, as `unlifted-int?`, with type
+(require/type racket [integer? unlifted-int? : (C→ CAny CBool)])
+
+(if (unlifted-int? x)
+    (add1 x)
+    (error "can't add non-int")) ; => type error}
+
+This program is also available in @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
+
+In this program, the raw Racket @racket[integer?] is imported with a
+@racket[CAny] type, indicating that its input may be any @emph{concrete}
+value. Since @racket[x] is a symbolic value, the type checker raises a type error.
 
 @subsection{Paper section 2}
 
