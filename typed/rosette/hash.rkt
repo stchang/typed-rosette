@@ -1,7 +1,7 @@
 #lang turnstile
 
 (provide hash make-hash
-         hash-ref hash-set hash-keys hash-has-key?
+         hash-count hash-ref hash-set hash-keys hash-has-key?
          hash-set! hash-ref! hash-remove! hash-clear! hash-copy)
 
 (require (except-in typed/rosette/base-forms #%app)
@@ -30,16 +30,30 @@
   [(_ {tyk tyv}) ≫
    ----------
    [⊢ (hash-) ⇒ (CHashTable tyk tyv)]]
+  [(_ (~seq k v) ...) ⇐ (~CHashTable tyk tyv) ≫
+   #:fail-unless (concrete? #'tyk) "hash keys must be concrete"
+   [⊢ k ≫ k- ⇐ tyk] ...
+   [⊢ v ≫ v- ⇐ tyv] ...
+   #:with (k+v ...) (stx-flatten #'((k- v-) ...))
+   ----------
+   [⊢ (hash- k+v ...)]]
   [(_ (~seq k v) ...) ≫
    [⊢ k ≫ k- ⇒ tyk] ...
    [⊢ v ≫ v- ⇒ tyv] ...
-   #:when (and (same-types? #'(tyk ...))
-               (same-types? #'(tyv ...)))
-   #:with tyk1 (stx-car #'(tyk ...))
-   #:with tyv1 (stx-car #'(tyv ...))
+   #:fail-unless (stx-andmap concrete? #'(tyk ...))
+                 "hash keys must be concrete"
    #:with (k+v ...) (stx-flatten #'((k- v-) ...))
    ----------
-   [⊢ (hash- k+v ...) ⇒ (CHashTable tyk1 tyv1)]])
+   [⊢ (hash- k+v ...) ⇒ (CHashTable (CU tyk ...) 
+                                    #,(if (stx-andmap concrete? #'(tyv ...))
+                                          #'(CU tyv ...)
+                                          #'(U tyv ...)))]])
+
+(define-typed-syntax hash-count
+  [(_ hsh:expr) ≫
+   [⊢ hsh ≫ hsh- ⇒ (~CHashof _ _)]
+   --------
+   [⊢ (ro:hash-ref hsh-) ⇒ CPosInt]])
 
 (define-typed-syntax hash-ref
   [(_ hsh:expr key:expr) ≫

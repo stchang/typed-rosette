@@ -32,7 +32,7 @@
  (rename-in "rosette-util.rkt" [bitvector? lifted-bitvector?]))
 
 (provide : define define/conc set! λ λ/conc apply ann begin
-         let
+         let require/type
          (rename-out [app #%app]
                      [ro:#%module-begin #%module-begin] 
                      [λ lambda]
@@ -1068,7 +1068,7 @@
    [⊢ (ro:begin0 e0- e- ...) ⇒ τ]])
 
 ;; ------------------------------------------------------------------------
-;; undocumented
+;; undocumented rosette fns
 
 ;; TODO: add union
 
@@ -1091,3 +1091,13 @@
 ;  [⊢ e ≫ e- ⇒ _]
   ----------
   [⊢ (syntax- e) ⇒ CStx])
+
+;; ----------------------------------------------------------------------------
+;; require forms
+(define-syntax require/type
+  (syntax-parser
+    [(_ m [x typed-x (~datum :) ty] ...)
+     #:with (tmp ...) (generate-temporaries #'(x ...))
+     #'(begin-
+         (require- (only-in m [x tmp] ...))
+         (define typed-x (unsafe-assign-type tmp : ty)) ...)]))
