@@ -7,6 +7,7 @@
 
 RKT_INSTALLER="racket-6.10.1-x86_64-linux.sh"
 ARTIFACT="popl2018-artifact"
+REPO="typed-rosette"
 ARTIFACT_TAR="${ARTIFACT}.tar"
 PAPER_TITLE="popl18-paper"
 DESKTOP="/home/artifact/Desktop"
@@ -43,10 +44,12 @@ raco setup -D
 ## -----------------------------------------------------------------------------
 # Set up the artifact files
 
-tar -xf ${ARTIFACT_TAR}
-rm ${ARTIFACT_TAR}
-cd ~/${ARTIFACT}
-raco pkg install --deps search-auto ../${ARTIFACT}
+mkdir ${ARTIFACT}
+cd ${ARTIFACT}
+tar -xf ../${ARTIFACT_TAR}
+rm ../${ARTIFACT_TAR}
+cd ${REPO}
+raco pkg install --deps search-auto
 cd ./artifact
 make readme
 mkdir -p ${DESKTOP}
