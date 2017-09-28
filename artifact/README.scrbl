@@ -12,18 +12,18 @@
 @(define DOCS (build-path TURNSTILE "doc" "turnstile" "index.html"))
 @(define GUIDE (build-path TURNSTILE "doc" "turnstile" "The_Turnstile_Guide.html"))
 @(define REF (build-path TURNSTILE "doc" "turnstile" "The_Turnstile_Reference.html"))
-@(define POPL-EXAMPLES (build-path MACROTYPES "examples" "popl2017"))
+@(define POPL-EXAMPLES (build-path MACROTYPES "examples" "popl2018"))
 @(define RACKET-EXAMPLES (build-path MACROTYPES "examples"))
 @(define TURNSTILE-EXAMPLES (build-path TURNSTILE "examples"))
 @(define TURNSTILE-TEST (build-path TURNSTILE-EXAMPLES "tests"))
 @(define MLISH-TEST (build-path TURNSTILE-TEST "mlish"))
 
-@(define PAPER-TITLE  "Type Systems as Macros")
+@(define PAPER-TITLE  "Symbolic Types for Lenient Symbolic Execution")
 @(define PAPER-PDF  "paper.pdf")
 @(define PAPER (build-path ARTIFACT PAPER-PDF))
 
-@(define REPO-URL "https://bitbucket.com/stchang/macrotypes")
-@(define POPL-URL "http://www.ccs.neu.edu/home/stchang/popl2017")
+@(define REPO-URL "https://github.com/stchang/typed-rosette")
+@(define POPL-URL "http://www.ccs.neu.edu/home/stchang/popl2018")
 @(define VM-URL (string-append POPL-URL "/" "type-systems-as-macros.ova"))
 
 @(define (file:// p) ;; Path -> String
@@ -39,16 +39,16 @@
 
 @(author (author+email "Stephen Chang" "stchang@ccs.neu.edu")
          (author+email "Alex Knauth" "alexknauth@ccs.neu.edu")
-         (author+email "Ben Greenman" "types@ccs.neu.edu"))
+         (author+email "Emina Torlak" "emina@cs.washington.edu"))
 
 This is a README file for the artifact that accompanies "@|PAPER-TITLE|" in
-POPL 2017.  If you have any questions, please email any (or all) of the
+POPL 2018.  If you have any questions, please email any (or all) of the
 authors.
 
 Our artifact is a VM image that contains:
 @itemlist[
-  @item{a copy of the POPL 2017 camera-ready @hyperlink[@file://[PAPER]]{[link]},}
-  @item{a distribution of the Racket programming language (v6.6),}
+  @item{a copy of the POPL 2018 camera-ready @hyperlink[@file://[PAPER]]{[link]},}
+  @item{a distribution of the Racket programming language (v6.10.1),}
   @item{and the @racket[turnstile] library and its documentation.}
  ]
 
@@ -94,22 +94,22 @@ the VirtualBox image is somehow not working.
 (We have only tested these steps with Linux.)
 
 @itemlist[@item{Install @hyperlink["http://download.racket-lang.org"]{Racket
-            6.6}.
+            6.10.1}.
 
            Add the Racket @tt{bin} directory to your @tt{PATH}. The
            remaining steps assume that Racket's @tt{bin} directory is in the 
            @tt{PATH}.}
            
-          @item{Clone the repository into the @tt{popl2017} directory (or any directory):
+          @item{Clone the repository into the @tt{popl2018} directory (or any directory):
 
-                @tt{git clone https://bitbucket.org/stchang/macrotypes popl2017}}
+                @tt{git clone https://github.com/stchang/typed-rosette popl2018}}
           @item{Change directory to the repository root:
 
-                @tt{cd popl2017}}
-          @item{From the repository root, check out the @tt{popl2017-artifact} branch:
+                @tt{cd popl2018}}
+          @item{From the repository root, check out the @tt{popl2018-artifact} branch:
 
-                @tt{git checkout popl2017-artifact}}
-          @item{From the repository root, install Turnstile (may take ~30min-1hr):
+                @tt{git checkout popl2018-artifact}}
+          @item{From the repository root, install the repo as a Racket package:
 
                 @tt{raco pkg install }@literal{--}@tt{auto}}
           @item{Register the documentation:
@@ -133,7 +133,7 @@ The following files may also be accessed via the VM Desktop:
 @itemlist[
   @item{@file-url[ARTIFACT]{README.html}: This page}
   @item{@file-url[ARTIFACT PAPER-PDF]: The camera-ready version of the paper.}
-  @item{@tt{DrRacket}: DrRacket IDE for Racket v6.6
+  @item{@tt{DrRacket}: DrRacket IDE for Racket v6.10.1
 
   Run example files by opening them in DrRacket and pressing the "Run" button.
   

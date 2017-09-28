@@ -29,8 +29,8 @@ chown -R artifact ~/.ssh
 # Install Racket
 
 cd ~
-# first download Racket v6.6
-wget http://mirror.racket-lang.org/installers/6.6/${RKT_INSTALLER}
+# first download Racket v6.10.1
+wget http://mirror.racket-lang.org/installers/6.10.1/${RKT_INSTALLER}
 # Do a local install. A unix-style install is preferable in some ways, but the
 # permissions are a pain when overriding packages
 sh ${RKT_INSTALLER} --in-place --dest ~/racket

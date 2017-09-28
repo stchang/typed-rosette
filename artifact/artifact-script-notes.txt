@@ -1,4 +1,11 @@
 # notes for popl2018
+- using Ubuntu 16.04.3 LTS (Xenial Xerus) resulted in "SSH timeout err"
+  - reverting to Ubuntu 14.04.3 LTS (Trusty Tahr) gets past the err
+
+- Welcome to the first start of the panel:
+  - Choose below which setup you want for the first startup:
+    - "Use default config"
+    - Other option is "One empty panel"
 
 # old notes
 steps not included in script that builds artifact VM:
