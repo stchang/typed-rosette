@@ -49,15 +49,15 @@ Our artifact is a VM image that contains:
 @itemlist[
   @item{a copy of the POPL 2018 camera-ready @hyperlink[@file://[PAPER]]{[link]},}
   @item{a distribution of the Racket programming language (v6.10.1),}
-  @item{and the @racket[typed-rosette] language and some of its libraries.}
- ]
+
+  @item{and a prototype implementation of the Typed Rosette language and some
+        of its libraries.}
+  ]
 
 The goals of this artifact are to:
 @itemlist[
-  @item{package the @racket[typed-rosette] language described in the paper,}
-  @item{provide runnable code for each example in the paper,}
+  @item{provide a tour of the Typed Rosette language via examination of runnable versions of the paper's examples,}
   @item{and review a few of the evaluation examples.}
-  @;item{and show how the tables in the paper were computed.}
  ]
 
 
@@ -101,7 +101,8 @@ the VirtualBox image is somehow not working.
            remaining steps assume that Racket's @tt{bin} directory is in the 
            @tt{PATH}.}
            
-          @item{Clone the repository into the @tt{popl2018} directory (or any directory):
+          @item{Clone the @tt{typed-rosette} repository into the @tt{popl2018} directory
+                (or any directory):
 
                 @tt{git clone https://github.com/stchang/typed-rosette popl2018}}
           @item{Change directory to the repository root:
@@ -112,10 +113,10 @@ the VirtualBox image is somehow not working.
                 @tt{git checkout popl2018-artifact}}
           @item{From the repository root, install the repo as a Racket package:
 
-                @tt{raco pkg install }@literal{--}@tt{auto}}
-          @item{Register the documentation:
+                @tt{raco pkg install }@literal{--}@tt{auto -n typed-rosette}}
+          @;item{Register the documentation:
 
-                @tt{raco setup }@literal{--}@tt{doc-index}}
+                @;tt{raco setup }@literal{--}@tt{doc-index}}
           @item{From the repository root, change to the @tt{artifact} directory:
 
                 @tt{cd artifact}}
@@ -127,8 +128,6 @@ the VirtualBox image is somehow not working.
 @; -----------------------------------------------------------------------------
 @section{Artifact Overview}
 
-
-The relevant files are in @file-url[REPO].
 
 The following files may also be accessed via the VM Desktop:
 @itemlist[
@@ -147,18 +146,19 @@ The following files may also be accessed via the VM Desktop:
 @; -----------------------------------------------------------------------------
 @section[#:tag "examples"]{Code From the Paper}
 
-For readability and conciseness, the paper sometimes stylizes code that may not
-run exactly as presented. This artifact, however, includes and describes
-runnable versions of all the paper's examples.
+For readability and conciseness, the paper occasionally stylizes or elides code
+and thus some examples may not run exactly as presented. This artifact, however,
+includes and describes runnable versions of all the paper's examples.
 
-The file links below open in the browser by default. (If not viewing in the VM,
-you may need to adjust your browser's "Text Encoding" to display Unicode.) To
-run the files, run with @tt{racket} on the command line, or open with DrRacket.
+The file links in the following subsections open in the browser by default. (If
+not viewing in the VM, you may need to adjust your browser's "Text Encoding" to
+display Unicode.) To run the files, run with @tt{racket} on the command line,
+or open with DrRacket.
 
 @subsection{Paper section 1}
 
 The paper's intro section contains a single example that demonstrates the kind
-of unintuitive errors that can occur in a naive implementation of lenient
+of unintuitive errors that can occur with lenient
 symbolic execution, where symbolic values mix with code that may not recognize
 them. Specifically, here is the example in (untyped) Rosette:
 
@@ -177,23 +177,28 @@ them. Specifically, here is the example in (untyped) Rosette:
 
 (if (unlifted-int? x)
     (add1 x)
-    (error "can't add non-int")) ; => errors}
+    (error "can't add non-int")) ; => error}
 
-This program is also available in @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
+This program is also available here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
 
-The first @racket[if] expression is valid because Rosette's @racket[integer?]
-function recognizes symbolic values.
+The programmer expects the program to reach the "then" branch and the first
+@racket[if] expression does this because Rosette's @racket[integer?] function
+recognizes symbolic values.
 
 The second @racket[if] expression, however, reaches the error branch even
 though @racket[x] is an integer because the base @racket[integer?] predicate
 from @emph{Racket}, which we have renamed to @racket[unlifted-int?], does not
 recognize symbolic values.
 
-If the "else" branch did not happen throw an error, the program would instead
-silently return the incorrect value.
+This kind of error is common in lenient symbolic evaluation, where the
+programmer mistakenly allows a symbolic value to reach positions that cannot
+handle them. Worse, such an error is difficult to debug and often results the
+program silently returning the incorrect value, for example if the "else"
+branch above returned a result instead of throwing an error.
 
-In contrast, our Typed Rosette language reports type errors when symbolic
-values flow to positions that do not recognize them:
+Typed Rosette helps lenient symbolic execution by reporting these problems---
+when symbolic values flow to positions that do not recognize them---as type
+errors:
 
 @codeblock{
 #lang typed/rosette
@@ -220,117 +225,125 @@ value. Since @racket[x] is a symbolic value, the type checker raises a type erro
 
 @subsection{Paper section 2}
 
-The paper's second section introduces Rosette via examples and motivates the
-need for Typed Rosette.
+The paper's second section introduces Rosette via examples and further
+motivates the need for Typed Rosette.
 
-The first part of the section introduces basic computing with symbolic values
-in Rosette and shows one example of interacting with the solver. These programs
-use the restricted @racket[rosette/safe] language, which does not allow lenient
-symbolic execution. These "safe" Rosette examples are already described in the
-paper and are mostly straightforward so we will not repeat the explanations
-here. Runnable versions of the safe examples may be viewed here:
+@subsubsection[#:tag "safe-example"]{Safe Examples}
 
 @file-url[POPL-EXAMPLES]{sec2-rosette-safe-examples.rkt}
 
-Using the full @racket[rosette] language instead of @racket[rosette/safe],
-programmers can take advantage of lenient symbolic execution and use the full
-Racket language. The first @tt{#lang rosette} example, viewable here:
+The first few examples introduce basic computing with symbolic values in
+Rosette and show examples of interacting with the solver, for example to verify
+the sortedness of a vector. These examples use the restricted @tt{rosette/safe}
+language where all language forms are lifted to recognize symbolic values,
+i.e., no lenient symbolic execution is allowed. These "safe" programs aremostly
+straightforward so we will not repeat the explanations here.
+
+@subsubsection[#:tag "unsafe-example"]{Unsafe Example}
 
 @file-url[POPL-EXAMPLES]{sec2-rosette-unsafe-hash-example.rkt}
 
-uses (unlifted) hash
-tables and tries to prove that the list is always sorted with the specified
-constraints. Even we expect that the constraints are sufficient to specify
-sortedness, the solver returns a "counterexample" that supposedly violates our
-constraints. Inspecting this "counterexample", however, reveals that it is not
-actually a counterexample--- it still results in a sorted hash!
+The full @racket[rosette] language supports lenient symbolic execution, i.e.,
+programmers may use the full Racket language which includes unlifted constructs
+and data structures that are too complicated to encode as solver
+constraints. The full Rosette language is unsafe, however, because programmers
+must manually concretize symbolic values before they reach unlifted
+positions.
 
+This example, similar to the safe vector example from the
+@secref{safe-example} section, tries to verify "sortedness" of a hash table,
+where the keys are concrete integers acting as the "indices". Even though we
+use the same constraints as before, the solver returns a "counterexample" that
+supposedly violates our sortedness specification. Inspecting
+this "counterexample", however, reveals that it is not actually a
+counterexample---it still results in a sorted hash.
 
-At this point, Rosette programmers are stumped, since the program has failed
-silently. Specifically, the solver has returned an unexpected result but the
-programmer has no information with which to look for the cause of the problem
-in the program. Even worse, an inattentive programmer may not think anything is
-wrong and instead accept the result of solver as correct. This highlights the
-problems with lenient symbolic execution.
+At this point, Rosette programmers are often stumped, since the program has
+failed silently. In other words, the solver has returned an incorrect result
+but the programmer has no information with which to look for the cause of the
+problem in the program. Even worse, an inattentive programmer may not think
+anything is wrong and instead accept the result of solver as correct. This
+highlights the problems with lenient symbolic execution.
 
-
-In contrast, the same example in Typed Rosette produces a type error that
-pinpoints the exact source of the problem. Specifically, @racket[hash-ref] is
-unlifted, i.e., it does not recognize symbolic keys, but the programmer has
-given it a symbolic value.
-
-The full program is here:
+@subsubsection{Unsafe Example, with Types}
 
 @file-url[POPL-EXAMPLES]{sec2-typed-rosette-hash-example.rkt}
 
+The problem in the @secref{unsafe-example} is that hash tables are unlifted
+; specifically @racket[hash-ref] does not recognize symbolic values but is given
+one. Typed Rosette is able to detect this problem and reports it as a type
+error, pinpointing the exact source of the problem.
 
 
-@subsection{}
-
-@file-url[POPL-EXAMPLES]
-@itemlist[@item{@file-url[POPL-EXAMPLES]{lam.rkt}: defines a language with only
-                single-argument lambda.}
-          @item{@file-url[POPL-EXAMPLES]{lam-prog.rkt}: a program using
-                @tt{lam.rkt} as its language.
-                Attempting to apply functions results in a syntax error.
-                This file uses our custom unit-testing framework to catch and
-                check errors.}
-          @item{@file-url[POPL-EXAMPLES]{lc.rkt}: extends @tt{lam.rkt} with
-                function application.}
-          @item{@file-url[POPL-EXAMPLES]{lc-prog.rkt}: a program using
-                @tt{lc.rkt} as its language.
-                This program will loop forever when run.}]
-          
 @subsection{Paper section 3}
 
-@file-url[POPL-EXAMPLES]
-@itemlist[@item{@file-url[POPL-EXAMPLES]{stlc-with-racket.rkt}: runnable version
-                of code from figures 3 through 8.}
-          @item{@file-url[POPL-EXAMPLES]{stlc-with-racket-prog.rkt}:
-                a program that uses @tt{stlc-with-racket.rkt} as its language.
-                Shows a few type errors.}]
+@subsubsection{Basic Occurrence Typing}
 
-@subsection{Paper section 4}
+@file-url[POPL-EXAMPLES]{sec31-basic-occurrence-typing.rkt}
 
-@file-url[POPL-EXAMPLES]
-@itemlist[@item{@file-url[POPL-EXAMPLES]{stlc-with-turnstile.rkt}: runnable
-                version of code from figure 11, as well as the extended
-                @tt{#%app} from section 4.2.}
-          @item{@file-url[POPL-EXAMPLES]{stlc-with-turnstile-prog.rkt}:
-                same as @tt{stlc-with-racket-prog.rkt}, but using
-                @tt{stlc-with-turnstile.rkt} as its language.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+prim.rkt}: language implementation from figure 12
-                that extends @tt{stlc-with-turnstile.rkt} with integers and addition.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+prim-prog.rkt}: some examples
-                (not shown in paper) using the @tt{stlc+prim.rkt} language.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+prim-with-racket.rkt}:
-                (not shown in paper) same language implementation as
-                @tt{stlc+prim.rkt}, but using base Racket instead of Turnstile.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+prim-with-racket-prog.rkt}:
-                (not shown in paper) same as @tt{stlc+prim-prog.rkt}, but using
-                @tt{stlc+prim-with-racket.rkt} as its language.}]
+These examples demonstrate basic occurrence typing. The input to the @racket[f]
+function, @racket[x], may be either a (concrete) integer or string, and the
+@racket[integer?] predicate refines @racket[x] to an integer or string in
+the "then" and "else" branches, respectively.
 
-@subsection{Paper section 5}
+The @racket[g] function shows that the predicate's argument may be an arbitrary
+expression and is not restricted to plain variables. Nevertheless, @racket[x]'s
+type is refined in the same way as in @racket[f].
 
-@file-url[POPL-EXAMPLES]
+@subsubsection{Path Concreteness: Motivation}
 
-@itemlist[@item{@file-url[POPL-EXAMPLES]{exist.rkt}: language with existential
-                types from figure 13, including @tt{subst} and @tt{τ=}.}
-          @item{@file-url[POPL-EXAMPLES]{exist-prog.rkt}: the "counter" example
-                from the paper.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+sub.rkt}: language with subtyping
-                from figure 14; reuses rules from @tt{stlc+prim.rkt}.}
-          @item{@file-url[POPL-EXAMPLES]{stlc+sub-prog.rkt}: some examples
-                (not shown in paper) using the @tt{stlc+sub.rkt} language.}
-          @item{@file-url[POPL-EXAMPLES]{fomega.rkt}: F-omega language from
-                figure 16.}
-          @item{@file-url[POPL-EXAMPLES]{fomega-prog.rkt}: some examples
-                (not shown in paper) using the @tt{fomega.rkt} language.}
-          @item{@file-url[POPL-EXAMPLES]{effect.rkt}: language with
-                type-and-effect system from figure 17.}
-          @item{@file-url[POPL-EXAMPLES]{effect-prog.rkt}: some examples
-                (not shown in paper) using the @tt{effect.rkt} language.}]
+@file-url[POPL-EXAMPLES]{sec34-path-concreteness1-untyped.rkt}
 
+This example motivates the need for path concreteness when mutation is
+involved. Specifically, a concrete value, even if it is only ever mutated with
+other concrete values, may change into a symbolic value if mutated under a
+symbolic path.
+
+@file-url[POPL-EXAMPLES]{sec34-path-concreteness1-typed.rkt}
+
+Our type system rejects mutation of concrete variables in symbolic paths
+because it results in unsoundness. In other words, allowing such mutations
+results in variables with concrete types having symbolic values.
+
+@subsubsection{Path Concreteness: Functions}
+
+
+Functions (that mutate variables) add extra complication since it is the
+concreteness of the call sites that we must be concerned about. Typed Rosette
+addresses this in two ways.
+
+@itemlist[#:style 'ordered
+
+@item{@file-url[POPL-EXAMPLES]{sec34-path-concreteness2.rkt} Bodies of
+functions defined with @racket[define] are type checked twice, once assuming
+concrete path and once assuming symbolic path. This example is rejected because
+calling it in a symbolic path leads to unsoundness. If a
+@racket[define]-defined function type checks, we know it's safe to call in
+either a concrete or symbolic path, so we do not need extra checking at the
+call sites.}
+
+@item{@file-url[POPL-EXAMPLES]{sec34-path-concreteness3.rkt} Programmers may
+also restrict where a function is called by defining it with
+@racket[define/conc]. Such functions may only be called in a concrete path. In
+this example, we define the same @racket[g] function as as in the first item,
+only we use @racket[define/conc]. Thus the definition type checks this
+time. But attempting to call this @racket[g] in a symbolic path results in a
+type error.}]
+
+
+
+@section{Paper Section 5: Typed Rosette Implementation}
+
+
+
+
+
+
+
+
+
+
+@section{}
 @subsection{Other files}
 @file-url[POPL-EXAMPLES]
 @itemlist[@item{@file-url[POPL-EXAMPLES]{abbrv.rkt}: defines abbreviations from
