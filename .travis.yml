@@ -24,7 +24,7 @@ before_install:
   - sleep 3 # give xvfb some time to start
 
 install:
- - raco pkg install --auto -n typed-rosette
+ - raco pkg install -j 1 --auto -n typed-rosette
 
 script:
  - raco test --package typed-rosette
