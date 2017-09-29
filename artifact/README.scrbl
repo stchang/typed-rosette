@@ -47,7 +47,7 @@ authors.
 
 Our artifact is a VM image that contains:
 @itemlist[
-  @item{a copy of the POPL 2018 camera-ready @hyperlink[@file://[PAPER]]{[link]},}
+  @item{a revised version of the submitted paper @hyperlink[@file://[PAPER]]{[link]},}
   @item{a distribution of the Racket programming language (v6.10.1),}
 
   @item{and a prototype implementation of the Typed Rosette language and some
@@ -150,7 +150,21 @@ For readability and conciseness, the paper occasionally stylizes or elides code
 and thus some examples may not run exactly as presented. This artifact, however,
 includes and describes runnable versions of all the paper's examples.
 
-The file links in the following subsections open in the browser by default. (If
+General code clarifications:
+@itemlist[
+  @item{Symbolic types in the @emph{paper} are decorated with a Latex @tt{\widehat}
+        while concrete types are undecorated. Confusingly, in actual Typed Rosette code,
+        these same undecorated type names now represent symbolic values, while
+        concrete values have a @tt{C} prefix.
+ 
+        For example:
+        @tabular[#:style 'boxed
+                 (list (list @bold{Description} @bold{Paper notation} @bold{Code})
+                       (list "type for (possibly) symbolic values" @tt{\widehat{Int}} @tt{Int})
+                       (list "type for concrete values" @tt{Int} @tt{CInt}))]}
+       ]
+
+NOTE: The file links in the following subsections open in the browser by default. (If
 not viewing in the VM, you may need to adjust your browser's "Text Encoding" to
 display Unicode.) To run the files, run with @tt{racket} on the command line,
 or open with DrRacket.
@@ -334,8 +348,13 @@ type error.}]
 
 @section{Paper Section 5: Typed Rosette Implementation}
 
+@subsection{Sample Type Rule Implementations}
 
+@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/bool.rkt#L24-L51"]{@tt{if}}
 
+@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/base-forms.rkt#L901-L908"]{@tt{set!}}
+
+@subsection{Concreteness Polymorphism in Practice}
 
 
 
