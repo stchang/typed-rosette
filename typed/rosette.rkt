@@ -125,6 +125,14 @@
 ;; define-symbolic
 
 (define-typed-syntax define-symbolic
+  [(_ x:id ...+ (~datum :) ty) ≫
+;   [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]]
+   [⊢ ty ≫ ty- (⇒ pred pred-)]
+   #:with (y ...) (generate-temporaries #'(x ...))
+   --------
+   [_ ≻ (begin-
+          (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
+          (ro:define-symbolic y ... pred?-))]]
   [(_ x:id ...+ pred?) ≫
    [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]]
    #:fail-unless (syntax-e #'s?)
@@ -943,7 +951,7 @@
 ;; Reflecting on symbolic values
 
 (provide (typed-out
-          [term? : UnliftedPred]
+          [term? : (UnliftedPredForNot CAny)]
           [expression? : UnliftedPred]
           [constant? : UnliftedPred]
           [type? : UnliftedPred]

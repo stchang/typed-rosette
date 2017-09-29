@@ -81,7 +81,7 @@
          LiftedPred LiftedPred2
          LiftedPredDeep LiftedPredDeep2
          LiftedNumPred LiftedIntPred UnliftedPred
-         LiftedPredFor UnliftedPredFor
+         LiftedPredFor UnliftedPredFor UnliftedPredForNot
          (for-syntax ~CUnit CUnit?
                      (rename-out [~CUnit ~CVoid] [CUnit? CVoid?])
                      ~CString CString?
@@ -777,6 +777,8 @@
 
 (define-simple-macro (UnliftedPredFor τ:type)
   (C→* [Any] [] CBool : #:+ (@ 0 : τ.norm) #:- (!@ 0 : τ.norm)))
+(define-simple-macro (UnliftedPredForNot τ:type)
+  (C→* [Any] [] CBool : #:+ (!@ 0 : τ.norm) #:- (@ 0 : τ.norm)))
 
 ;; ---------------------------------------------------------
 
@@ -1056,10 +1058,21 @@
               #false
               (free-id-table-set acc x* τ_new))])]))
 
+  ;; concretize : Type -> Type
+  (define (concretize τ)
+    (syntax-parse τ
+      [(~U* . tys)
+       #:with ctys (stx-map concretize #'tys)
+       #'(CU . tys)]
+      [(~Term* ty) (concretize #'ty)]
+      [(~Constant* ty) (concretize #'ty)]
+      [_ τ]))
+      
   ;; type-restrict : Type Type -> Type
   (define (type-restrict orig new)
     (cond [(types-no-overlap? orig new) typeCNothing]
           [(typecheck? new orig) new]
+          [(CAny? new) (concretize orig)]
           [(Un? new)
            ((current-type-eval)
             (syntax-parse new
@@ -1124,6 +1137,7 @@
   ;; type-remove : Type Type -> Type
   (define (type-remove orig new-not)
     (cond [(typecheck? orig new-not) typeCNothing]
+          [(CAny? new-not) orig] ; nothing to do
           [(Un? orig)
            ((current-type-eval)
             (syntax-parse orig

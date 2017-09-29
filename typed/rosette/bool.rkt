@@ -43,12 +43,12 @@
               (⇒ : _)
               (⇒ prop+ posprop)
               (⇒ prop- negprop)]
-   [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]
-      [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]
+   [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ ty1]
+      [(with-occurrence-prop negprop e2) ≫ e2- ⇒ ty2]
       #:mode (symb-path)]
    #:with τ_out (type-merge #'ty1 #'ty2)
    --------
-   [⊢ [_ ≫ (ro:if e_tst- e1- e2-) ⇒ : τ_out]]])
+   [⊢ (ro:if e_tst- e1- e2-) ⇒ τ_out]])
 
 ;; ----------------------------------------------------------------------------
 
