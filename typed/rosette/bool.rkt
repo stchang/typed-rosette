@@ -21,33 +21,28 @@
       (and (not (typecheck? ((current-type-eval) #'CFalse) ty))
            (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) ty)))))
 
-;; TODO: this is not precise enough
-;; specifically, a symbolic non-bool should produce a concrete val
 (define-typed-syntax if
   [(_ e_tst e1 e2) ≫
-   [⊢ [e_tst ≫ e_tst-
-             (⇒ : ty_tst)
-             (⇒ prop+ posprop)
-             (⇒ prop- negprop)]]
+   [⊢ e_tst ≫ e_tst-
+              (⇒ : ty_tst)
+              (⇒ prop+ posprop)
+              (⇒ prop- negprop)]
    #:when (ty-sym-false? #'ty_tst)
-   [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]]
-   [⊢ [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]]
-   #:with τ_out
+   [⊢ (with-occurrence-prop posprop e1) ≫ e1- ⇒ ty1]
+   [⊢ (with-occurrence-prop negprop e2) ≫ e2- ⇒ ty2]
+   #:with τ_out ; compute join
    (cond [(and (concrete? #'ty1) (concrete? #'ty2)) #'(CU ty1 ty2)]
          [(typecheck? #'ty1 typeCNothing) #'ty2]
          [(typecheck? #'ty2 typeCNothing) #'ty1]
          ;; else don't need to merge, but do need U
          [else #'(U ty1 ty2)])
    --------
-   [⊢ [_ ≫ (ro:if e_tst-
-                  e1-
-                  e2-)
-         ⇒ : τ_out]]]
+   [⊢ (ro:if e_tst- e1- e2-) ⇒ τ_out]]
   [(_ e_tst e1 e2) ≫
-   [⊢ [e_tst ≫ e_tst-
-             (⇒ : _)
-             (⇒ prop+ posprop)
-             (⇒ prop- negprop)]]
+   [⊢ e_tst ≫ e_tst-
+              (⇒ : _)
+              (⇒ prop+ posprop)
+              (⇒ prop- negprop)]
    [⊢ [(with-occurrence-prop posprop e1) ≫ e1- ⇒ : ty1]
       [(with-occurrence-prop negprop e2) ≫ e2- ⇒ : ty2]
       #:mode (symb-path)]
