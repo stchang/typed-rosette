@@ -125,24 +125,23 @@
 ;; define-symbolic
 
 (define-typed-syntax define-symbolic
-  [(_ x:id ...+ (~datum :) ty) ≫
-;   [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]]
-   [⊢ ty ≫ ty- (⇒ pred pred-)]
+  [(_ x:id ...+ (~datum :) ty) ≫ ; programmer provides type, lookup pred
+   [⊢ ty ≫ (~U* ty-) (⇒ pred pred?-)]
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
-   [_ ≻ (begin-
-          (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
-          (ro:define-symbolic y ... pred?-))]]
-  [(_ x:id ...+ pred?) ≫
-   [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]]
+   [≻ (begin-
+       (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty-)))) ...
+       (ro:define-symbolic y ... pred?-))]]
+  [(_ x:id ...+ pred?) ≫ ; programmer provides pred, lookup type
+   [⊢ pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]
    #:fail-unless (syntax-e #'s?)
                  (format "Expected a Rosette-solvable type, given ~a." 
                          (syntax->datum #'pred?))
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
-   [_ ≻ (begin-
-          (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
-          (ro:define-symbolic y ... pred?-))]])
+   [≻ (begin-
+       (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
+       (ro:define-symbolic y ... pred?-))]])
 
 (define-typed-syntax define-symbolic*
   [(_ x:id ...+ pred?) ≫

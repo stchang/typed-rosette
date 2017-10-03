@@ -61,12 +61,18 @@
    [⊢ key ≫ key- ⇐ : τ_key]
    --------
    [⊢ (ro:hash-ref hsh- key-) ⇒ : τ_val]]
-  [(_ hsh:expr key:expr fail:expr) ≫
+  [(_ hsh:expr key:expr fail:expr) ≫ ; thunk fail case
    [⊢ hsh ≫ hsh- ⇒ : (~CHashof τ_key τ_val)]
    [⊢ key ≫ key- ⇐ : τ_key]
    [⊢ fail ≫ fail- ⇐ : (C→ τ_val)]
    --------
-   [⊢ (ro:hash-ref hsh- key- fail-) ⇒ : τ_val]])
+   [⊢ (ro:hash-ref hsh- key- fail-) ⇒ : τ_val]]
+  [(_ hsh:expr key:expr fail:expr) ≫ ; non-thunk fail case
+   [⊢ hsh ≫ hsh- ⇒ : (~CHashof τ_key τ_val)]
+   [⊢ key ≫ key- ⇐ : τ_key]
+   [⊢ fail ≫ fail- ⇒ : τ_fail]
+   --------
+   [⊢ (ro:hash-ref hsh- key- fail-) ⇒ : (CU τ_val τ_fail)]])
 
 (define-typed-syntax hash-set
   [(_ e k v) ≫

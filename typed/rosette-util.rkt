@@ -20,7 +20,7 @@
       (type-cast pred a)
       (let ([pass? (pred a)])
         (when (and (not (union? pass?)) (not (term? pass?)) (false? pass?))
-          (printf "assert-pred failed outright\n  a: ~v\n  pred: ~v\n"
+          (printf "(warning) assert-pred failed outright\n  a: ~v\n  pred: ~v\n"
                   a pred))
         (assert pass?)
         a)))

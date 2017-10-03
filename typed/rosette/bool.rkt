@@ -22,7 +22,7 @@
            (not (typecheck? ((current-type-eval) #'(Constant (Term CFalse))) ty)))))
 
 (define-typed-syntax if
-  [(_ e_tst e1 e2) ≫
+  [(_ e_tst e1 e2) ≫ ; concrete case
    [⊢ e_tst ≫ e_tst-
               (⇒ : ty_tst)
               (⇒ prop+ posprop)
@@ -38,7 +38,7 @@
          [else #'(U ty1 ty2)])
    --------
    [⊢ (ro:if e_tst- e1- e2-) ⇒ τ_out]]
-  [(_ e_tst e1 e2) ≫
+  [(_ e_tst e1 e2) ≫ ; symbolic case
    [⊢ e_tst ≫ e_tst-
               (⇒ : _)
               (⇒ prop+ posprop)
