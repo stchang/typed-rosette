@@ -11,4 +11,4 @@
 
 (define-symbolic b boolean?)
 
-;(if b (g 1) (g 2)) ; type err: cannot call g in symbolic path
+(if b (g 1) (g 2)) ; type err: cannot call g in symbolic path

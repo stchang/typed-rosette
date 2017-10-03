@@ -8,3 +8,10 @@
 (if b
     (set! x 10)
     (set! x 11))
+
+(define y : Int 0) ; x has type symbolic Int
+
+;; ok
+(if b
+    (set! y 10)
+    (set! y 11))

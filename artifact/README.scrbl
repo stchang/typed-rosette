@@ -2,7 +2,8 @@
 
 @require[scribble/eval
          scriblib/autobib
-         racket/list]
+         racket/list
+         #;(for-label (only-in rosette define-symbolic))]
 
 @(define HOME (find-system-path 'home-dir))
 @(define REPO (apply build-path (drop-right (explode-path (current-directory)) 1)))
@@ -17,6 +18,7 @@
 @(define TURNSTILE-EXAMPLES (build-path TURNSTILE "examples"))
 @(define TURNSTILE-TEST (build-path TURNSTILE-EXAMPLES "tests"))
 @(define MLISH-TEST (build-path TURNSTILE-TEST "mlish"))
+@(define (EXAMPLE f) (list "runnable program: " (file-url POPL-EXAMPLES f)))
 
 @(define PAPER-TITLE  "Symbolic Types for Lenient Symbolic Execution")
 @(define PAPER-PDF  "paper.pdf")
@@ -54,11 +56,9 @@ Our artifact is a VM image that contains:
         of its libraries.}
   ]
 
-The goals of this artifact are to:
-@itemlist[
-  @item{provide a tour of the Typed Rosette language via examination of runnable versions of the paper's examples,}
-  @item{and review a few of the evaluation examples.}
- ]
+The goal of this artifact is to
+provide a tour of the Typed Rosette language and parts of its
+implementation, primarily by examining runnable versions of the paper's examples.
 
 
 @; -----------------------------------------------------------------------------
@@ -144,24 +144,42 @@ The following files may also be accessed via the VM Desktop:
 
 
 @; -----------------------------------------------------------------------------
+@section[#:tag "typed-rosette"]{Typed Rosette}
+
+This artifact is set up to allow exploration of both Typed Rosette's
+implementation and usage.
+
+One source of examples is the Typed Rosette test suite, viewable here: @file-url[REPO]{test}
+
+To run the test suite, open a terminal and execute the following command (may
+take 30-60min to complete):
+
+@tt{raco test -p typed-rosette}
+
+The complete source for the implementation is viewable at:
+@itemlist[
+@item{local: @file-url[REPO]{typed/rosette}}
+@item{@hyperlink[REPO-URL]{web link}}]
+
+@; -----------------------------------------------------------------------------
 @section[#:tag "examples"]{Code From the Paper}
 
 For readability and conciseness, the paper occasionally stylizes or elides code
 and thus some examples may not run exactly as presented. This artifact, however,
-includes and describes runnable versions of all the paper's examples.
+includes and describes full runnable versions of all the paper's examples.
 
-General code clarifications:
+Some code clarifications:
 @itemlist[
   @item{Symbolic types in the @emph{paper} are decorated with a Latex @tt{\widehat}
-        while concrete types are undecorated. Confusingly, in actual Typed Rosette code,
-        these same undecorated type names now represent symbolic values, while
-        concrete values have a @tt{C} prefix.
+        while concrete types are undecorated. Somewhat confusingly @emph{Typed Rosette code}
+        uses these same undecorated type names to represent symbolic values, while
+        concrete types have a @tt{C} prefix.
  
         For example:
         @tabular[#:style 'boxed
-                 (list (list @bold{Description} @bold{Paper notation} @bold{Code})
-                       (list "type for (possibly) symbolic values" @tt{\widehat{Int}} @tt{Int})
-                       (list "type for concrete values" @tt{Int} @tt{CInt}))]}
+                 (list (list @bold{Description} @bold{Paper} @bold{Typed Rosette Code})
+                       (list "type for (possibly) symbolic integers" @tt{\widehat{Int}} @tt{Int})
+                       (list "type for concrete integers" @tt{Int} @tt{CInt}))]}
        ]
 
 NOTE: The file links in the following subsections open in the browser by default. (If
@@ -169,46 +187,54 @@ not viewing in the VM, you may need to adjust your browser's "Text Encoding" to
 display Unicode.) To run the files, run with @tt{racket} on the command line,
 or open with DrRacket.
 
+
+@; ----------------------------------------------------------------------------
+@; paper section 1
 @subsection{Paper section 1}
 
-The paper's intro section contains a single example that demonstrates the kind
-of unintuitive errors that can occur with lenient
-symbolic execution, where symbolic values mix with code that may not recognize
-them. Specifically, here is the example in (untyped) Rosette:
+The first section of the paper uses one small example to illustrate the main
+problem with lenient symbolic execution that we tackle in the paper, where
+symbolic values mix with code that may not recognize them. Specifically, here
+is the example in (untyped) Rosette:
 
 @codeblock{
 #lang rosette
-
-(define-symbolic x integer?) ; defines symbolic value x
-
-;; ok because Rosette lifts `integer?` to handle symbolic vals
+ 
+(define-symbolic x integer?) ; defines symbolic integer x
+ 
+;; evaluates to symbolic value (+ x 1)
+;; works because Rosette's `integer?` returns true for symbolic ints
 (if (integer? x)
     (add1 x)
-    (error "can't add non-int")) ; => symbolic value (+ x 1)
-
+    (error "can't add non-int"))
+ 
 ;; import raw Racket's `integer?`, as `unlifted-int?`
 (require (only-in racket [integer? unlifted-int?]))
-
+ 
+;; errors bc `unlifted-int?` does not recognize symbolic vals and returns false
 (if (unlifted-int? x)
     (add1 x)
-    (error "can't add non-int")) ; => error}
+    (error "can't add non-int"))
+}
 
-This program is also available here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
+The full runnable program may also be viewed here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
 
-The programmer expects the program to reach the "then" branch and the first
-@racket[if] expression does this because Rosette's @racket[integer?] function
-recognizes symbolic values.
+The programmer expects the program to reach the "then" branch and this is true
+in the first @racket[if] expression because Rosette's @racket[integer?]
+function recognizes symbolic values.
 
-The second @racket[if] expression, however, reaches the error branch even
-though @racket[x] is an integer because the base @racket[integer?] predicate
-from @emph{Racket}, which we have renamed to @racket[unlifted-int?], does not
-recognize symbolic values.
+The second @racket[if] expression is identical to the first except it uses a
+different conditional predicate. Lenient symbolic increases expressiveness by
+allowing mixing of lifted and unlifted code, however, so if a programmer
+mistakenly uses an @emph{unlifted} predicate (which we've conveniently named
+@racket[unlifted-int?] here) that does no recognize symbolic value, evaluation
+reaches the error branch.
 
-This kind of error is common in lenient symbolic evaluation, where the
-programmer mistakenly allows a symbolic value to reach positions that cannot
-handle them. Worse, such an error is difficult to debug and often results the
-program silently returning the incorrect value, for example if the "else"
-branch above returned a result instead of throwing an error.
+This kind of error is common in languages supporting lenient symbolic
+evaluation like Rosette and is particuarly difficult to debug because the
+program often fails silently. For example if the "else" branch above returned a
+result instead of throwing an error, then a programmer may not even be aware of
+a problem.
 
 Typed Rosette helps lenient symbolic execution by reporting these problems---
 when symbolic values flow to positions that do not recognize them---as type
@@ -216,55 +242,82 @@ errors:
 
 @codeblock{
 #lang typed/rosette
-
-(define-symbolic x integer?) ; defines symbolic value x
-
-;; ok because `integer?` is lifted to handle symbolic vals
+ 
+(define-symbolic x integer?) ; defines symbolic integer x
+ 
+;; evaluates to symbolic value (+ x 1)
+;; works because Rosette's `integer?` returns true for symbolic ints
 (if (integer? x)
     (add1 x)
-    (error "can't add non-int")) ; => symbolic value (+ 1 x)
-
+    (error "can't add non-int"))
+ 
 ;; import raw Racket's `integer?`, as `unlifted-int?`, with type
 (require/type racket [integer? unlifted-int? : (C→ CAny CBool)])
-
+ 
+;; type error
 (if (unlifted-int? x)
     (add1 x)
-    (error "can't add non-int")) ; => type error}
+    (error "can't add non-int"))
+}
 
-This program is also available in @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
+This program is also available here @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
 
 In this program, the raw Racket @racket[integer?] is imported with a
 @racket[CAny] type, indicating that its input may be any @emph{concrete}
-value. Since @racket[x] is a symbolic value, the type checker raises a type error.
+value. Since @racket[x] is a symbolic value, the type checker raises a type error:
 
+@codeblock{
+;; intro-example-typed-rosette.rkt:15.4: #%app: type mismatch
+;;   expected:    CAny
+;;   given:       (Constant (Term CInt))
+;;   expressions: x
+;;   at: (#%app unlifted-int? x)
+}
+
+In addition to reporting the error, this message provides extra information by
+a few internal details of Typed Rosette. Specifically, Typed Rosette actually
+tracks multiple variants of each symbolic type from the paper and internally
+uses a @tt{Term} constructor to convert a concrete type into a (possibly)
+symbolic one, and uses a @tt{Constant} constructor to additionally track
+symbolic constant values (which are produced with @racket[define-symbolic]). In
+the above program, @racket[x] is a symbolic constant, but the symbolic value
+@racket[(+ x 1)] result of @racket[(add1 x)] is not.
+
+
+@; ----------------------------------------------------------------------------
+@; paper section 2
 @subsection{Paper section 2}
 
-The paper's second section introduces Rosette via examples and further
+The paper's second section introduces more of Rosette via examples and further
 motivates the need for Typed Rosette.
+
+Each subsequent subsection first links to a runnable program file, and then
+comments on the contents of the file.
 
 @subsubsection[#:tag "safe-example"]{Safe Examples}
 
-@file-url[POPL-EXAMPLES]{sec2-rosette-safe-examples.rkt}
+@EXAMPLE{sec2-rosette-safe-examples.rkt}
 
-The first few examples introduce basic computing with symbolic values in
-Rosette and show examples of interacting with the solver, for example to verify
-the sortedness of a vector. These examples use the restricted @tt{rosette/safe}
-language where all language forms are lifted to recognize symbolic values,
-i.e., no lenient symbolic execution is allowed. These "safe" programs aremostly
-straightforward so we will not repeat the explanations here.
+The first few examples in section 2 of the paper introduce basic computing with
+symbolic values in Rosette and show examples of interacting with the solver,
+for example to verify the sortedness of a vector given some constraints. These
+examples use the restricted @tt{rosette/safe} language where all language forms
+are lifted to recognize symbolic values, i.e., no lenient symbolic execution is
+allowed. These "safe" programs are mostly straightforward so we will not repeat
+the explanations here.
 
 @subsubsection[#:tag "unsafe-example"]{Unsafe Example}
 
-@file-url[POPL-EXAMPLES]{sec2-rosette-unsafe-hash-example.rkt}
+@EXAMPLE{sec2-rosette-unsafe-hash-example.rkt}
 
 The full @racket[rosette] language supports lenient symbolic execution, i.e.,
-programmers may use the full Racket language which includes unlifted constructs
-and data structures that are too complicated to encode as solver
-constraints. The full Rosette language is unsafe, however, because programmers
-must manually concretize symbolic values before they reach unlifted
-positions.
+the language is more expressive because programmers may use the full Racket
+language which includes unlifted constructs and data structures that may be too
+complicated to encode as solver constraints. The full Rosette language is
+unsafe, however, because programmers must manually concretize symbolic values
+before they reach unlifted positions.
 
-This example, similar to the safe vector example from the
+This example, in the same manner as the safe vector example from the
 @secref{safe-example} section, tries to verify "sortedness" of a hash table,
 where the keys are concrete integers acting as the "indices". Even though we
 use the same constraints as before, the solver returns a "counterexample" that
@@ -272,59 +325,72 @@ supposedly violates our sortedness specification. Inspecting
 this "counterexample", however, reveals that it is not actually a
 counterexample---it still results in a sorted hash.
 
-At this point, Rosette programmers are often stumped, since the program has
-failed silently. In other words, the solver has returned an incorrect result
-but the programmer has no information with which to look for the cause of the
-problem in the program. Even worse, an inattentive programmer may not think
+At this point, Rosette programmers are often stumped, since the solver has
+returned an incorrect result but the programmer has no information with which
+to look for the cause of the problem in the program. In other words, the
+program has failed silently. An inattentive programmer may not even think
 anything is wrong and instead accept the result of solver as correct. This
-highlights the problems with lenient symbolic execution.
+highlights the main problem with lenient symbolic execution.
 
 @subsubsection{Unsafe Example, with Types}
 
-@file-url[POPL-EXAMPLES]{sec2-typed-rosette-hash-example.rkt}
+@EXAMPLE{sec2-typed-rosette-hash-example.rkt}
 
-The problem in the @secref{unsafe-example} is that hash tables are unlifted
-; specifically @racket[hash-ref] does not recognize symbolic values but is given
+The problem in the @secref{unsafe-example} is that hash tables are unlifted;
+specifically @racket[hash-ref] does not recognize symbolic values but is given
 one. Typed Rosette is able to detect this problem and reports it as a type
-error, pinpointing the exact source of the problem.
+error, pinpointing the exact source of the problem:
 
+@codeblock{
+;; sec2-typed-rosette-hash-example.rkt:13.19: hash-ref: type mismatch: expected CInt, given (Constant (Term CInt))
+;;   expression: i
+;;   at: i
+;;   in: (hash-ref h i)
+}
 
 @subsection{Paper section 3}
 
 @subsubsection{Basic Occurrence Typing}
 
-@file-url[POPL-EXAMPLES]{sec31-basic-occurrence-typing.rkt}
+@EXAMPLE{sec31-basic-occurrence-typing.rkt}
 
 These examples demonstrate basic occurrence typing. The input to the @racket[f]
-function, @racket[x], may be either a (concrete) integer or string, and the
-@racket[integer?] predicate refines @racket[x] to an integer or string in
+function, @racket[x], may be either a (concrete) integer or string. The 
+@racket[integer?] predicate then refines @racket[x] to an integer and string in
 the "then" and "else" branches, respectively.
 
 The @racket[g] function shows that the predicate's argument may be an arbitrary
 expression and is not restricted to plain variables. Nevertheless, @racket[x]'s
-type is refined in the same way as in @racket[f].
+type is refined in the same way as in @racket[f]. (We use @racket[and] with a
+single argument to stand in for the @tt{id} function mentioned on page 6 of the
+paper.)
 
 @subsubsection{Path Concreteness: Motivation}
 
-@file-url[POPL-EXAMPLES]{sec34-path-concreteness1-untyped.rkt}
+@EXAMPLE{sec34-path-concreteness1-untyped.rkt}
 
 This example motivates the need for path concreteness when mutation is
-involved. Specifically, a concrete value, even if it is only ever mutated with
-other concrete values, may change into a symbolic value if mutated under a
-symbolic path.
+involved. Specifically, a concrete value, even if it is only ever assigned
+other concrete values, may change into a symbolic value if the mutation occurs
+under a symbolic path.
 
-@file-url[POPL-EXAMPLES]{sec34-path-concreteness1-typed.rkt}
+@EXAMPLE{sec34-path-concreteness1-typed.rkt}
 
 Our type system rejects mutation of concrete variables in symbolic paths
 because it results in unsoundness. In other words, allowing such mutations
 results in variables with concrete types having symbolic values.
 
+A programmer wishing to allow such mutations may annotate the variable with a
+possibly symbolic type, like @racket[y] in the example.
+
 @subsubsection{Path Concreteness: Functions}
 
 
-Functions (that mutate variables) add extra complication since it is the
-concreteness of the call sites that we must be concerned about. Typed Rosette
-addresses this in two ways.
+Functions that mutate variables add extra complication since they require the
+type checker to be context sensitive at function call sites. Specifically, the
+type checker must track whether a function (that mutates variables) is called
+in a symbolic path or a concrete path. Typed Rosette addresses this in two
+ways.
 
 @itemlist[#:style 'ordered
 
@@ -341,20 +407,137 @@ also restrict where a function is called by defining it with
 @racket[define/conc]. Such functions may only be called in a concrete path. In
 this example, we define the same @racket[g] function as as in the first item,
 only we use @racket[define/conc]. Thus the definition type checks this
-time. But attempting to call this @racket[g] in a symbolic path results in a
-type error.}]
+time. But attempting to call this @racket[g] function in a symbolic path
+results in a type error.}]
 
 
 
-@section{Paper Section 5: Typed Rosette Implementation}
+@section{Typed Rosette Implementation}
+
+This section contains commentary for examples from section 5 of the paper.
+
+To help readability, these examples may utilize a special type checker
+unit-testing framework, evident from a @racket[(require typed/lib/roseunit)] at
+the top of the file. The unit-testing framework has three main forms:
+
+@itemlist[
+@item{A @racket[(check-type e : τ)] test passes if @racket[e] has type @racket[τ].}
+@item{A @racket[(check-not-type e : τ)] test passes if @racket[e] does not have type @racket[τ].}
+@item{A @racket[(typecheck-fail e)] test passes if @racket[e] fails to type
+check. This form may additionally specify a regexp that the error message must satisfy.}]
+
+When running a file that contains these tests, an error message is produced for
+failing tests, and no output is produced if all tests pass.
 
 @subsection{Sample Type Rule Implementations}
 
-@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/bool.rkt#L24-L51"]{@tt{if}}
+We created Rosette using Turnstile, a Racket-based meta-DSL for creating typed
+languages. Turnstile allows implementing type rules with a declarative syntax
+that resembles mathematical type rule specifications. Figure 25 of the paper
+shows a few example rules. These same rule implementations may be viewed in the
+repo here (the syntax has evolved slightly):
 
-@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/base-forms.rkt#L901-L908"]{@tt{set!}}
+@itemlist[
+@item{@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/bool.rkt#L24-L51"]{@tt{if} rule}
+
+@itemlist[@item{In the first, concrete, case, the path concreteness is unchanged and is thus inherited from the context.}
+@item{In the second, symbolic case, the path concreteness is changed to symbolic.}]}
+
+@item{@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/base-forms.rkt#L901-L908"]{@tt{set!} rule}
+
+The implementation of the @racket[set!] mutation rule does not actually need
+two separate cases like shown in the paper. Instead, the @racket[no-mutate?]
+function (whose implementation can be seen
+@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/types.rkt#L176-L177"]{here}),
+determines when mutation of the @racket[x] variable is not allowed (when
+@racket[x] has a concrete type and the path is symbolic), and raises a type
+error if appropriate.}
+]
+
+NOTE: The details of the Turnstile language are not the focal point of this
+paper but, briefly, programmers write interleaved rewrite and type check
+judgements of the form @tt{Γ ⊢ e ≫ e+ (⇒ key val) ...} or @tt{Γ ⊢ e ≫ e+ (⇐ key
+val) ...}, where @tt{⇒} and @tt{⇐} are the conventional "synth" and "check"
+bidirectional arrows, respectively. A rule may specify more than one key-value
+pair and in the example rules, we utilize this to simultaneously check types
+and propositions, as shown in section 3 of the paper. In addition, the @tt{e ≫
+e+} part of the relation specifies that @tt{e} rewrites to @tt{e+}.
 
 @subsection{Concreteness Polymorphism in Practice}
+
+@EXAMPLE{sec53.rkt}
+
+Section 5.3 of the paper shows an example of how programmers may control the
+precision of the type checker. Specifically, the @racket[Ccase->] type is the
+implementation of the intersection type specified in section 3.3 of the
+paper. When applying a function with a @racket[Ccase->] type, the type checker
+checks each consituent function type, in listed order, and either uses the
+first one that type checks or raises a type error if it exhausts all the
+options.
+
+Function types also support specifying optional arguments, as seen in the
+@racket[add/opt] example.
+
+@subsection{Handling Imprecision}
+
+@EXAMPLE{sec54.rkt}
+
+Section 5.4 shows an example where the programmer may need to add
+annotations to help the type checker accept valid programs.
+
+The first example shows an instance where evaluating an expression @racket[(if
+b 2 2)] results in a concrete value, but the type system computes a symbolic
+type. In this case, a programmer can use @racket[term?] (equivalent to
+@tt{conc?} on page 11 of the paper) and occurrence typing to refine the type.
+
+The second example shows an instance where the type system computes a union
+type, but the runtime value is more precise (due to Rosette's path pruning). In
+this case, a programmer can use @racket[assert-type], which is behaves somewhat
+like casts in some OO languages in that it refines the type but "preserves"
+soundness by inserting runtime checks. In Rosette, it results in an extra
+constraint for the solver. In this example, the @racket[assert-type] generates
+the constraint that the symbolic boolean @racket[b] must be @racket[true].
+
+
+@section{Evaluation}
+
+@subsection{Synthesizing Loop-Free Bitvector Programs}
+
+@EXAMPLE{bv.rkt}
+
+This tiny example shows usage of a bitvector constructor @racket[bv] with both
+concrete and a symbolic integer values. Since @racket[bv] requires a concrete
+argument, the former evaluates properly while the latter results in a type error.
+
+The paper also describes a @tt{mk-trailing-0s} example. The same example in our
+test suite may be viewed
+@hyperlink["https://github.com/stchang/typed-rosette/blob/master/test/bv-ref-tests.rkt#L305-L308"]{here}.
+
+This test file may be run by navigating to the containing directory and running the command:
+
+@tt{racket bv-ref-tests.rkt}
+
+NOTE: Running the Typed Rosette test suite, as described in the
+@secref{typed-rosette} section above actually runs test suite for this
+bitvector example as well.
+
+@subsection{A Library for Relational Logic Specifications}
+
+@EXAMPLE{cats-untyped.rkt}
+
+@subsection{Synthesizing Incremental Algorithms}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

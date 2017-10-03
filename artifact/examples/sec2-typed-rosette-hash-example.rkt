@@ -4,6 +4,8 @@
 (define (sorted-hash? [h : (CHashTable CInt Int)]) -> Bool
   (let-symbolic [i j integer?]
     (let ([max (sub1 (hash-count h))]) ; largest index
+      ;; hash h is "sorted" if, for each pair of (valid) keys i j,
+      ;; i < j implies h[i] <= h[j]
       (implies (and (<= 0 i max) (<= 0 j max) ; assume valid indices
                     (< i j))
                ;; hash-ref does not recognize symbolic values

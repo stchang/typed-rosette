@@ -11,4 +11,4 @@ x ; concrete
     (set! x 10)
     (set! x 11))
 
-x ; symbolic
+x ; symbolic, will cause error if it flows to unlifted position
