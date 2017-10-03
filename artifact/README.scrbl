@@ -521,181 +521,56 @@ NOTE: Running the Typed Rosette test suite, as described in the
 @secref{typed-rosette} section above actually runs test suite for this
 bitvector example as well.
 
-@subsection{A Library for Relational Logic Specifications}
 
-@EXAMPLE{cats-untyped.rkt}
+
+@subsection{A Library for Relational Logic Specifications}
+@subsubsection{Untyped}
+untyped example (see note below): @file-url[POPL-EXAMPLES]{cats-untyped.rkt}
+
+NOTE: This untyped file cannot be run by default in this VM due to package name
+conflicts. Specifically, the VM has the typed Ocelot package installed while
+the above file uses the untyped package. It's not too important, but to run the
+above untyped file (from the @tt{popl2018-artifact} directory:
+
+@itemlist[
+@item{remove typed package: @tt{raco pkg remove ocelot}}
+@item{install untyped package: @tt{raco pkg install -n ocelot untyped-ocelot/}}
+@item{run the untyped example above: @tt{racket typed-rosette/artifact/examples/cats-untyped.rkt}}
+@item{uninstall untyped package: @tt{raco pkg remove ocelot}}
+@item{re-install typed pacakge: @tt{raco pkg install ocelot/}}]
+
+The untyped file again demonstrates that if a programmer accidentally gives an
+unlifted function a symbolic value, the program silently fails by returing the
+wrong answer.
+
+In fact, the
+@hyperlink["https://github.com/stchang/ocelot/blob/master/engine/interpretation.rkt#L45"]{problem
+spot} is very similar to the example from page 1 of the paper. Specifically,
+the program branches (the @racket[#:when x] from the link) on a value that is
+assumed to be concrete, but supplying a symbolic value causes a different
+branch to execute. In this case, the list comprehension does not filter out the
+undesired cases.
+
+@subsubsection{Typed}
+@EXAMPLE{cats-typed.rkt}
+
+The typed version raises a type error when the unlifted function is given a symbolic argument.
+
+To further explore the typed version of the ocelot library, one can start from
+the test suite. To run the typed ocelot test suite (assuming the package is
+installed):
+
+@tt{raco test -p ocelot}
 
 @subsection{Synthesizing Incremental Algorithms}
 
+@EXAMPLE{incremental.rkt}
 
+The paper describes two examples. The first requires a symbolic type annotation
+in order to successfully mutate a vector in a symbolic path. The second uses
+occurrence typing to eliminate a "Maybe"-type-like union.
 
+To further explore the typed incremental language, one can start from the test
+suite. Enter the following command to run the test suite:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@section{}
-@subsection{Other files}
-@file-url[POPL-EXAMPLES]
-@itemlist[@item{@file-url[POPL-EXAMPLES]{abbrv.rkt}: defines abbreviations from
-                the paper, like @tt{define-m}.}
-          @item{@file-url[POPL-EXAMPLES]{run-all-examples.rkt}: runs all the
-                @tt{-prog.rkt} example programs.}]
-
-@; -----------------------------------------------------------------------------
-@section{Paper Section 6: MLish}
-The paper presents simplistic snippets of the MLish language implementation,
-optimized for readability. The actual implementation can be found in the files
-listed below.
-
-@file-url[TURNSTILE-EXAMPLES]
-@itemlist[@item{@file-url[TURNSTILE-EXAMPLES]{mlish.rkt}: MLish language
-                (no type classes).}
-          @item{@file-url[TURNSTILE-EXAMPLES]{mlish+adhoc.rkt}: MLish language
-                (with type classes); @tt{define-tc} in the paper is
-                @tt{define-typeclass}.}]
-
-These implementations fill in the gaps from the paper. The actual
-implementations may additionally differ from the paper in other ways, for
-example with improved error message reporting and a more efficient type
-inference algorithm.
-
-Feel free to experiment with creating your own MLish program. Look at examples
-in the @file-url[TURNSTILE-EXAMPLES]{tests/mlish} directory to help get started.
-
-For example, @file-url[MLISH-TEST]{trees.mlish} and
-@file-url[MLISH-TEST]{trees-tests.mlish} contain the trees example from the
-paper.
-
-@; -----------------------------------------------------------------------------
-@section[#:tag "tables"]{Tables From the Paper}
-
-To evaluate Turnstile, we implemented two versions of several example languages:
-@itemlist[#:style 'ordered
-          @item{a version using Racket, as described in Section 3 of the paper.
-                These implementations can be found at:
-
-                @file-url[RACKET-EXAMPLES]}
-          @item{a version using Turnstile, as described in Sections 4-6 of the
-                paper. These implementations can be found at:
-
-                @file-url[TURNSTILE-EXAMPLES]}]
-
-The languages in each directory extend and reuse components from each other when
-possible.
-
-@subsection{Table 1: Summary of reuse (visual)}
-
-Table 1 was compiled using the
-@hyperlink[@file://[RACKET-EXAMPLES]]{Racket implementations} (#1 above).
-Table 1 remains roughly accurate for the
-@hyperlink[@file://[TURNSTILE-EXAMPLES]]{Turnstile versions} (#2), except that
-Turnstile defines more things, e.g., @tt{τ=}, automatically.
-
-The (Excel) source for Table 1 is at @file-url[REPO]{extension-table.xlsm}. The
-VM does not have a local viewer for the file but the file is viewable with
-Google Sheets. It is also publicly downloadable from our repository.
-
-@subsection{Table 2: Summary of reuse (line counts)}
-
-@itemlist[@item{Column 1: reports the exact line numbers of the
-@hyperlink[@file://[TURNSTILE-EXAMPLES]]{Turnstile implementations} (#2 above).}
-
-@item{Column 2: estimates the number of lines required to implement
-each language without reusing any other languages by adding up the lines for
-the relevant languages from column 1. Column 2 is an approximation because it
-only counts lines from files that were @emph{entirely} needed to implement the
-language in question, and excludes files from which only a few lines are reused.}
-
-@item{Column 3: estimates all the lines of code required by the 
-@hyperlink[RACKET-EXAMPLES]{non-Turnstile implementations} (#1 above). Since we
-did not explicitly implement every permutation of every language, and instead
-followed standard software development practices such as moving common
-operations to libraries, column 3 was difficult to compute accurately. To get a
-rough idea, we simply added all the lines of code in the language implementations and common library
-files together.}]
-
-All line counts include comments and whitespace and all approximate numbers are
-rounded to two significant figures. Despite the approximations, this table
-remains useful for understanding the degree of reuse achieved by using
-Turnstile.
-
-The numbers in Table 2 may be recomputed by running @file-url[REPO]{compute-table2.rkt}.
-
-@subsection{Table 3: Tests (line counts)}
-
-@itemlist[@item{Column 1: number of lines of tests for the core languages, available at:
-
- @file-url[TURNSTILE-TEST]
-
-Run all (non-MLish) tests by running @file-url[TURNSTILE-TEST]{run-all-tests.rkt}.}
-
-@item{Column 2: number of lines of tests for MLish, available at:
-
- @file-url[MLISH-TEST]
-
-Run all the MLish tests by running @file-url[TURNSTILE-TEST]{run-all-mlish-tests.rkt}.}]
-
-All line counts include comments and whitespace.
-
-@margin-note{To completely re-compile and re-run all tests (may take ~30-60min):
- @itemlist[@item{@tt{raco setup -c turnstile macrotypes}}
-           @item{@tt{raco setup turnstile macrotypes}}
-           @item{@tt{raco test turnstile macrotypes}}]}
-
-Particular files of interest for MLish tests:
-@itemize[@item{@file-url[MLISH-TEST]{generic.mlish}: example typeclass operations
-         }
-         @item{@file-url[MLISH-TEST]{term.mlish}: some tests from
-          @hyperlink["https://realworldocaml.org/"]{@emph{Real-World OCaml}}
-         }
-         @item{@file-url[MLISH-TEST]{nbody.mlish},
-               @file-url[MLISH-TEST]{fasta.mlish},
-               @file-url[MLISH-TEST]{chameneos.mlish}:
-          some tests from
-          @hyperlink["http://benchmarksgame.alioth.debian.org/"]{The Computer Language Benchmarks Game}
-         }
-         @item{@file-url[MLISH-TEST]{listpats.mlish},
-               @file-url[MLISH-TEST]{match2.mlish}:
-          pattern matching tests for lists, tuples, and user-defined datatypes
-         }
-         @item{@file-url[(build-path MLISH-TEST "bg")]{okasaki.mlish}:
-           tests from @emph{Purely Functional Data Structures}
-         }
-         @item{@file-url[MLISH-TEST]{polyrecur.mlish}: polymorphic, recursive
-           type definitions
-         }
-         @item{@file-url[MLISH-TEST]{queens.mlish},
-               @file-url[(build-path MLISH-TEST "bg")]{huffman.mlish}:
-          a few other common example programs
-         }
-]
-
-The numbers in Table 3 may be recomputed by running @file-url[REPO]{compute-table3.rkt}.
-
-@; -----------------------------------------------------------------------------
-@section[#:tag "new"]{Building New Typed Languages}
-
-To learn more about @racketmodname[turnstile], view the official 
-@racketmodname[turnstile] documentation.
-
-@secref["The_Turnstile_Guide"
-         #:doc '(lib "turnstile/scribblings/turnstile.scrbl")]
-describes how to build and re-use a new typed language.
-
-@secref["The_Turnstile_Reference"
-         #:doc '(lib "turnstile/scribblings/turnstile.scrbl")]
-describes all the forms provided
-by Turnstile.
-
+@tt{raco test -p incremental}

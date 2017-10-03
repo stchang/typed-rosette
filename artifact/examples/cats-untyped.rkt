@@ -1,21 +1,20 @@
-#lang typed/rosette
-(require ocelot typed/lib/roseunit)
+#lang rosette
+(require ocelot)
 
-(define Un (universe '(a b c d))) ; declare universe of atoms
-(define cats (declare-relation 1 "cats")) ; declare a ”cats” relation
-(define iCats (instantiate-bounds ; create an interpretation for ”cats”
-               (bounds Un (list (make-upper-bound cats '((a) (b) (c) (d)))))))
-(define F (some cats) )
-(- univ cats)
-;; (if (some cats)
-;;               (some (- cats cats))
-;;               #f)) ; find an interesting model for ”cats”
-(define resultCats (solve (assert (interpret* (unsafe-cast-nonfalse F) iCats))))
+(define U (universe '(a b c d)))
 
-;(evaluate iCats resultCats)
-; Lift the model back to atoms in Un
-;(interpretation->relations (evaluate iCats resultCats)) ; => cats: b
+; Declare a cats relation and create an interpretation for it
+(define cats (declare-relation 1 "cats"))
+(define bCats (make-upper-bound cats '((a) (b) (c) (d))))
+(define allCatBounds (bounds U (list bCats)))
+(define iCats (instantiate-bounds allCatBounds))
 
-;; accidentally forget to call evaluate, passing in symbolic vals
-;; - should be type err
+; Find an interesting model for the cats relation
+(define F (and (some cats) (some (- univ cats))))
+
+(define resultCats (solve (assert (interpret* F iCats))))
+
+(evaluate iCats resultCats)
+iCats
+(interpretation->relations (evaluate iCats resultCats)) ; => cats: b
 (interpretation->relations iCats) ; => cats: a,b,c,d (WRONG)
