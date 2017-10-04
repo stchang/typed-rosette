@@ -23,4 +23,4 @@
 
 ;; erroneously produces "counterexample" that is actually sorted
 (verify #:assume (assert (and (< x y) (< y z)))
-        #:guarantee (assert (sorted-hash? h))) ; => ✗: x=-1, y=0, z=1, i=0, j=1
+        #:guarantee (assert (sorted-hash? h))) ; => cex?: x=-1, y=0, z=1, i=0, j=1

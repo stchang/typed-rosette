@@ -41,3 +41,4 @@
 ;; assert-type refines the type as directed but inserts dynamic checks
 ;; to preserve safety
 (+ 1 (assert-type (if b 2 "bad") : Int)) ; => 3
+

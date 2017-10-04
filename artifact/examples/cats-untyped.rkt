@@ -14,5 +14,9 @@
 
 (define resultCats (solve (assert (interpret* F iCats))))
 
+(display "with conrete input (correct result):")
 (interpretation->relations (evaluate iCats resultCats)) ; => cats: b
+(displayln)
+(display "with symbolic input (incorrect result):")
 (interpretation->relations iCats) ; => cats: a,b,c,d (WRONG)
+(displayln)
