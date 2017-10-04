@@ -580,16 +580,40 @@ version of the package is installed), execute the command:
 
 @EXAMPLE{incremental.rkt}
 
-The paper describes two examples that show the kind of techniques required to
-port the Incremental language to Typed Rosette. The first requires a symbolic
-type annotation in order to successfully mutate a vector in a symbolic
-path. The second uses occurrence typing to eliminate a "Maybe"-type-like union.
+The paper (and the @tt{incremental.rkt} file above) describes two
+representative examples that illustrate kind of techniques required to port the
+Incremental language to Typed Rosette.
 
-To further explore the typed incremental language, one can start by looking at the test suite in these directories:
+This section will describe the techniques, and then point out an example in the
+real implementation where the technique is used. We will use this file from the
+implementation for all examples:
+@file-url[REPO]{../incremental/typed/src/rosette/enum-set.rkt}
+
+The first example requires a symbolic type annotation in order to successfully
+mutate a vector in a symbolic path. Such annotations are used in the
+@racket[enum-make-set] function in the implementation file.
+
+The second example uses occurrence typing to eliminate a "Maybe"-type-like
+union with false. Such annotations may be seen in the @racket[enum-make-symbolic-set] function in the implementation file.
+
+Finally, the paper reports that we were able to remove roughly 100 lines of
+dynamic checks by porting the library to Typed Rosette. In the
+@tt{enum-set.rkt} implementation file, we left in these checks as comments in
+many places. For example, the @emph{untyped} version of @racket[enum-make-set]
+used a @racket[(when (term? ...) (error ...))] check to prevent symbolic values
+from being passed to the function. Such checks are incomplete, however, because
+the @racket[term?] predicate does not recognize symbolic union values. With
+Typed Rosette, we do not need any checks and instead we can prevent @emph{all}
+symbolic values from being passed to the function by specifying types.
+
+To further explore the typed incremental language, one can start by looking at
+the test suite in these directories:
+
 @itemlist[
 @item{@file-url[REPO]{../incremental/example/typed/}}
 @item{@file-url[REPO]{../incremental/typed/src/test/}}]
 
- To run the Incremental language test suite, execute the command:
+To run the Incremental language test suite, execute the command (may require
+20-30 minutes to complete):
 
 @tt{raco test -p incremental}
