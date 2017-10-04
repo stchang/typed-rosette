@@ -16,7 +16,7 @@
 
 (display "with conrete input (correct result):")
 (interpretation->relations (evaluate iCats resultCats)) ; => cats: b
-(displayln)
+(displayln "")
 (display "with symbolic input (incorrect result):")
 (interpretation->relations iCats) ; => cats: a,b,c,d (WRONG)
-(displayln)
+(displayln "")

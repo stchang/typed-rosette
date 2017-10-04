@@ -138,7 +138,13 @@ The following files may also be accessed via the VM Desktop:
   
  Alternatively, run files from the command line with @tt{racket} (may be faster):
 
-  @tt{racket <Racket filename>}}
+  @tt{racket <Racket filename>}
+
+  A terminal window may be opened from the launcher bar at the bottom of the
+virtual desktop (second icon from the left).
+
+  Most of the examples described in this artifact can be found at @file-url[POPL-EXAMPLES]{}
+  }
  ]
 
 
@@ -148,8 +154,8 @@ The following files may also be accessed via the VM Desktop:
 This artifact is set up to allow exploration of both Typed Rosette's
 implementation and usage.
 
-Some examples of Typed Rosette programs can be found in the test suite,
-@file-url[REPO]{viewable here}.
+Some examples of Typed Rosette programs can be found in the test suite, viewable here:
+@file-url[REPO]{test}.
 
 To run the test suite, open a terminal and execute the following command (may
 take 30min to complete):
@@ -171,19 +177,19 @@ includes and describes full runnable versions of all the paper's examples.
 Some clarifications when reading the code:
 @itemlist[
   @item{Symbolic types in the @emph{paper} are decorated with a Latex @tt{\widehat}
-        while concrete types are undecorated. Somewhat confusingly @emph{Typed Rosette code}
+        while concrete types are undecorated. Somewhat confusingly, @emph{Typed Rosette code}
         uses these same undecorated type names to represent symbolic values, while
         concrete types have a @tt{C} prefix.
  
         For example:
         @tabular[#:style 'boxed
-                 (list (list @bold{Description} @bold{Paper} @bold{Typed Rosette Code})
+                 (list (list @bold{Description} @bold{Paper} @bold{Typed Rosette Program})
                        (list "type for (possibly) symbolic integers" @tt{\widehat{Int}} @tt{Int})
                        (list "type for concrete integers" @tt{Int} @tt{CInt}))]}
-       ]
 
-The @tt{C} prefix convention is used for both concrete base types as well as
-concrete type constructors.
+@item{The @tt{C} prefix convention is used for both concrete base types as well as
+concrete type constructors in Typed Rosette.}
+]
 
 NOTE: The file links in the following subsections open in the browser by default. (If
 not viewing in the VM, you may need to adjust your browser's "Text Encoding" to
@@ -195,10 +201,11 @@ or open with DrRacket.
 @; paper section 1
 @subsection{Paper section 1}
 
-The first section of the paper uses one small example to illustrate the main
-difficulty with lenient symbolic execution that we tackle in the paper, where
-symbolic values mix with code that may not recognize them. Specifically, here
-is the example in (untyped) Rosette:
+The first section of the paper uses a one-line example to illustrate the main
+difficulty with lenient symbolic execution that we tackle in the
+paper. Specifically, when symbolic values mix with code that may not recognize
+them, unexpected results (that are difficult to debug) may occur. Here is the
+same example, with more comments, in (untyped) Rosette:
 
 @codeblock{
 #lang rosette
@@ -220,24 +227,25 @@ is the example in (untyped) Rosette:
     (error "can't add non-int"))
 }
 
-The full runnable program may also be viewed here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
+This full runnable program may also be viewed here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
 
-The programmer expects the program to reach the "then" branch and this is the
+The programmer expects this program to reach the "then" branch, and this is the
 case in the first @racket[if] expression because Rosette's @racket[integer?]
 function recognizes symbolic values.
 
 The second @racket[if] expression is identical to the first except it uses a
-different predicate @racket[unlifted-int?]. Lenient symbolic increases
-expressiveness by allowing mixing of lifted and unlifted code, but if a
-programmer mistakenly uses such an unlifted predicate (which won't always
-have a convenient name like @racket[unlifted-int?]) that does no recognize symbolic
-value, evaluation reaches the error branch.
+different predicate @racket[unlifted-int?]. Lenient symbolic execution
+increases expressiveness because it allows mixing of lifted and unlifted code, but if
+a programmer mistakenly uses such an unlifted predicate (which won't always
+have a convenient name like @racket[unlifted-int?]) that does not recognize
+symbolic values, evaluation reaches the error branch.
 
 This kind of error is common in a language that supports lenient symbolic
 evaluation like Rosette. Worse, this kind of error is particuarly difficult to
-debug because the program often fails silently by just returning the wrong
+debug because the program often fails silently by simply returning the wrong
 answer. For example if the "else" branch above returned a result instead of
-throwing an error, then a programmer may not even be aware of a problem.
+throwing an error, then a programmer may not even be aware of a problem unless
+they inspect the output.
 
 Typed Rosette helps lenient symbolic execution by reporting these problems---
 when symbolic values flow to positions that do not recognize them---as type
@@ -266,7 +274,7 @@ errors:
 This typed program is viewable here: @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
 
 In this program, the raw Racket @racket[unlifted-int?] is imported with a
-@racket[CAny] type, indicating that its input must be a @emph{concrete}
+@racket[CAny] input type, indicating that its input must be a @emph{concrete}
 value. Since @racket[x] is a symbolic value, the type checker raises a type error:
 
 @codeblock{
@@ -282,7 +290,7 @@ information by revealing a few internal details of Typed Rosette, namely that
 Typed Rosette actually recognizes multiple variants of each symbolic type from
 paper. Specifically, a symbolic @tt{Int} type is represented internally as the
 @tt{(Term CInt)} seen in the error message, where a @tt{Term} constructor wraps
-a concrete @tt{CInt} type to convert it into a possibly symbolic one. In
+a concrete @tt{CInt} type to convert it into a symbolic type. In
 addition, a @tt{Constant} type constructor represents symbolic constant
 values (which are produced with @racket[define-symbolic]), e.g., in the above
 program, @racket[x] is a symbolic constant but the symbolic value @racket[(+ x
@@ -433,7 +441,7 @@ three kinds of tests:
 
 @itemlist[
 @item{A @racket[(check-type e : τ)] test passes if @racket[e]'s type typechecks with type @racket[τ].}
-@item{A @racket[(check-not-type e : τ)] test passes if @racket[e]'s type does not typecheck with @racket[τ]. This test is useful in languages with subtyping.}
+@item{A @racket[(check-not-type e : τ)] test passes if @racket[e]'s type does not typecheck with @racket[τ]. This kind of test is particularly useful in languages with subtyping.}
 @item{A @racket[(typecheck-fail e)] test passes if @racket[e] fails to type
 check. This form may additionally specify a regexp that the produced error message must satisfy.}]
 
@@ -446,14 +454,15 @@ We created Rosette using Turnstile, a Racket-based meta-DSL for creating typed
 languages. Turnstile allows implementing type rules with a declarative syntax
 that resembles mathematical type rule specifications.
 
-@margin-note{NOTE: The details of the Turnstile language are not the focal point of this
-paper but, briefly, programmers write interleaved rewrite-and-typecheck
-judgements of the form @tt{Γ ⊢ e ≫ e+ (⇒ key val) ...} or @tt{Γ ⊢ e ≫ e+ (⇐ key
-val) ...}, where @tt{⇒} and @tt{⇐} are the standard "synth" and "check"
-bidirectional arrows, respectively. A rule may specify more than one key-value
-pair and in the example rules, we utilize this to simultaneously check types
-and propositions, as specified in section 3 of the paper. In addition, the @tt{e ≫
-e+} part of the relation specifies that @tt{e} rewrites to @tt{e+}.}
+@margin-note{NOTE: The details of the Turnstile language are not the focus of
+this paper but, briefly, Turnstile programmers implement typed languages by
+writing interleaved rewrite-and-typecheck judgements of the form @tt{Γ ⊢ e ≫
+e+ (⇒ key val) ...} or @tt{Γ ⊢ e ≫ e+ (⇐ key val) ...}, where @tt{⇒} and @tt{⇐}
+are the standard "synth" and "check" bidirectional arrows, respectively. A rule
+may specify more than one key-value pair and in the example rules, we utilize
+this to simultaneously check types and propositions, as specified in section 3
+of the paper. In addition, the @tt{e ≫ e+} part of the relation specifies that
+@tt{e} rewrites to @tt{e+}.}
 
 Figure 25 of the paper shows a few example type rules. These same rule
 implementations may be viewed in the Typed Rosette repo here (the syntax has
@@ -467,10 +476,10 @@ evolved slightly but the essence remains the same):
 
 @item{@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/base-forms.rkt#L901-L908"]{@tt{set!} rule}
 
-The implementation of the @racket[set!] mutation rule differs slightly because
-the two separate cases shown in the paper are combined into one in the
-implementation. Instead, the @racket[no-mutate?] function (whose implementation
-can be seen
+The implementation of the @racket[set!] mutation rule differs slightly from the
+paper because the two separate cases shown in the paper are combined into one
+in the implementation. In place of a separate clause, the @racket[no-mutate?]
+function (whose implementation can be seen
 @hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/types.rkt#L176-L177"]{here}),
 determines when mutation of the @racket[x] variable is not allowed (when
 @racket[x] has a concrete type and the path is symbolic), and raises a type
@@ -485,8 +494,8 @@ precision of the type checker. Specifically, the @racket[Ccase->] type is the
 implementation of the intersection type specified in section 3.3 of the
 paper. When applying a function with a @racket[Ccase->] type, the type checker
 checks each consituent function type, in listed order, and either uses the
-first one that type checks or raises a type error if it exhausts all the
-options.
+first one that type checks, or raises a type error if all the
+options are exhausted.
 
 Function types also support specifying optional arguments, as seen in the
 @racket[add/opt] example.
@@ -504,12 +513,13 @@ type. In this case, a programmer can use @racket[term?] (equivalent to
 @tt{conc?} on page 11 of the paper) and occurrence typing to refine the type.
 
 The second example shows an instance where the type system computes a union
-type, but the runtime value is more precise (due to Rosette's path pruning). In
-this case, a programmer can use @racket[assert-type], which behaves somewhat
-like casts in some OO languages in that it refines the type but preserves
-safety by inserting runtime checks. In Rosette, it results in an extra
-constraint for the solver. In this example, the @racket[assert-type] generates
-the constraint that the symbolic boolean @racket[b] must be @racket[true].
+type, but the runtime value is more precise (due to Rosette's infeasible path
+pruning). In this case, a programmer can use @racket[assert-type], which
+behaves somewhat like casts in some OO languages in that it refines the type
+but preserves safety by inserting runtime checks. In Rosette, it results in an
+extra constraint for the solver. In this example, the @racket[assert-type]
+generates the constraint that the symbolic boolean @racket[b] must be
+@racket[true].
 
 
 @section{Evaluation}
@@ -532,7 +542,7 @@ the command (may take 5 minutes to complete):
 @tt{racket bv-ref-tests.rkt}
 
 NOTE: Running the Typed Rosette test suite, as described in the
-@secref{typed-rosette} section above, runs the bitvector test suite as well.
+@secref{typed-rosette} section above, runs this bitvector test suite as well.
 
 
 
@@ -553,14 +563,16 @@ commands from the @tt{popl2018-artifact} directory:
 @item{uninstall untyped package: @tt{raco pkg remove ocelot}}
 @item{re-install typed pacakge: @tt{raco pkg install ocelot/}}]}
 
-The untyped file demonstrates (again) what happens if a programmer accidentally
-gives an unlifted function a symbolic value: the program silently fails by
-returing the wrong answer.
+The details of this particular example (taken from the documentation) is not
+too important. The main takeaway is that the untyped file demonstrates (again) what
+happens if a programmer accidentally gives an unlifted function a symbolic
+value: the program silently fails by returing the wrong answer.
 
-In fact the problem, 
-@hyperlink["https://github.com/stchang/ocelot/blob/master/engine/interpretation.rkt#L45"]{which can be seen in the source here}, is very similar to the example from page 1 of the
-paper. Specifically, the program branches (the @racket[#:when x] from the link)
-on a value that is assumed to be concrete, but supplying a symbolic value
+Further, the source of the problem,
+@hyperlink["https://github.com/stchang/ocelot/blob/master/engine/interpretation.rkt#L45"]{which
+can be seen here}, is very similar to the example from page 1 of
+the paper. Specifically, the program branches (the @racket[#:when x] from the
+link) on a value that is assumed to be concrete, but supplying a symbolic value
 causes a different branch to execute. In this case, the list comprehension does
 not properly filter out the undesired cases.
 
@@ -581,12 +593,12 @@ version of the package is installed), execute the command:
 @EXAMPLE{incremental.rkt}
 
 The paper (and the @tt{incremental.rkt} file above) describes two
-representative examples that illustrate kind of techniques required to port the
-Incremental language to Typed Rosette.
+representative examples that illustrate the kind of techniques required to port
+the Incremental language to Typed Rosette.
 
-This section will describe the techniques, and then point out an example in the
-real implementation where the technique is used. We will use this file from the
-implementation for all examples:
+This section will describe the techniques, and then point out an instance in
+the real implementation code where the technique is used. The instances we
+point out will be from this implementation file:
 @file-url[REPO]{../incremental/typed/src/rosette/enum-set.rkt}
 
 The first example requires a symbolic type annotation in order to successfully
@@ -601,13 +613,13 @@ dynamic checks by porting the library to Typed Rosette. In the
 @tt{enum-set.rkt} implementation file, we left in these checks as comments in
 many places. For example, the @emph{untyped} version of @racket[enum-make-set]
 used a @racket[(when (term? ...) (error ...))] check to prevent symbolic values
-from being passed to the function. Such checks are incomplete, however, because
-the @racket[term?] predicate does not recognize symbolic union values. With
-Typed Rosette, we do not need any checks and instead we can prevent @emph{all}
-symbolic values from being passed to the function by specifying types.
+from being passed to the function. Such checks are both incomplete, because the
+@racket[term?] predicate does not recognize symbolic union values, and
+unnecessary in Typed Rosette, where instead we prevent @emph{all} symbolic
+values from being passed to the function by specifying types.
 
 To further explore the typed incremental language, one can start by looking at
-the test suite in these directories:
+the test suite files in these directories:
 
 @itemlist[
 @item{@file-url[REPO]{../incremental/example/typed/}}

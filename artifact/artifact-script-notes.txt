@@ -8,6 +8,7 @@
     - Other option is "One empty panel"
 
 - to create .ova file, choose "export appliance" in virtualbox
+  - used default args (eg, ovf 1.0)
 
 
 
