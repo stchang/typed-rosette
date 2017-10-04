@@ -14,7 +14,5 @@
 
 (define resultCats (solve (assert (interpret* F iCats))))
 
-(evaluate iCats resultCats)
-iCats
 (interpretation->relations (evaluate iCats resultCats)) ; => cats: b
 (interpretation->relations iCats) ; => cats: a,b,c,d (WRONG)

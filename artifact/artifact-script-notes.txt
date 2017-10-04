@@ -7,6 +7,10 @@
     - "Use default config"
     - Other option is "One empty panel"
 
+- to create .ova file, choose "export appliance" in virtualbox
+
+
+
 # old notes
 steps not included in script that builds artifact VM:
 1) does not set Racket prefs

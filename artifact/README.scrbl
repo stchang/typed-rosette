@@ -24,7 +24,7 @@
 @(define PAPER-PDF  "paper.pdf")
 @(define PAPER (build-path ARTIFACT PAPER-PDF))
 
-@(define REPO-URL "https://github.com/stchang/typed-rosette")
+@(define REPO-URL "https://github.com/stchang/typed-rosette/tree/master/typed/rosette")
 @(define POPL-URL "http://www.ccs.neu.edu/home/stchang/popl2018")
 @(define VM-URL (string-append POPL-URL "/" "typed-rosette.ova"))
 
@@ -44,8 +44,7 @@
          (author+email "Emina Torlak" "emina@cs.washington.edu"))
 
 This is a README file for the artifact that accompanies "@|PAPER-TITLE|" in
-POPL 2018.  If you have any questions, please email any (or all) of the
-authors.
+POPL 2018. If you have any questions, please email the first two authors.
 
 Our artifact is a VM image that contains:
 @itemlist[
@@ -149,14 +148,15 @@ The following files may also be accessed via the VM Desktop:
 This artifact is set up to allow exploration of both Typed Rosette's
 implementation and usage.
 
-One source of examples is the Typed Rosette test suite, viewable here: @file-url[REPO]{test}
+Some examples of Typed Rosette programs can be found in the test suite,
+@file-url[REPO]{viewable here}.
 
 To run the test suite, open a terminal and execute the following command (may
 take 30-60min to complete):
 
 @tt{raco test -p typed-rosette}
 
-The complete source for the implementation is viewable at:
+The complete source for Typed Rosette's implementation is viewable at:
 @itemlist[
 @item{local: @file-url[REPO]{typed/rosette}}
 @item{@hyperlink[REPO-URL]{web link}}]
@@ -168,7 +168,7 @@ For readability and conciseness, the paper occasionally stylizes or elides code
 and thus some examples may not run exactly as presented. This artifact, however,
 includes and describes full runnable versions of all the paper's examples.
 
-Some code clarifications:
+Some clarifications when reading the code:
 @itemlist[
   @item{Symbolic types in the @emph{paper} are decorated with a Latex @tt{\widehat}
         while concrete types are undecorated. Somewhat confusingly @emph{Typed Rosette code}
@@ -193,7 +193,7 @@ or open with DrRacket.
 @subsection{Paper section 1}
 
 The first section of the paper uses one small example to illustrate the main
-problem with lenient symbolic execution that we tackle in the paper, where
+difficulty with lenient symbolic execution that we tackle in the paper, where
 symbolic values mix with code that may not recognize them. Specifically, here
 is the example in (untyped) Rosette:
 
@@ -219,22 +219,22 @@ is the example in (untyped) Rosette:
 
 The full runnable program may also be viewed here: @file-url[POPL-EXAMPLES]{intro-example-untyped-rosette.rkt}
 
-The programmer expects the program to reach the "then" branch and this is true
-in the first @racket[if] expression because Rosette's @racket[integer?]
+The programmer expects the program to reach the "then" branch and this is the
+case in the first @racket[if] expression because Rosette's @racket[integer?]
 function recognizes symbolic values.
 
 The second @racket[if] expression is identical to the first except it uses a
-different conditional predicate. Lenient symbolic increases expressiveness by
-allowing mixing of lifted and unlifted code, however, so if a programmer
-mistakenly uses an @emph{unlifted} predicate (which we've conveniently named
-@racket[unlifted-int?] here) that does no recognize symbolic value, evaluation
-reaches the error branch.
+different predicate @racket[unlifted-int?]. Lenient symbolic increases
+expressiveness by allowing mixing of lifted and unlifted code, but if a
+programmer mistakenly uses such an unlifted predicate (which won't always
+have a convenient name like @racket[unlifted-int?]) that does no recognize symbolic
+value, evaluation reaches the error branch.
 
-This kind of error is common in languages supporting lenient symbolic
-evaluation like Rosette and is particuarly difficult to debug because the
-program often fails silently. For example if the "else" branch above returned a
-result instead of throwing an error, then a programmer may not even be aware of
-a problem.
+This kind of error is common in a language that supports lenient symbolic
+evaluation like Rosette. Worse, this kind of error is particuarly difficult to
+debug because the program often fails silently by just returning the wrong
+answer. For example if the "else" branch above returned a result instead of
+throwing an error, then a programmer may not even be aware of a problem.
 
 Typed Rosette helps lenient symbolic execution by reporting these problems---
 when symbolic values flow to positions that do not recognize them---as type
@@ -260,10 +260,10 @@ errors:
     (error "can't add non-int"))
 }
 
-This program is also available here @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
+This typed program is viewable here: @file-url[POPL-EXAMPLES]{intro-example-typed-rosette.rkt}
 
-In this program, the raw Racket @racket[integer?] is imported with a
-@racket[CAny] type, indicating that its input may be any @emph{concrete}
+In this program, the raw Racket @racket[unlifted-int?] is imported with a
+@racket[CAny] type, indicating that its input must be a @emph{concrete}
 value. Since @racket[x] is a symbolic value, the type checker raises a type error:
 
 @codeblock{
@@ -274,14 +274,15 @@ value. Since @racket[x] is a symbolic value, the type checker raises a type erro
 ;;   at: (#%app unlifted-int? x)
 }
 
-In addition to reporting the error, this message provides extra information by
-a few internal details of Typed Rosette. Specifically, Typed Rosette actually
-tracks multiple variants of each symbolic type from the paper and internally
-uses a @tt{Term} constructor to convert a concrete type into a (possibly)
-symbolic one, and uses a @tt{Constant} constructor to additionally track
-symbolic constant values (which are produced with @racket[define-symbolic]). In
-the above program, @racket[x] is a symbolic constant, but the symbolic value
-@racket[(+ x 1)] result of @racket[(add1 x)] is not.
+In addition to reporting the error location, this message provides extra
+information by revealing a few internal details of Typed Rosette. Specifically,
+Typed Rosette actually tracks multiple variants of each symbolic type from the
+paper and internally uses a @tt{Term} constructor to convert a concrete type
+into a (possibly) symbolic one, and uses a @tt{Constant} constructor to
+additionally track symbolic constant values (which are produced with
+@racket[define-symbolic]). In the above program, @racket[x] is a symbolic
+constant, but the symbolic value @racket[(+ x 1)] result of @racket[(add1 x)]
+is not.
 
 
 @; ----------------------------------------------------------------------------
