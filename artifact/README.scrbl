@@ -55,9 +55,8 @@ Our artifact is a VM image that contains:
         of its libraries.}
   ]
 
-The goal of this artifact is to
-provide a tour of the Typed Rosette language and parts of its
-implementation, primarily by examining runnable versions of the paper's examples.
+The goal of this artifact is to provide a tour of the Typed Rosette language,
+primarily by examining runnable versions of the paper's examples.
 
 
 @; -----------------------------------------------------------------------------
@@ -143,7 +142,7 @@ The following files may also be accessed via the VM Desktop:
   A terminal window may be opened from the launcher bar at the bottom of the
 virtual desktop (second icon from the left).
 
-  Most of the examples described in this artifact can be found at @file-url[POPL-EXAMPLES]{}
+  Most of the example files described in this artifact can be found at @file-url[POPL-EXAMPLES]{}
   }
  ]
 
@@ -154,7 +153,7 @@ virtual desktop (second icon from the left).
 This artifact is set up to allow exploration of both Typed Rosette's
 implementation and usage.
 
-Some examples of Typed Rosette programs can be found in the test suite, viewable here:
+Some examples of Typed Rosette programs can be found in its test suite, viewable here:
 @file-url[REPO]{test}.
 
 To run the test suite, open a terminal and execute the following command (may
@@ -183,9 +182,9 @@ Some clarifications when reading the code:
  
         For example:
         @tabular[#:style 'boxed
-                 (list (list @bold{Description} @bold{Paper} @bold{Typed Rosette Program})
-                       (list "type for (possibly) symbolic integers" @tt{\widehat{Int}} @tt{Int})
-                       (list "type for concrete integers" @tt{Int} @tt{CInt}))]}
+                 (list (list @bold{Description} @bold{Paper} @bold{Typed Rosette})
+                       (list "type that includes symbolic ints" @tt{\widehat{Int}} @tt{Int})
+                       (list "type for concrete ints only" @tt{Int} @tt{CInt}))]}
 
 @item{The @tt{C} prefix convention is used for both concrete base types as well as
 concrete type constructors in Typed Rosette.}
@@ -373,6 +372,9 @@ function, @racket[x], may be either a (concrete) integer or string. The
 @racket[integer?] predicate then refines @racket[x] to an integer and string in
 the "then" and "else" branches, respectively.
 
+The @racket[f2] function shows that occurrence typing may be applied to
+symbolic inputs as well.
+
 The @racket[g] function shows that the predicate's argument may be an arbitrary
 expression and is not restricted to plain variables. Nevertheless, @racket[x]'s
 type is refined in the same way as in @racket[f]. (We use @racket[and] with a
@@ -383,16 +385,17 @@ paper.)
 
 @EXAMPLE{sec34-path-concreteness1-untyped.rkt}
 
-This example motivates the need for path concreteness when mutation is
-involved. Specifically, a concrete value, even if it is only ever assigned
-other concrete values, may change into a symbolic value if the mutation occurs
-under a symbolic path.
+This (untyped Rosette) example motivates the need for path concreteness when
+mutation is involved. Specifically, a concrete value, even if it is only ever
+assigned other concrete values, may change into a symbolic value if the
+mutation occurs under a symbolic path.
 
 @EXAMPLE{sec34-path-concreteness1-typed.rkt}
 
-Our type system rejects mutation of concrete variables in symbolic paths
-because it results in unsoundness. In other words, allowing such mutations
-results in variables with concrete types having symbolic values.
+Our type system must account for this path-sensitive behavior
+thus rejects mutation of concrete variables in symbolic paths because it
+results in unsoundness. In other words, allowing such mutations results in
+variables with concrete types having symbolic values.
 
 A programmer wishing to allow such mutations may annotate the variable with a
 possibly symbolic type, like @racket[y] in the example.
@@ -401,7 +404,7 @@ possibly symbolic type, like @racket[y] in the example.
 
 
 Functions that mutate variables add extra complication since they require the
-type checker to be context sensitive at function call sites. Specifically, the
+type checker to be context-sensitive at function call sites. Specifically, the
 type checker must track whether a function (that mutates variables) is
 @emph{called} in a symbolic path or a concrete path. Typed Rosette addresses
 this in two ways.
@@ -462,17 +465,21 @@ are the standard "synth" and "check" bidirectional arrows, respectively. A rule
 may specify more than one key-value pair and in the example rules, we utilize
 this to simultaneously check types and propositions, as specified in section 3
 of the paper. In addition, the @tt{e ≫ e+} part of the relation specifies that
-@tt{e} rewrites to @tt{e+}.}
+@tt{e} rewrites to @tt{e+} and is useful for specifying type erasure or other
+elaborations commonly performed by type checkers.}
 
 Figure 25 of the paper shows a few example type rules. These same rule
 implementations may be viewed in the Typed Rosette repo here (the syntax has
-evolved slightly but the essence remains the same):
+evolved slightly but the essence has not changed):
 
 @itemlist[
 @item{@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/bool.rkt#L24-L51"]{@tt{if} rule}
 
-@itemlist[@item{In the first, concrete, case, the path concreteness is unchanged and is thus inherited from the context.}
-@item{In the second, symbolic case, the path concreteness is changed to symbolic.}]}
+@itemlist[@item{In the first, concrete, case, the path concreteness is
+unchanged and is thus inherited from the context.}
+
+@item{In the second, symbolic case, the path concreteness is changed to
+symbolic while type checking the conditional branches.}]}
 
 @item{@hyperlink["https://github.com/stchang/typed-rosette/blob/master/typed/rosette/base-forms.rkt#L901-L908"]{@tt{set!} rule}
 
@@ -516,10 +523,10 @@ The second example shows an instance where the type system computes a union
 type, but the runtime value is more precise (due to Rosette's infeasible path
 pruning). In this case, a programmer can use @racket[assert-type], which
 behaves somewhat like casts in some OO languages in that it refines the type
-but preserves safety by inserting runtime checks. In Rosette, it results in an
-extra constraint for the solver. In this example, the @racket[assert-type]
-generates the constraint that the symbolic boolean @racket[b] must be
-@racket[true].
+but preserves safety by inserting runtime checks. In Typed Rosette, it results
+in an extra constraint for the solver. In this example, the
+@racket[assert-type] generates the constraint that the symbolic boolean
+@racket[b] must be @racket[true].
 
 
 @section{Evaluation}
@@ -579,7 +586,8 @@ not properly filter out the undesired cases.
 @subsubsection{Typed}
 @EXAMPLE{cats-typed.rkt}
 
-The typed version raises a type error when the unlifted function is given a symbolic argument.
+The typed version of the "cats" example raises a type error when the unlifted
+function is given a symbolic argument.
 
 To further explore the typed version of the ocelot library, one can start by
 @hyperlink["https://github.com/stchang/ocelot/tree/typed-rosette/test"]{looking
@@ -593,11 +601,11 @@ version of the package is installed), execute the command:
 @EXAMPLE{incremental.rkt}
 
 The paper (and the @tt{incremental.rkt} file above) describes two
-representative examples that illustrate the kind of techniques required to port
-the Incremental language to Typed Rosette.
+representative examples that illustrate some Typed Rosette features we used
+while porting the Incremental language to Typed Rosette.
 
-This section will describe the techniques, and then point out an instance in
-the real implementation code where the technique is used. The instances we
+This section will describe each feature, and then point out an instance in
+the real implementation code where the feature is used. The instances we
 point out will be from this implementation file:
 @file-url[REPO]{../incremental/typed/src/rosette/enum-set.rkt}
 
@@ -606,7 +614,8 @@ mutate a vector in a symbolic path. Such annotations are used in the
 @racket[enum-make-set] function in the implementation file.
 
 The second example uses occurrence typing to eliminate a "Maybe"-type-like
-union with false. Such annotations may be seen in the @racket[enum-make-symbolic-set] function in the implementation file.
+union with false. Such annotations may be seen in the
+@racket[enum-make-symbolic-set] function in the implementation file.
 
 Finally, the paper reports that we were able to remove roughly 100 lines of
 dynamic checks by porting the library to Typed Rosette. In the
