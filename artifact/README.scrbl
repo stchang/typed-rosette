@@ -287,13 +287,14 @@ value. Since @racket[x] is a symbolic value, the type checker raises a type erro
 In addition to reporting the error location, this message provides extra
 information by revealing a few internal details of Typed Rosette, namely that
 Typed Rosette actually recognizes multiple variants of each symbolic type from
-paper. Specifically, a symbolic @tt{Int} type is represented internally as the
-@tt{(Term CInt)} seen in the error message, where a @tt{Term} constructor wraps
-a concrete @tt{CInt} type to convert it into a symbolic type. In
-addition, a @tt{Constant} type constructor represents symbolic constant
-values (which are produced with @racket[define-symbolic]), e.g., in the above
-program, @racket[x] is a symbolic constant but the symbolic value @racket[(+ x
-1)] result of @racket[(add1 x)] is not.
+paper. This extra precision is not too important for this artifact but,
+briefly, a symbolic @tt{Int} type is represented internally as the @tt{(Term
+CInt)} seen in the error message, where a @tt{Term} constructor wraps a
+concrete @tt{CInt} type to convert it into a symbolic type. In addition, a
+@tt{Constant} type constructor represents symbolic constant values (which are
+produced with @racket[define-symbolic]), e.g., in the above program, @racket[x]
+is a symbolic constant but the symbolic value @racket[(+ x 1)] result of
+@racket[(add1 x)] is not.
 
 
 @; ----------------------------------------------------------------------------
@@ -392,7 +393,7 @@ mutation occurs under a symbolic path.
 
 @EXAMPLE{sec34-path-concreteness1-typed.rkt}
 
-Our type system must account for this path-sensitive behavior
+Our type system must account for this path-sensitive behavior and
 thus rejects mutation of concrete variables in symbolic paths because it
 results in unsoundness. In other words, allowing such mutations results in
 variables with concrete types having symbolic values.
@@ -420,7 +421,7 @@ symbolic and thus it is safe to call @racket[f] in either a concrete or
 symbolic path.
 
 In contrast, the @racket[g] function in the example is rejected because
-@racket[x] has a concrete type and thus allowing calls to @racket[g] it in a
+@racket[x] has a concrete type and thus allowing calls to @racket[g] in a
 symbolic path is unsound.}
 
 @item{@file-url[POPL-EXAMPLES]{sec34-path-concreteness3.rkt} Programmers may
