@@ -1,7 +1,7 @@
 #lang turnstile
 
-(provide for/fold for for/list for/and for/or
-         for*/list
+(provide for  for/fold  for/list for/hash for/and for/or
+         for* for*/fold for*/list
          in-list in-naturals in-range in-set in-vector)
 
 (require typed/rosette/types
@@ -70,7 +70,7 @@
 
 ;; ----------------------------------------------------------------------------
 
-;; For Loops
+;; For Loops (not in rosette/safe)
 
 (define-typed-syntax for/fold
   [(_ ([acc:id e_init:expr])
@@ -95,6 +95,29 @@
         (ro:let ([x- clauses.env.x] ...) body-))
       ⇒ τ_acc]])
 
+(define-typed-syntax for*/fold
+  [(_ ([acc:id e_init:expr])
+      (~var clauses (for-clauses #'[]))
+     body:expr ...+) ⇐ τ_acc ≫
+   [⊢ e_init ≫ e_init- ⇐ τ_acc]
+   [[acc ≫ acc- : τ_acc] [clauses.env.x ≫ x- : clauses.env.τ] ...
+    ⊢ (begin body ...) ≫ body- ⇐ τ_acc]
+   --------
+   [⊢ (ro:for*/fold ([acc- e_init-])
+                   (clauses.clause- ...)
+        (ro:let ([x- clauses.env.x] ...) body-))]]
+  [(_ ([acc:id : τ_acc e_init:expr])
+      (~var clauses (for-clauses #'[]))
+     body:expr ...+) ≫
+   [⊢ e_init ≫ e_init- ⇐ τ_acc]
+   [[acc ≫ acc- : τ_acc] [clauses.env.x ≫ x- : clauses.env.τ] ...
+    ⊢ (begin body ...) ≫ body- ⇐ τ_acc]
+   --------
+   [⊢ (ro:for/fold* ([acc- e_init-])
+                   (clauses.clause- ...)
+        (ro:let ([x- clauses.env.x] ...) body-))
+      ⇒ τ_acc]])
+
 (define-typed-syntax for
   [(_ (~var clauses (for-clauses #'[]))
      body:expr ...+) ≫
@@ -104,6 +127,29 @@
    [⊢ (ro:for (clauses.clause- ...)
         (ro:let ([x- clauses.env.x] ...) body- ...))
       ⇒ CVoid]])
+
+(define-typed-syntax for*
+  [(_ (~var clauses (for-clauses #'[]))
+     body:expr ...+) ≫
+   [[clauses.env.x ≫ x- : clauses.env.τ] ...
+    ⊢ [body ≫ body- ⇒ _] ...]
+   --------
+   [⊢ (ro:for* (clauses.clause- ...)
+        (ro:let ([x- clauses.env.x] ...) body- ...))
+      ⇒ CVoid]])
+
+;; TODO: note that the body is not quite the same as Racket,
+;; bc Typed Rosette doesnt support multiple return arguments yet
+(define-typed-syntax for/hash
+  [(_ (~var clauses (for-clauses #'[]))
+     #:key ek:expr #:val ev:expr) ≫
+   [[clauses.env.x ≫ x- : clauses.env.τ] ... ⊢
+                               [ek ≫ ek- ⇒ τ_k]
+                               [ev ≫ ev- ⇒ τ_v]]
+   --------
+   [⊢ (ro:for/hash (clauses.clause- ...)
+        (ro:let ([x- clauses.env.x] ...) (values- ek- ev-)))
+      ⇒ (CHashTable τ_k τ_v)]])
 
 (define-typed-syntax for/list
   [(_ (~var clauses (for-clauses #'[]))

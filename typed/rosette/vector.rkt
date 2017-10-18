@@ -65,10 +65,10 @@
    [⊢ e ≫ e- ⇒ (~or (~CMVectorof _) (~CIVectorof _))]
    --------
    [⊢ (ro:vector-length e-) ⇒ CNat]]
-  [(_ e n) ≫
+  [(_ e) ≫
    [⊢ e ≫ e- ⇒ (~U* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]
    --------
-   [⊢ [_ ≫ (ro:vector-length e-) ⇒ Nat]]])
+   [⊢ (ro:vector-length e-) ⇒ Nat]])
 
 (define-typed-syntax vector-set!
   [(_ v:expr i:expr x:expr) ≫

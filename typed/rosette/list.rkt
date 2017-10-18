@@ -3,9 +3,9 @@
 (provide cons pair car cdr null
          length list-ref first rest second
          map filter foldl for-each member? remove-duplicates
-         cartesian-product* append* sort
+         cartesian-product* append* append sort
          andmap ormap
-         build-list make-list range)
+         build-list make-list range splitf-at)
 
 (require (rename-in typed/rosette/base-forms [#%app tro:#%app])
          typed/rosette/types
@@ -390,6 +390,13 @@
    --------
    [⊢ (ro:apply ro:cartesian-product lst-)]])
 
+(define-typed-syntax append
+  [(_ l0 l:expr ...) ≫
+   [⊢ l0 ≫ l0- ⇒ (~CListof τ)]
+   [⊢ l ≫ l- ⇐ (CListof τ)] ...
+   --------
+   [⊢ (ro:append l0 l- ...) ⇒ (CListof τ)]])
+
 (define-typed-syntax append*
   [(_ lol:expr) ≫
    [⊢ lol ≫ lol- ⇒ (~CListof (~CListof τ))]
@@ -504,4 +511,10 @@
    ------------------
    [⊢ (ro:range n-) ⇒ (CListof CNat)]])
 
-   
+(define-typed-syntax splitf-at
+  [(_ l f) ≫
+   [⊢ l ≫ l- ⇒ (~CListof τ)]
+   [⊢ f ≫ f- ⇐ (C→ τ CAny)]
+   -----------
+   [⊢ (ro:let-values ([(l r) (ro:splitf-at l- f-)]) (ro:list l r))
+      ⇒ (CList (CListof τ) (CListof τ))]])

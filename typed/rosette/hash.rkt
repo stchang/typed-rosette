@@ -53,7 +53,7 @@
   [(_ hsh:expr) ≫
    [⊢ hsh ≫ hsh- ⇒ (~CHashof _ _)]
    --------
-   [⊢ (ro:hash-ref hsh-) ⇒ CPosInt]])
+   [⊢ (ro:hash-count hsh-) ⇒ CPosInt]])
 
 (define-typed-syntax hash-ref
   [(_ hsh:expr key:expr) ≫
