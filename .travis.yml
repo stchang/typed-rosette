@@ -20,6 +20,9 @@ before_install:
   # turnstile (use git head)
   - git clone https://github.com/stchang/macrotypes.git ../macrotypes
   - raco pkg install --auto -n turnstile ../macrotypes
+  # rosette (use stchang)
+  - git clone https://github.com/stchang/rosette.git ../rosette
+  - raco pkg install --auto -n rosette ../rosette
   # xvfb, enables gtk
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
