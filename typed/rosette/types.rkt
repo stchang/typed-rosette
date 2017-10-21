@@ -402,7 +402,7 @@
 
 (define-syntax-parser IdObj
   [(_ x:id) #`(IdObj- (quote-syntax-
-                       #,(attach #'x 'orig-id (syntax-local-introduce #'x))))])
+                       #,(attach #'x 'orig-id #'x)))])
 
 (begin-for-syntax
   (begin-for-syntax
@@ -1040,7 +1040,7 @@
          #:literals [quote-syntax-]
          [(~NoObj) acc]
          [(~IdObj (quote-syntax- x:id))
-          (define x* (syntax-local-introduce (detach #'x 'orig-id)))
+          (define x* (detach #'x 'orig-id))
           (define τ_orig (free-id-table-ref acc x* (λ () (detach #'x 'orig-type))))
           (define τ_new (type-restrict τ_orig #'τ))
           (if (typecheck? τ_new typeCNothing)
@@ -1051,7 +1051,7 @@
          #:literals [quote-syntax-]
          [(~NoObj) acc]
          [(~IdObj (quote-syntax- x:id))
-          (define x* (syntax-local-introduce (detach #'x 'orig-id)))
+          (define x* (detach #'x 'orig-id))
           (define τ_orig (free-id-table-ref acc x* (λ () (detach #'x 'orig-type))))
           (define τ_new (type-remove τ_orig #'τ))
           (if (typecheck? τ_new typeCNothing)

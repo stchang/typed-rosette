@@ -128,9 +128,9 @@
 (begin-for-syntax
   ;; TODO: is there any way to push these into #%tro-var?
   (current-var-assign
-   (lambda (x seps τs)
+   (lambda (x x+ seps τs)
      (attachs
-      ((macro-var-assign #'#%tro-var) x seps τs)
+      ((macro-var-assign #'#%tro-var) x x+ seps τs)
       '(orig-binding sym-scope)
       (list x (current-sym-scope))))))
 
