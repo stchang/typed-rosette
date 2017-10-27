@@ -11,10 +11,10 @@
 ;; returns true if given vector v is sorted (ascending)
 (define (sorted? v)
   (define-symbolic i j integer?)
-  (define max (sub1 (vector-length v))) ; largest index
+  (define max (vector-length v)) ; largest index
   ;; vector v is sorted if, for each pair of (valid) indices i j,
   ;; i < j implies v[i] <= v[j]
-  (implies (and (<= 0 i max) (<= 0 j max) ; assume valid indices
+  (implies (and (< 0 i (vector-length v)) (< 0 j (vector-length v)) ; assume valid indices
                 (< i j))
            (<= (vector-ref v i) ; check if each pair is sorted
                (vector-ref v j))))

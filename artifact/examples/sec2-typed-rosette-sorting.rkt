@@ -80,12 +80,20 @@
     (list (unsafe-cast-concrete (car res))
           (unsafe-cast-concrete (car (cdr res))))))
 
+(require/type
+ racket/list
+ [splitf-at r:splitf-at : (C→ (CListof Int)
+                              (C→ Int CBool)
+                              (CList (CListof Int) (CListof Int)))])
+
 (define (insert [x : Int] [lst : (CListof Int)]) -> (CListof Int)
   ;; good, with manually implemented splitf
   #;(let ([l+r (splitf (list) lst (λ ([y : Int]) (> x y)) #;(curry > x))])
     (append (car l+r) (cons x (car (cdr l+r)))))
   ;; bad, splitf-pred must return conc val, bc it gets unsed in unlifted if
-  (let ([l+r (splitf-at lst (λ ([y : Int]) (> x y)) #;(curry > x))])
+  #;(let ([l+r (r:splitf-at lst (λ ([y : Int]) (> x y)) #;(curry > x))]) ; racket version
+    (append (car l+r) (cons x (car (cdr l+r)))))
+#;  (let ([l+r (splitf-at lst (λ ([y : Int]) (> x y)) #;(curry > x))])
     (append (car l+r) (cons x (car (cdr l+r)))))
   ;; good, manually use (lifted) if
   (unsafe-cast-concrete

@@ -3,10 +3,10 @@
 ;; returns true if given vector v is sorted (ascending)
 (define (sorted? v)
   (define-symbolic i j integer?)
-  (define max (sub1 (vector-length v))) ; largest index
+  (define max (vector-length v)) ; largest index
   ;; vector v is sorted if, for each pair of (valid) indices i j,
   ;; i < j implies v[i] <= v[j]
-  (implies (and (<= 0 i max) (<= 0 j max) ; assume valid indices
+  (implies (and (< 0 i max) (< 0 j max) ; assume valid indices
                 (< i j))
            (<= (vector-ref v i) ; check if each pair is sorted
                (vector-ref v j))))
@@ -45,17 +45,17 @@
 (define (insert x lst)
   (if (null? lst)
       (list x)
-      (let ([y (car lst)][rst (cdr lst)])
-        (if (< x y)
-            (cons x lst)
-            (cons y (insert x rst))))))
+      (let ([y (first lst)][ys (rest lst)])
+        (if (< x y) (cons x lst) (cons y (insert x ys))))))
 
 (define (insertionsort lst)
-  (cond [(null? lst) lst]
-        [(null? (cdr lst)) lst]
+  (if (null? lst) lst (insert (first lst) (insertionsort (rest lst))))
+  #;(cond [(null? lst) lst]
+;        [(null? (cdr lst)) lst]
         [else (insert (car lst) (insertionsort (cdr lst)))]))
 
-(verify #:guarantee (assert (sorted? (list->vector (insertionsort (mk-symb-lst 3))))))
+;; need assert wrapper?
+(verify #:guarantee (sorted? (list->vector (insertionsort (mk-symb-lst 3)))))
 
 
 ;; invalid example, verify arbitrary length lists -----------------------------
