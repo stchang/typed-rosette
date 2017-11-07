@@ -14,7 +14,7 @@
   (define max (vector-length v)) ; largest index
   ;; vector v is sorted if, for each pair of (valid) indices i j,
   ;; i < j implies v[i] <= v[j]
-  (implies (and (< 0 i (vector-length v)) (< 0 j (vector-length v)) ; assume valid indices
+  (implies (and (< -1 i (vector-length v)) (< -1 j (vector-length v)) ; assume valid indices
                 (< i j))
            (<= (vector-ref v i) ; check if each pair is sorted
                (vector-ref v j))))
@@ -22,6 +22,7 @@
 ;; attempt to verify sortedness of vector of concrete ints
 ;; - finds counterexample
 (verify (assert (sorted? (vector 3 5 4)))) ; => cex: i = 1, j = 2
+(verify (assert (sorted? (vector 4 3 5)))) ; => cex: i = 0, j = 1
 
 ;; attempt to verify sortedness of vector of symbolic ints,
 ;; given constraints x < y < z

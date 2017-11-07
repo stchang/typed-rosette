@@ -6,7 +6,7 @@
   (define max (vector-length v)) ; largest index
   ;; vector v is sorted if, for each pair of (valid) indices i j,
   ;; i < j implies v[i] <= v[j]
-  (implies (and (< 0 i max) (< 0 j max) ; assume valid indices
+  (implies (and (< -1 i max) (< -1 j max) ; assume valid indices
                 (< i j))
            (<= (vector-ref v i) ; check if each pair is sorted
                (vector-ref v j))))

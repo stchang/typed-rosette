@@ -14,7 +14,7 @@
 ;; returns true if given hash h, with concrete int indices, is sorted, ascending
 (define (sorted-hash? h)
   (define-symbolic* i j integer?)
-  (let ([size (hash-count h)]) ; largest index
+  (let ([size (sub1 (hash-count h))]) ; largest index
     ;; hash h is "sorted" if, for each pair of (valid) keys i j,
     ;; i < j implies h[i] <= h[j]
 #;      (for*/fold ([result #t])
@@ -24,7 +24,7 @@
                       (<= (hash-ref h i)
                           (hash-ref h j)))
              result))
-    (implies (and (< 0 i size) (< 0 j size) ; assume valid indices
+    (implies (and (<= 0 i size) (<= 0 j size) ; assume valid indices
                   (< i j))
              ;; hash-ref does not recognize symbolic values
              ;; - results in type error
