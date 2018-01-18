@@ -356,7 +356,8 @@
    [⊢ (ro:λ (x- ... kw-arg- ... ...) body-)
       ⇒ (C→ τ_in ... [kw τ_kw] ... τ_out)]]
   ;; no expected type, rest argument
-  [(_ ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
+  ;; commit, to prevent backtracking to expected-type clauses
+  [(_ ~! ([x:id : τ_in:type] ... [kw:keyword y:id : τ_kw:type e_def:expr] ... . [rst:id : τ_rst:type])
       body) ≫
    ;; assume types are same in both kinds of paths, TODO: is this true?
    [[x ≫ x* : τ_in.norm] ...
