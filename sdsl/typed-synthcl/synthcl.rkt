@@ -40,7 +40,7 @@
   [NULL : void*]))
 
 (begin-for-syntax
-  (current-typecheck-relation (current-type=?)) ; no subtyping
+  (current-typecheck-relation type=?) ; no subtyping
   (define (typecheck/un? t1 t2) ; typecheck unexpanded types
     (typecheck? ((current-type-eval) t1) ((current-type-eval) t2)))
   (define (pointer-type? t) (Pointer? t))

@@ -1305,7 +1305,7 @@
      (Any? t2)
      (and (concrete/shallow-recur? t1) (CAny? t2))
      (and (concrete/recur? t1) (CAnyDeep? t2))
-     ((current-type=?) t1 t2)
+     (type=? t1 t2)
      (syntax-parse (list t1 t2)
        #:literals [quote-syntax-]
        ;; Constant clause must appear before U, ow (Const Int) <: Int wont hold
