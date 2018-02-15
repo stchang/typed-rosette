@@ -1,4 +1,6 @@
 #lang turnstile
+(begin-for-syntax
+  (current-use-stop-list? #f))
 ;; reuse unlifted forms as-is
 (reuse  
  let* letrec #%datum ann current-join ⊔
