@@ -43,22 +43,22 @@
    [⊢ [v ≫ v- ⇒ : (~or (~CMVectorof τ) (~CIVectorof τ))]]
    [⊢ [i ≫ i- ⇐ : CInt]]
    --------
-   [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : τ]]]
+   [⊢ (ro:vector-ref v- i-) ⇒ : τ]]
   [(_ v:expr i:expr) ≫
    [⊢ [v ≫ v- ⇒ : (~or (~CMVectorof τ) (~CIVectorof τ))]]
    [⊢ [i ≫ i- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : #,(type-merge #'τ #'τ)]]]
+   [⊢ (ro:vector-ref v- i-) ⇒ : #,(type-merge #'τ #'τ)]]
   [(_ v:expr i:expr) ≫
    [⊢ [v ≫ v- ⇒ : (~U* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]]
    [⊢ [i ≫ i- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]]]
+   [⊢ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]]
   [(_ v:expr i:expr) ≫
    [⊢ [v ≫ v- ⇒ : (~CU* (~and (~or (~CMVectorof τ) (~CIVectorof τ))) ...)]]
    [⊢ [i ≫ i- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]]])
+   [⊢ (ro:vector-ref v- i-) ⇒ : #,(type-merge* #'[τ ...])]])
 
 (define-typed-syntax vector-length
   [(_ e) ≫
@@ -101,25 +101,25 @@
 (define-typed-syntax list->vector
   [_:id ≫ ;; TODO: use polymorphism
    --------
-   [⊢ [_ ≫ ro:list->vector ⇒ : (Ccase-> (C→ (CListof Any) (CMVectorof Any))
-                                        (C→ (Listof Any) (MVectorof Any)))]]]
+   [⊢ ro:list->vector ⇒ : (Ccase-> (C→ (CListof Any) (CMVectorof Any))
+                                   (C→ (Listof Any) (MVectorof Any)))]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof #,(if (concrete? #'τ) #'(U τ) #'τ))]]]
+   [⊢ (ro:list->vector e-) ⇒ : (CMVectorof #,(if (concrete? #'τ) #'(U τ) #'τ))]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
    #:with [τ* ...] (stx-map (λ (τ) (if (concrete? τ) #`(U #,τ) τ)) #'[τ ...])
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVectorof τ*) ...)]]]
+   [⊢ (ro:list->vector e-) ⇒ : (U (CMVectorof τ*) ...)]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CList τ ...)]]
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (CMVectorof (U τ ...))]]]
+   [⊢ (ro:list->vector e-) ⇒ : (CMVectorof (U τ ...))]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CList τ ...) ...)]]
    --------
-   [⊢ [_ ≫ (ro:list->vector e-) ⇒ : (U (CMVector (U τ ...)) ...)]]])
+   [⊢ (ro:list->vector e-) ⇒ : (U (CMVector (U τ ...)) ...)]])
 
 ;; ------------------------------------------------------------------------
 ;; not in rosette/safe

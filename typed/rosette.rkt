@@ -166,11 +166,11 @@
                          (syntax->datum #'pred?))
    [([x ≫ x- : (Constant ty)] ...) ⊢ [(begin e ...) ≫ e- ⇒ τ_out]]
    --------
-   [⊢ [_ ≫ (ro:let-values
-            ([(x- ...) (ro:let ()
-                         (ro:define-symbolic x ... pred?-)
-                         (ro:values x ...))])
-            e-) ⇒ : τ_out]]])
+   [⊢ (ro:let-values
+       ([(x- ...) (ro:let ()
+                          (ro:define-symbolic x ... pred?-)
+                          (ro:values x ...))])
+       e-) ⇒ : τ_out]])
 (define-typed-syntax let-symbolic*
   [(_ (x:id ...+ pred?) e ...) ≫
    [⊢ [pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]]
@@ -179,11 +179,11 @@
                          (syntax->datum #'pred?))
    [([x ≫ x- : (Constant ty)] ...) ⊢ [(begin e ...) ≫ e- ⇒ τ_out]]
    --------
-   [⊢ [_ ≫ (ro:let-values
-            ([(x- ...) (ro:let ()
-                         (ro:define-symbolic* x ... pred?-)
-                         (ro:values x ...))])
-            e-) ⇒ : τ_out]]])
+   [⊢ (ro:let-values
+       ([(x- ...) (ro:let ()
+                          (ro:define-symbolic* x ... pred?-)
+                          (ro:values x ...))])
+       e-) ⇒ : τ_out]])
 
 ;; ---------------------------------
 ;; assert, assert-type
@@ -192,12 +192,12 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:assert e-) ⇒ : CUnit]]]
+   [⊢ (ro:assert e-) ⇒ : CUnit]]
   [(_ e m) ≫
    [⊢ [e ≫ e- ⇒ : _]]
    [⊢ [m ≫ m- ⇐ : (CU CString (C→ CNothing))]]
    --------
-   [⊢ [_ ≫ (ro:assert e- m-) ⇒ : CUnit]]])
+   [⊢ (ro:assert e- m-) ⇒ : CUnit]])
 
 ;; TODO: assert-type wont work with unlifted types
 ;; but sometimes it should, eg in with for/all lifted functions
@@ -209,7 +209,7 @@
    #:fail-when (and (not (syntax-e #'pred)) #'ty)
    "type does not (or cannot) have an associated predicate"
    --------
-   [⊢ [_ ≫ (ro:#%app assert-pred e- pred) ⇒ : ty.norm]]])  
+   [⊢ (ro:#%app assert-pred e- pred) ⇒ : ty.norm]])
 
 
 ;; ---------------------------------
@@ -269,13 +269,13 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CHashTable τ _)]]
    --------
-   [⊢ [_ ≫ (ro:hash-keys e-) ⇒ : (CListof τ)]]])
+   [⊢ (ro:hash-keys e-) ⇒ : (CListof τ)]])
 
 (define-typed-syntax hash-values
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CHashTable _ τ)]]
    --------
-   [⊢ [_ ≫ (ro:hash-values e-) ⇒ : (CListof τ)]]])
+   [⊢ (ro:hash-values e-) ⇒ : (CListof τ)]])
 
 ;; ---------------------------------
 ;; lists
@@ -286,52 +286,52 @@
 (define-typed-syntax take
   [_:id ≫ ;; TODO: use polymorphism
    --------
-   [⊢ [_ ≫ ro:take ⇒ : (Ccase-> (C→ (CListof Any) CInt (CListof Any))
-                                (C→ (Listof Any) Int (Listof Any)))]]]
+   [⊢ ro:take ⇒ : (Ccase-> (C→ (CListof Any) CInt (CListof Any))
+                           (C→ (Listof Any) Int (Listof Any)))]]
   [(_ e n) ≫
    [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
    [⊢ [n ≫ n- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:take e- n-) ⇒ : (CListof τ)]]]
+   [⊢ (ro:take e- n-) ⇒ : (CListof τ)]]
   [(_ e n) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
    [⊢ [n ≫ n- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:take e- n-) ⇒ : (U (CListof τ) ...)]]]
+   [⊢ (ro:take e- n-) ⇒ : (U (CListof τ) ...)]]
   [(_ e n) ≫
    [⊢ [e ≫ e- ⇒ : (~CList τ ...)]]
    [⊢ [n ≫ n- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:take e- n-) ⇒ : (CListof (U τ ...))]]]
+   [⊢ (ro:take e- n-) ⇒ : (CListof (U τ ...))]]
   [(_ e n) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CList τ ...) ...)]]
    [⊢ [n ≫ n- ⇐ : Int]]
    --------
-   [⊢ [_ ≫ (ro:take e- n-) ⇒ : (U (CList (U τ ...)) ...)]]])
+   [⊢ (ro:take e- n-) ⇒ : (U (CList (U τ ...)) ...)]])
 
 (define-typed-syntax reverse
   [_:id ≫ ;; TODO: use polymorphism
    --------
-   [⊢ [_ ≫ ro:reverse ⇒ : (Ccase-> (C→ (CListof Any) (CListof Any))
-                                   (C→ (Listof Any) (Listof Any)))]]]
+   [⊢ ro:reverse ⇒ : (Ccase-> (C→ (CListof Any) (CListof Any))
+                              (C→ (Listof Any) (Listof Any)))]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CListof τ)]]
    --------
-   [⊢ [_ ≫ (ro:reverse e-) ⇒ : (CListof τ)]]]
+   [⊢ (ro:reverse e-) ⇒ : (CListof τ)]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CListof τ) ...)]]
    --------
-   [⊢ [_ ≫ (ro:reverse e-) ⇒ : (U (CListof τ) ...)]]]
+   [⊢ (ro:reverse e-) ⇒ : (U (CListof τ) ...)]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~CList . τs)]]
    #:with τs/rev (stx-rev #'τs)
    --------
-   [⊢ [_ ≫ (ro:reverse e-) ⇒ : (CList . τs/rev)]]]
+   [⊢ (ro:reverse e-) ⇒ : (CList . τs/rev)]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~CList . τs) ...)]]
    #:with (τs/rev ...) (stx-map stx-rev #'(τs ...))
    --------
-   [⊢ [_ ≫ (ro:reverse e-) ⇒ : (U (CList . τs/rev) ...)]]])
+   [⊢ (ro:reverse e-) ⇒ : (U (CList . τs/rev) ...)]])
 
 ;; ---------------------------------
 ;; IO and other built-in ops
@@ -568,7 +568,7 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : ty]]
    --------
-   [⊢ [_ ≫ (ro:time e-) ⇒ : ty]]])
+   [⊢ (ro:time e-) ⇒ : ty]])
 
 ;; ---------------------------------
 ;; mutable boxes
@@ -577,24 +577,24 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : τ]]
    --------
-   [⊢ [_ ≫ (ro:box e-) ⇒ : (CMBoxof #,(type-merge #'τ #'τ))]]])
+   [⊢ (ro:box e-) ⇒ : (CMBoxof #,(type-merge #'τ #'τ))]])
 
 (define-typed-syntax box-immutable
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : τ]]
    --------
-   [⊢ [_ ≫ (ro:box-immutable e-) ⇒ : (CIBoxof τ)]]])
+   [⊢ (ro:box-immutable e-) ⇒ : (CIBoxof τ)]])
 
 (define-typed-syntax unbox
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~or (~CMBoxof τ) (~CIBoxof τ))]]
    --------
-   [⊢ [_ ≫ (ro:unbox e-) ⇒ : τ]]]
+   [⊢ (ro:unbox e-) ⇒ : τ]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : (~U* (~and (~or (~CMBoxof τ) (~CIBoxof τ))) ...)]]
    #:with τ_out (type-merge* #'[τ ...])
    --------
-   [⊢ [_ ≫ (ro:unbox e-) ⇒ : τ_out]]])
+   [⊢ (ro:unbox e-) ⇒ : τ_out]])
 
 ;; TODO: implement multiple values
 ;; result type should be (Valuesof ty CAsserts)
@@ -602,7 +602,7 @@
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : ty]]
    --------
-   [⊢ [_ ≫ (ro:with-asserts e-) ⇒ : ty]]])
+   [⊢ (ro:with-asserts e-) ⇒ : ty]])
 
 (provide (typed-out
           [term-cache
@@ -622,14 +622,14 @@
 (define-typed-syntax current-bitwidth
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:current-bitwidth ⇒ : (CParamof (CU CFalse CPosInt))]]]
+   [⊢ ro:current-bitwidth ⇒ : (CParamof (CU CFalse CPosInt))]]
   [(_) ≫
    --------
-   [⊢ [_ ≫ (ro:current-bitwidth) ⇒ : (CU CFalse CPosInt)]]]
+   [⊢ (ro:current-bitwidth) ⇒ : (CU CFalse CPosInt)]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇐ : (CU CFalse CPosInt)]]
    --------
-   [⊢ [_ ≫ (ro:current-bitwidth e-) ⇒ : CUnit]]])
+   [⊢ (ro:current-bitwidth e-) ⇒ : CUnit]])
 
 (define-named-type-alias BVMultiArgOp (Ccase-> (C→ BV BV BV)
                                                (C→ BV BV BV BV)))
@@ -756,40 +756,40 @@
 (define-typed-syntax &&
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:&& ⇒ :
-         (C→* [] [] #:rest (Listof Bool) Bool)]]]
+   [⊢ ro:&& ⇒ :
+      (C→* [] [] #:rest (Listof Bool) Bool)]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇐ : Bool] ...]
    --------
-   [⊢ [_ ≫ (ro:&& e- ...) ⇒ : Bool]]])
+   [⊢ (ro:&& e- ...) ⇒ : Bool]])
 (define-typed-syntax ||
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:|| ⇒ :
-           (C→* [] [] #:rest (Listof Bool) Bool)]]]
+   [⊢ ro:|| ⇒ :
+      (C→* [] [] #:rest (Listof Bool) Bool)]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇐ : Bool] ...]
    --------
-   [⊢ [_ ≫ (ro:|| e- ...) ⇒ : Bool]]])
+   [⊢ (ro:|| e- ...) ⇒ : Bool]])
 
 ;; and, or, and not are defined in rosette/forms-pre-match.rkt
 
 (define-typed-syntax nand
   [(_) ≫
    --------
-   [⊢ [_ ≫ (ro:nand) ⇒ : CFalse]]]
+   [⊢ (ro:nand) ⇒ : CFalse]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : _] ...]
    --------
-   [⊢ [_ ≫ (ro:nand e- ...) ⇒ : Bool]]])
+   [⊢ (ro:nand e- ...) ⇒ : Bool]])
 (define-typed-syntax nor
   [(_) ≫
    --------
-   [⊢ [_ ≫ (ro:nor) ⇒ : CTrue]]]
+   [⊢ (ro:nor) ⇒ : CTrue]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : _] ...]
    --------
-   [⊢ [_ ≫ (ro:nor e- ...) ⇒ : Bool]]])
+   [⊢ (ro:nor e- ...) ⇒ : Bool]])
 (define-typed-syntax implies
   [(_ e1 e2) ≫
    --------
@@ -821,7 +821,7 @@
            (type->str #'ty))
    [⊢ [body ≫ body- ⇐ : Bool]]
    --------
-   [⊢ [_ ≫ (ro:forall vs- body-) ⇒ : Bool]]]
+   [⊢ (ro:forall vs- body-) ⇒ : Bool]]
   [(_ vs body) ≫
    [⊢ [vs ≫ vs- ⇒ : (~CList ~! ty ...)]]
    #:fail-unless (stx-andmap Constant*? #'(ty ...))
@@ -829,7 +829,7 @@
            (string-join (stx-map type->str #'(ty ...)) ", "))
    [⊢ [body ≫ body- ⇐ : Bool]]
    --------
-   [⊢ [_ ≫ (ro:forall vs- body-) ⇒ : Bool]]])
+   [⊢ (ro:forall vs- body-) ⇒ : Bool]])
 (define-typed-syntax exists
   [(_ vs body) ≫
    [⊢ [vs ≫ vs- ⇒ : (~CListof ~! ty)]]
@@ -839,7 +839,7 @@
            (type->str #'ty))
    [⊢ [body ≫ body- ⇐ : Bool]]
    --------
-   [⊢ [_ ≫ (ro:exists vs- body-) ⇒ : Bool]]]
+   [⊢ (ro:exists vs- body-) ⇒ : Bool]]
   [(_ vs body) ≫
    [⊢ [vs ≫ vs- ⇒ : (~CList ~! ty ...)]]
    #:fail-unless (stx-andmap Constant*? #'(ty ...))
@@ -847,30 +847,30 @@
            (string-join (stx-map type->str #'(ty ...)) ", "))
    [⊢ [body ≫ body- ⇐ : Bool]]
    --------
-   [⊢ [_ ≫ (ro:exists vs- body-) ⇒ : Bool]]])
+   [⊢ (ro:exists vs- body-) ⇒ : Bool]])
 
 (define-typed-syntax verify
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:verify e-) ⇒ : CSolution]]]
+   [⊢ (ro:verify e-) ⇒ : CSolution]]
   [(_ #:assume ae #:guarantee ge) ≫
    [⊢ [ae ≫ ae- ⇒ : _]]
    [⊢ [ge ≫ ge- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:verify #:assume ae- #:guarantee ge-) ⇒ : CSolution]]])
+   [⊢ (ro:verify #:assume ae- #:guarantee ge-) ⇒ : CSolution]])
 
 (define-typed-syntax evaluate
   [(_ v s) ≫
    [⊢ [v ≫ v- ⇒ : (~Constant* ty)]]
    [⊢ [s ≫ s- ⇐ : CSolution]]
    --------
-   [⊢ [_ ≫ (ro:evaluate v- s-) ⇒ : ty]]]
+   [⊢ (ro:evaluate v- s-) ⇒ : ty]]
   [(_ v s) ≫
    [⊢ [v ≫ v- ⇒ : ty]]
    [⊢ [s ≫ s- ⇐ : CSolution]]
    --------
-   [⊢ [_ ≫ (ro:evaluate v- s-) ⇒ : #,(remove-Constant #'ty)]]])
+   [⊢ (ro:evaluate v- s-) ⇒ : #,(remove-Constant #'ty)]])
 
 ;; TODO: enforce list of constants?
 (define-typed-syntax synthesize
@@ -878,61 +878,61 @@
    [⊢ [ie ≫ ie- ⇐ : (CListof Any)]]
    [⊢ [ge ≫ ge- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:synthesize #:forall ie- #:guarantee ge-) ⇒ : CSolution]]]
+   [⊢ (ro:synthesize #:forall ie- #:guarantee ge-) ⇒ : CSolution]]
   [(_ #:forall ie #:assume ae #:guarantee ge) ≫
    [⊢ [ie ≫ ie- ⇐ : (CListof Any)]]
    [⊢ [ae ≫ ae- ⇒ : _]]
    [⊢ [ge ≫ ge- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:synthesize #:forall ie- #:assume ae- #:guarantee ge-) ⇒ : CSolution]]])
+   [⊢ (ro:synthesize #:forall ie- #:assume ae- #:guarantee ge-) ⇒ : CSolution]])
 
 (define-typed-syntax solve
   [(_ e) ≫
    [⊢ [e ≫ e- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:solve e-) ⇒ : CSolution]]])
+   [⊢ (ro:solve e-) ⇒ : CSolution]])
 
 (define-typed-syntax optimize
   [(_ #:guarantee ge) ≫
    [⊢ [ge ≫ ge- ⇒ : _]]
    --------
-   [⊢ [_ ≫ (ro:optimize #:guarantee ge-) ⇒ : CSolution]]]
+   [⊢ (ro:optimize #:guarantee ge-) ⇒ : CSolution]]
   [(_ #:minimize mine #:guarantee ge) ≫
    [⊢ [ge ≫ ge- ⇒ : _]]
    [⊢ [mine ≫ mine- ⇐ : (CListof (U Num BV))]]
    --------
-   [⊢ [_ ≫ (ro:optimize #:minimize mine- #:guarantee ge-) ⇒ : CSolution]]]
+   [⊢ (ro:optimize #:minimize mine- #:guarantee ge-) ⇒ : CSolution]]
   [(_ #:maximize maxe #:guarantee ge) ≫
    [⊢ [ge ≫ ge- ⇒ : _]]
    [⊢ [maxe ≫ maxe- ⇐ : (CListof (U Num BV))]]
    --------
-   [⊢ [_ ≫ (ro:optimize #:maximize maxe- #:guarantee ge-) ⇒ : CSolution]]]
+   [⊢ (ro:optimize #:maximize maxe- #:guarantee ge-) ⇒ : CSolution]]
   [(_ #:minimize mine #:maximize maxe #:guarantee ge) ≫
    [⊢ [ge ≫ ge- ⇒ : _]]
    [⊢ [maxe ≫ maxe- ⇐ : (CListof (U Num BV))]]
    [⊢ [mine ≫ mine- ⇐ : (CListof (U Num BV))]]
    --------
-   [⊢ [_ ≫ (ro:optimize #:minimize mine- #:maximize maxe- #:guarantee ge-) ⇒ : CSolution]]]
+   [⊢ (ro:optimize #:minimize mine- #:maximize maxe- #:guarantee ge-) ⇒ : CSolution]]
   [(_ #:maximize maxe #:minimize mine #:guarantee ge) ≫
    [⊢ [ge ≫ ge- ⇒ : _]]
    [⊢ [maxe ≫ maxe- ⇐ : (CListof (U Num BV))]]
    [⊢ [mine ≫ mine- ⇐ : (CListof (U Num BV))]]
    --------
-   [⊢ [_ ≫ (ro:optimize #:maximize maxe- #:minimize mine- #:guarantee ge-) ⇒ : CSolution]]])
+   [⊢ (ro:optimize #:maximize maxe- #:minimize mine- #:guarantee ge-) ⇒ : CSolution]])
 
 ;; this must be a macro in order to support Racket's overloaded set/get
 ;; parameter patterns
 (define-typed-syntax current-solver
   [_:id ≫
    --------
-   [⊢ [_ ≫ ro:current-solver ⇒ : (CParamof CSolver)]]]
+   [⊢ ro:current-solver ⇒ : (CParamof CSolver)]]
   [(_) ≫
    --------
-   [⊢ [_ ≫ (ro:current-solver) ⇒ : CSolver]]]
+   [⊢ (ro:current-solver) ⇒ : CSolver]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇐ : CSolver]]
    --------
-   [⊢ [_ ≫ (ro:current-solver e-) ⇒ : CUnit]]])
+   [⊢ (ro:current-solver e-) ⇒ : CUnit]])
 
 ;(define-rosette-primop gen:solver : CSolver)
 (provide (typed-out
@@ -964,7 +964,7 @@
    ;; TODO: can U sometimes be converted to CU?
    [⊢ [u ≫ u- ⇒ : (~and τ (~U* _ ...))]] ; input must be symbolic, and not constant
    --------
-   [⊢ [_ ≫ (ro:union-contents u-) ⇒ : (CListof (CPair Bool τ))]]])
+   [⊢ (ro:union-contents u-) ⇒ : (CListof (CPair Bool τ))]])
 
 ;; TODO: add match and match expanders
 
@@ -1002,7 +1002,7 @@
    ;; Merge the τ_body with itself
    #:with τ_out (type-merge #'τ_body #'τ_body)
    --------
-   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]]
+   [⊢ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]
   ;; known concrete e
   [(_ ([x:id e]) e_body) ⇐ τ_body ≫
    [⊢ [e ≫ e- ⇒ : τ_x]]
@@ -1015,7 +1015,7 @@
    #:when (concrete? #'τ_x)
    [() ([x ≫ x- : τ_x]) ⊢ [e_body ≫ e_body- ⇒ : τ_body]]
    --------
-   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_body]]]
+   [⊢ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_body]]
   ;; other, for example a symbolic constant, an Any type, or a symbolic union
   ;; type that didn't pass the first case
   [(_ ([x:id e]) e_body) ⇐ τ_body ≫
@@ -1033,7 +1033,7 @@
    ;; Merge the τ_body with itself
    #:with τ_out (type-merge #'τ_body #'τ_body)
    --------
-   [⊢ [_ ≫ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]]])
+   [⊢ (ro:for/all ([x- e-]) e_body-) ⇒ : τ_out]])
 
 (define-typed-syntax for*/all
   [(_ () e_body) ≫

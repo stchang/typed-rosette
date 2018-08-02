@@ -23,14 +23,14 @@
 (define-typed-syntax current-bvpred
   [c-bvpred:id ≫
    --------
-   [⊢ [_ ≫ bv:BV ⇒ : (CParamof CBVPred)]]]
+   [⊢ bv:BV ⇒ : (CParamof CBVPred)]]
   [(_) ≫
    --------
-   [⊢ [_ ≫ (bv:BV) ⇒ : CBVPred]]]
+   [⊢ (bv:BV) ⇒ : CBVPred]]
   [(_ e) ≫
    [⊢ [e ≫ e- ⇐ : CBVPred]]
    --------
-   [⊢ [_ ≫ (bv:BV e-) ⇒ : CUnit]]])
+   [⊢ (bv:BV e-) ⇒ : CUnit]])
 
 (define-syntax-rule (bv:bool->bv b) 
   (ro:if b 
@@ -91,7 +91,7 @@
    #:fail-unless (stx-andmap τ⊑BV? #'(ty_out* ... ...))
                  "given op must have BV output"
    --------
-   [⊢ [_ ≫ (bv:bvlib [{id- ...} n-] ...) ⇒ : Lib]]])
+   [⊢ (bv:bvlib [{id- ...} n-] ...) ⇒ : Lib]])
 
 (begin-for-syntax
   (define BV* ((current-type-eval) #'BV))

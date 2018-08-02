@@ -133,5 +133,5 @@
    [⊢ [n ≫ n- ⇐ : Int]]
    [⊢ [procs ≫ procs- ⇐ : (List Instr)]]
    --------
-   [⊢ [_ ≫ (ifc:program n- procs-) ⇒ : Prog]]])
+   [⊢ (ifc:program n- procs-) ⇒ : Prog]])
 

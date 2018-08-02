@@ -13,10 +13,10 @@
   [(_ e : τ-expected -> v asserts) ≫
    [⊢ [e ≫ e- ⇐ : τ-expected]]
    --------
-   [⊢ [_ ≫ (check-equal?/asserts e-
-                                 (add-expected v τ-expected)
-                                 (add-expected asserts (CListof Bool)))
-         ⇒ : CUnit]]])
+   [⊢ (check-equal?/asserts e-
+                            (add-expected v τ-expected)
+                            (add-expected asserts (CListof Bool)))
+      ⇒ : CUnit]])
 
 (define-syntax (check-type+output stx)
   (syntax-parse stx

@@ -54,5 +54,5 @@
                        (syntax->datum #'(pred? ...)))
    [⊢ [e ≫ e- ⇒ : τ]]
    --------
-   [⊢ [_ ≫ (ro:debug (pred?- ...) e-) ⇒ : t/ro:CSolution]]])
+   [⊢ (ro:debug (pred?- ...) e-) ⇒ : t/ro:CSolution]])
   

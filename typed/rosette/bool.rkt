@@ -130,39 +130,39 @@
 (define-typed-syntax or
   [(_) ≫
    --------
-   [⊢ [_ ≫ (ro:or)
-         (⇒ : CFalse)
-         (⇒ prop+ Prop/Bot)
-         (⇒ prop- Prop/Top)]]]
+   [⊢ (ro:or)
+      (⇒ : CFalse)
+      (⇒ prop+ Prop/Bot)
+      (⇒ prop- Prop/Top)]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- (⇐ : CBool) (⇒ prop+ p+) (⇒ prop- p-)]
       ...]
    --------
-   [⊢ [_ ≫ (ro:or e- ...)
-         (⇒ : CBool)
-         (⇒ prop+ (Prop/Or p+ ...))
-         (⇒ prop- (Prop/And p- ...))]]]
+   [⊢ (ro:or e- ...)
+      (⇒ : CBool)
+      (⇒ prop+ (Prop/Or p+ ...))
+      (⇒ prop- (Prop/And p- ...))]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- (⇐ : Bool) (⇒ prop+ p+) (⇒ prop- p-)]
       ...]
    --------
-   [⊢ [_ ≫ (ro:or e- ...)
-         (⇒ : Bool)
-         (⇒ prop+ (Prop/Or p+ ...))
-         (⇒ prop- (Prop/And p- ...))]]]
+   [⊢ (ro:or e- ...)
+      (⇒ : Bool)
+      (⇒ prop+ (Prop/Or p+ ...))
+      (⇒ prop- (Prop/And p- ...))]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- (⇒ : ty) (⇒ prop+ p+) (⇒ prop- p-)]
       ...]
    #:when (stx-andmap concrete? #'(ty ...))
    --------
-   [⊢ [_ ≫ (ro:or e- ...)
-         (⇒ : (CU CFalse ty ...))
-         (⇒ prop+ (Prop/Or p+ ...))
-         (⇒ prop- (Prop/And p- ...))]]]
+   [⊢ (ro:or e- ...)
+      (⇒ : (CU CFalse ty ...))
+      (⇒ prop+ (Prop/Or p+ ...))
+      (⇒ prop- (Prop/And p- ...))]]
   [(_ e ...) ≫
    [⊢ [e ≫ e- ⇒ : ty] ...]
    --------
-   [⊢ [_ ≫ (ro:or e- ...) ⇒ : #,(type-merge* (cons typeCFalse #'[ty ...]))]]])
+   [⊢ (ro:or e- ...) ⇒ : #,(type-merge* (cons typeCFalse #'[ty ...]))]])
 
 (define-typed-syntax not
   [:id ≫
@@ -172,11 +172,11 @@
    [⊢ e ≫ e- (⇒ : τ) (⇒ prop+ p+) (⇒ prop- p-)]
    #:when (concrete? #'τ)
    --------
-   [⊢ [_ ≫ (ro:not e-) (⇒ : CBool) (⇒ prop+ (Prop p-)) (⇒ prop- (Prop p+))]]]
+   [⊢ (ro:not e-) (⇒ : CBool) (⇒ prop+ (Prop p-)) (⇒ prop- (Prop p+))]]
   [(_ e) ≫
    [⊢ e ≫ e- (⇒ : _) (⇒ prop+ p+) (⇒ prop- p-)]
    --------
-   [⊢ [_ ≫ (ro:not e-) (⇒ : Bool) (⇒ prop+ (Prop p-)) (⇒ prop- (Prop p+))]]])
+   [⊢ (ro:not e-) (⇒ : Bool) (⇒ prop+ (Prop p-)) (⇒ prop- (Prop p+))]])
 
 ;; ----------------------------------------------------------------------------
 
