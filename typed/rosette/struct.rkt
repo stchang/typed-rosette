@@ -182,7 +182,7 @@
          (add-predm (U (Struct name τ_merged ...)) name?))
        (define-syntax- constructor/type
          (make-variable-like-transformer
-          (⊢ name* : (C→ τ.norm ... CName))))
+          (assign-type #'name* #'(C→ τ.norm ... CName))))
        (: name? : (LiftedPredFor Name))
        (define name?
          (unsafe-assign-type name?* : (LiftedPredFor Name)))
@@ -236,7 +236,7 @@
          (add-predm (U (Struct name super.τ_fld_merged ... τ_merged ...)) name?))
        (define-syntax- constructor/type
          (make-variable-like-transformer
-          (⊢ name* : (C→ super.τ_fld ... τ.norm ... CName))))
+          (assign-type #'name* #'(C→ super.τ_fld ... τ.norm ... CName))))
        (: name? : LiftedPred)
        (define name?
          (unsafe-assign-type name?* : (LiftedPredFor Name)))

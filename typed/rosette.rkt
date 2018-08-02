@@ -132,7 +132,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin-
-       (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty-)))) ...
+       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty-)))) ...
        (ro:define-symbolic y ... pred?-))]]
   [(_ x:id ...+ pred?) ≫ ; programmer provides pred, lookup type
    [⊢ pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]
@@ -142,7 +142,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin-
-       (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
+       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty)))) ...
        (ro:define-symbolic y ... pred?-))]])
 
 (define-typed-syntax define-symbolic*
@@ -154,7 +154,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [_ ≻ (begin-
-          (define-syntax- x (make-rename-transformer (⊢ y : (Constant ty)))) ...
+          (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty)))) ...
           (ro:define-symbolic* y ... pred?-))]])
 
 ;; TODO: support internal definition contexts
@@ -547,7 +547,7 @@
     (provide- pred?)
     (define-syntax- pred?
       (make-variable-like-transformer
-       (attach (⊢ (mark-solvablem ro-pred?) : (LiftedPredFor Type))
+       (attach (assign-type #'(mark-solvablem ro-pred?) #'(LiftedPredFor Type))
                'typefor
                ((current-type-eval) #'(Term CType)))))))
 

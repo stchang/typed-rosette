@@ -85,7 +85,7 @@
           ;       supertype of all structs that implement
           ;       this, but not of anything else.
           (with-syntax ([Name #'Any])
-            (⊢ method-id* : method-τ))))
+            (assign-type #'method-id* #'method-τ))))
        ...)])
 
 ;; ----------------------------------------------------------------------------

@@ -206,7 +206,7 @@
   [(_ x:id e:expr) ≫
    #:with x- (generate-temporary #'x)
    [⊢ e ≫ e- ⇒ τ]
-   #:with x-/props (transfer-props #'e- (⊢ x- : τ))
+   #:with x-/props (transfer-props #'e- (assign-type #'x- #'τ))
    --------
    [≻ (begin-
         (define-syntax- x (make-variable-like-transformer #'x-/props))

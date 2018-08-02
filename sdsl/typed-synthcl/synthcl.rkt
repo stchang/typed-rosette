@@ -101,8 +101,15 @@
     (or (typecheck/un? ty #'bool)
         (and (real-type? ty) (not (vector-type? ty))))))
 
+;; ---------------------------
+
+;; An unsafe type assignment macro
+(define-syntax-parser ⊢m [(_ stx τ) (assign-type #'stx #'τ)])
+
 (define-syntax-parser add-convertm   [(_ stx fn) (add-convert #'stx #'fn)])
 (define-syntax-parser add-constructm [(_ stx fn) (add-construct #'stx #'fn)])
+
+;; ---------------------------
 
 (ro:define (to-bool v) (ro:#%app (ro:#%app cl:bool) v))
 
@@ -228,7 +235,7 @@
    #:with f- (add-orig (generate-temporary #'f) #'f)
    --------
    [≻ (begin-
-        (define-syntax- f (make-rename-transformer (⊢ f- : (C→ ty ... ty-out))))
+        (define-syntax- f (make-rename-transformer (assign-type #'f- #'(C→ ty ... ty-out))))
         (define- f-
           (lambda- (x ...)
             (rosette:let ([x (⊢m (ro:#%app conv x) ty)] ...)

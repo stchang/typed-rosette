@@ -27,7 +27,7 @@
    #:with y (generate-temporary #'x)
    --------
    [≻ (begin-
-        (define-syntax- x (make-rename-transformer (⊢ y : τ)))
+        (define-syntax- x (make-rename-transformer (assign-type #'y #'τ)))
         ;; TODO: this doesnt completely work
         ;; - specifically, using e- means #%app wont be stx-param'ed
         ;; to the right thing (app-track) since e- is fully expanded
@@ -38,7 +38,7 @@
    #:with f- (generate-temporary #'f)
    --------
    [≻ (begin-
-        (define-syntax- f (make-rename-transformer (⊢ f- : (t/ro:C→ ty ... ty_out))))
+        (define-syntax- f (make-rename-transformer (assign-type #'f- #'(t/ro:C→ ty ... ty_out))))
         (ro:define/debug f-
           (t/ro:λ ([x : ty] ...)
             (t/ro:ann (t/ro:begin e ...) : ty_out))))]])
