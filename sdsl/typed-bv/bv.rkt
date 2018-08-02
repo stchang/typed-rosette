@@ -52,8 +52,8 @@
 (define-typed-syntax define-fragment
   [(_ (id param ...) #:implements spec #:library lib-expr) ≫
    --------
-   [_ ≻ (define-fragment (id param ...)
-          #:implements spec #:library lib-expr #:minbv (rosette:#%datum . 4))]]
+   [≻ (define-fragment (id param ...)
+        #:implements spec #:library lib-expr #:minbv (rosette:#%datum . 4))]]
   [(_ (id param ...) #:implements spec #:library lib-expr #:minbv minbv) ≫
    [⊢ [spec ≫ spec- ⇒ : ty_spec]]
    #:fail-unless (C→? #'ty_spec) "spec must be a function"
@@ -61,17 +61,17 @@
    [⊢ [minbv ≫ minbv- ⇐ : Int]]
    #:with id-stx (format-id #'id "~a-stx" #'id #:source #'id)
    --------
-   [_ ≻ (begin-
-            (define-values- (id-internal id-stx-internal)
-              (bv:synthesize-fragment (id param ...) 
-                #:implements spec-
-                #:library lib-expr- 
-                #:minbv minbv-))
-          (define-syntax id
-            (make-rename-transformer (assign-type #'id-internal #'ty_spec)))
-          (define-syntax id-stx
-            (make-rename-transformer (assign-type #'id-stx-internal #'CStx)))
-          )]])
+   [≻ (begin-
+        (define-values- (id-internal id-stx-internal)
+          (bv:synthesize-fragment (id param ...) 
+            #:implements spec-
+            #:library lib-expr- 
+            #:minbv minbv-))
+        (define-syntax id
+          (make-rename-transformer (assign-type #'id-internal #'ty_spec)))
+        (define-syntax id-stx
+          (make-rename-transformer (assign-type #'id-stx-internal #'CStx)))
+        )]])
 
 (define-typed-syntax bvlib
   [(_ [(~and ids (id ...)) n] ...) ≫
