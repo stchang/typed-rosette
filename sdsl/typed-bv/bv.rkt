@@ -68,9 +68,9 @@
             #:library lib-expr- 
             #:minbv minbv-))
         (define-syntax id
-          (make-rename-transformer (assign-type #'id-internal #'ty_spec)))
+          (make-rename-transformer (assign-type #'id-internal #'ty_spec #:wrap? #f)))
         (define-syntax id-stx
-          (make-rename-transformer (assign-type #'id-stx-internal #'CStx)))
+          (make-rename-transformer (assign-type #'id-stx-internal #'CStx #:wrap? #f)))
         )]])
 
 (define-typed-syntax bvlib

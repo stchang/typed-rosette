@@ -235,7 +235,7 @@
    #:with f- (add-orig (generate-temporary #'f) #'f)
    --------
    [≻ (begin-
-        (define-syntax- f (make-rename-transformer (assign-type #'f- #'(C→ ty ... ty-out))))
+        (define-syntax- f (make-rename-transformer (assign-type #'f- #'(C→ ty ... ty-out) #:wrap? #f)))
         (define- f-
           (lambda- (x ...)
             (rosette:let ([x (⊢m (ro:#%app conv x) ty)] ...)
@@ -319,7 +319,7 @@
    #:with (x- ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin- (define-syntax- x
-                (make-rename-transformer (assign-type #'x- #'ty.norm))) ...
+                (make-rename-transformer (assign-type #'x- #'ty.norm #:wrap? #f))) ...
                 (ro:define x- (ro:#%datum . "")) ...)]]
   [(_ ty:type x:id ...) ≫
    #:when (real-type? #'ty.norm)
@@ -337,7 +337,7 @@
    [≻ (begin- (ro:define-symbolic* x-- pred [#,(string->number len-str)]) ...
               (ro:define x- (ro:apply mk-ty x--)) ...
               (define-syntax- x
-                (make-rename-transformer (assign-type #'x- #'ty.norm))) ...)]]
+                (make-rename-transformer (assign-type #'x- #'ty.norm #:wrap? #f))) ...)]]
   [(_ ty:type [len] x:id ...) ≫ ; array of vector types
    #:when (real-type? #'ty.norm)
    [⊢ len ≫ len- ⇐ int]
@@ -359,7 +359,7 @@
                     (cl:pointer-set! *x i (ro:apply mk-ty v)))
                   *x)) ...
               (define-syntax- x
-                (make-rename-transformer (assign-type #'x- #'ty*))) ...)]]
+                (make-rename-transformer (assign-type #'x- #'ty* #:wrap? #f))) ...)]]
   ;; real, scalar (ie non-vector) types
   [(_ ty:type x:id ...) ≫
    #:when (real-type? #'ty.norm)
@@ -368,14 +368,14 @@
    #:with (x- ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin- (define-syntax- x
-                (make-rename-transformer (assign-type #'x- #'ty.norm))) ...
+                (make-rename-transformer (assign-type #'x- #'ty.norm #:wrap? #f))) ...
               (ro:define-symbolic* x- pred) ...)]]
   ;; else init to NULLs
   [(_ ty:type x:id ...) ≫
    #:with (x- ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin- (define-syntax- x
-                (make-rename-transformer (assign-type #'x- #'ty.norm))) ...
+                (make-rename-transformer (assign-type #'x- #'ty.norm #:wrap? #f))) ...
               (ro:define x- cl:NULL) ...)]])
 
 ;; ?: --------------------------------------------------

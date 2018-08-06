@@ -132,7 +132,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin-
-       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty-)))) ...
+       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty-) #:wrap? #f))) ...
        (ro:define-symbolic y ... pred?-))]]
   [(_ x:id ...+ pred?) ≫ ; programmer provides pred, lookup type
    [⊢ pred? ≫ pred?- (⇒ : _) (⇒ typefor ty) (⇒ solvable? s?)]
@@ -142,7 +142,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin-
-       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty)))) ...
+       (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty) #:wrap? #f))) ...
        (ro:define-symbolic y ... pred?-))]])
 
 (define-typed-syntax define-symbolic*
@@ -154,7 +154,7 @@
    #:with (y ...) (generate-temporaries #'(x ...))
    --------
    [≻ (begin-
-        (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty)))) ...
+        (define-syntax- x (make-rename-transformer (assign-type #'y #'(Constant ty) #:wrap? #f))) ...
         (ro:define-symbolic* y ... pred?-))]])
 
 ;; TODO: support internal definition contexts
